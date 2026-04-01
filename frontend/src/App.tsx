@@ -22,6 +22,7 @@ import UserManagement from './pages/UserManagement'
 import BaseManagement from './pages/BaseManagement'
 import VehicleManagement from './pages/VehicleManagement'
 import UserManagementApi from './pages/UserManagementApi'
+import DeviceManagement from './pages/DeviceManagement'
 function App() {
   const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
     authenticationPath: '/login',
@@ -184,6 +185,7 @@ useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
                <Route path="user" element={<UserManagementApi />} />
                <Route path="bases" element={<BaseManagement />} />
                <Route path="vehicles" element={<VehicleManagement />} />
+               <Route path="devices" element={<DeviceManagement />} />
             
             </Route>
 

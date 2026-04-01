@@ -97,6 +97,15 @@ const SIDEBAR_MENUS = [
     path: '/vehicles',
     section: 'master',
   },
+
+  {
+    label: 'Onboard Devices',
+    name: 'Onboard Devices',
+    icon: <TrackChangesIcon fontSize="small" />,
+    path: '/devices',
+    section: 'master',
+  },
+
   {
     label: 'Tracking',
     name: 'Tracking',

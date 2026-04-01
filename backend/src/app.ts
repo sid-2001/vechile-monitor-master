@@ -4,6 +4,7 @@ import baseRoutes from "./routes/baseRoutes";
 import userRoutes from "./routes/userRoutes";
 import vehicleRoutes from "./routes/vehicleRoutes";
 import vehicleLocationRoutes from "./routes/vehicleLocationRoutes";
+import deviceRoutes from "./routes/deviceRoutes";
 import { authMiddleware } from "./middleware/authMiddleware";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { loggingMiddleware } from "./middleware/loggingMiddleware";
@@ -20,14 +21,13 @@ app.use(
 
 app.use(express.json());
 app.use(loggingMiddleware);
-app.use(express.json());
-app.use(loggingMiddleware);
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/auth", authRoutes);
 app.use("/bases", authMiddleware, baseRoutes);
 app.use("/users", authMiddleware, userRoutes);
 app.use("/vehicles", authMiddleware, vehicleRoutes);
-app.use("/vehicle-locations", authMiddleware, vehicleLocationRoutes);
+app.use("/vehicle-locations", vehicleLocationRoutes);
+app.use("/devices", authMiddleware, deviceRoutes);
 app.use(errorMiddleware);
 
 export default app;
