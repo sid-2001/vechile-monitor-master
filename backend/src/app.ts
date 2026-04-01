@@ -7,8 +7,19 @@ import vehicleLocationRoutes from "./routes/vehicleLocationRoutes";
 import { authMiddleware } from "./middleware/authMiddleware";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { loggingMiddleware } from "./middleware/loggingMiddleware";
-
+import cors from "cors";
 const app = express();
+
+app.use(
+  cors({
+    origin: "*", // allow all origins (change in production)
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+app.use(loggingMiddleware);
 app.use(express.json());
 app.use(loggingMiddleware);
 app.get("/health", (_req, res) => res.json({ status: "ok" }));

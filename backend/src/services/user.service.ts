@@ -30,6 +30,8 @@ export class UserService {
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }
 
   async login(username: string, password: string): Promise<{ token: string }> {
+    try{
+
     const user = await User.findOne({ username });
     if (!user) throw new Error("Invalid credentials");
     if (user.status === "LOCKED") throw new Error("User locked due to failed attempts");
@@ -52,6 +54,10 @@ export class UserService {
 
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, env.jwtSecret, { expiresIn: "1d" });
     return { token };
+  }catch(err){
+
+    console.log(err)
+  }
   }
 
   async generatePasscode(username: string, actor: string): Promise<{ temporaryPasscode: string }> {
