@@ -1,0 +1,36 @@
+#notificationHeader {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#notificationBody {
+  margin-top: 10px;
+  text-align: center;
+}
+
+#imageContainer {
+  display: flex;
+  align-items: center;
+  height: 100px;
+  object-fit: contain;
+}
+
+
+body {
+  margin: 0;
+ 
+ 
+ /* background-color: 'red'; */
+
+
+  min-height: 100vh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
