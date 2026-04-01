@@ -12,6 +12,24 @@ export class DeviceController {
     res.json({ items: await deviceService.list(filter) });
   }
 
+  async update(req: Request, res: Response): Promise<void> {
+    const item = await deviceService.update(req.params.id, req.body, req.user?.username || "SYSTEM");
+    if (!item) {
+      res.status(404).json({ message: "Device not found" });
+      return;
+    }
+    res.json(item);
+  }
+
+  async remove(req: Request, res: Response): Promise<void> {
+    const item = await deviceService.remove(req.params.id);
+    if (!item) {
+      res.status(404).json({ message: "Device not found" });
+      return;
+    }
+    res.json({ message: "Deleted" });
+  }
+
   async link(req: Request, res: Response): Promise<void> {
     const item = await deviceService.linkToVehicle(req.params.id, req.body?.vehicleId || null, req.user?.username || "SYSTEM");
     if (!item) {

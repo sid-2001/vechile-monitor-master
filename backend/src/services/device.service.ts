@@ -11,6 +11,14 @@ export class DeviceService {
     return Device.find(filter).populate("linkedVehicleId", "vehicleNumber licensePlate").sort({ createdAt: -1 });
   }
 
+  async update(id: string, payload: Partial<IDevice>, actor: string) {
+    return Device.findByIdAndUpdate(id, payload, { new: true, runValidators: true, currentUser: actor } as never);
+  }
+
+  async remove(id: string) {
+    return Device.findByIdAndDelete(id);
+  }
+
   async linkToVehicle(deviceId: string, vehicleId: string | null, actor: string) {
     return Device.findByIdAndUpdate(
       deviceId,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Alert, Box, Button, Card, CardContent, Grid, MenuItem, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 
@@ -43,20 +43,35 @@ const VehicleManagement = () => {
 
     if (form.deviceId) {
       const selectedDevice = devices.find((d: any) => d.imei === form.deviceId || d._id === form.deviceId)
-      if (selectedDevice?._id) {
-        await vehicleMonitorService.linkDevice(selectedDevice._id, vehicle._id)
-      }
+      if (selectedDevice?._id) await vehicleMonitorService.linkDevice(selectedDevice._id, vehicle._id)
     }
 
     setForm({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', baseId: '', driverId: '', deviceId: '' })
     load()
   }
 
+  const onEdit = async (row: any) => {
+    const vehicleNumber = window.prompt('Vehicle Number', row.vehicleNumber)
+    if (vehicleNumber === null) return
+    const licensePlate = window.prompt('License Plate', row.licensePlate)
+    if (licensePlate === null) return
+    await vehicleMonitorService.updateVehicle(row.id, { vehicleNumber, licensePlate })
+    load()
+  }
+
+  const onDelete = async (id: string) => {
+    if (!window.confirm('Delete this vehicle?')) return
+    await vehicleMonitorService.deleteVehicle(id)
+    load()
+  }
+
   const cols: GridColDef[] = [
     { field: 'vehicleId', headerName: 'Vehicle ID', flex: 1 },
     { field: 'vehicleNumber', headerName: 'Vehicle Number', flex: 1 },
+    { field: 'licensePlate', headerName: 'License', flex: 1 },
     { field: 'type', headerName: 'Type', flex: 1 },
-    { field: 'deviceId', headerName: 'Device', flex: 1 }
+    { field: 'deviceId', headerName: 'Device', flex: 1 },
+    { field: 'actions', headerName: 'Actions', flex: 1, sortable: false, renderCell: ({ row }) => <Stack direction='row' spacing={1}><Button size='small' onClick={() => onEdit(row)}>Edit</Button><Button size='small' color='error' onClick={() => onDelete(row.id)}>Delete</Button></Stack> }
   ]
 
   return <Box><Typography variant='h5' mb={2}>Vehicle Management</Typography>{error && <Alert severity='error'>{error}</Alert>}<Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Vehicle Number' value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Driver' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid></Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card></Box>
