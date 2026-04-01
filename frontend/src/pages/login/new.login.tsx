@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Container, TextField, Button, Box, Typography, InputAdornment, IconButton, Snackbar, Paper } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
+import { AuthService } from '@/services/auth.service'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('')
@@ -26,6 +27,7 @@ console.log("hello")
     return true
   }
 
+  let loginservice=new AuthService()
   const handleLogin = async () => {
     if (!username || !password) return
 
@@ -33,6 +35,8 @@ console.log("hello")
       setLoading(true)
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500))
+
+      loginservice.login({username,password});
       
       localStorage.setItem('access_token', 'mock_token')
       setSnackbar({ open: true, message: 'Login successful!', type: 'success' })
