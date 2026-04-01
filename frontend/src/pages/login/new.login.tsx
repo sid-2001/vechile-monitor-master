@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Container, TextField, Button, Box, Typography, InputAdornment, IconButton, Snackbar, Paper } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-import { AuthService } from '@/services/auth.service'
+import { AuthService } from '../../services/auth.service'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('')
@@ -34,6 +34,8 @@ console.log("hello")
     try {
       setLoading(true)
       const response = await loginservice.login({ username, password })
+      console.log("response aa gya hai ",response)
+      console.log(response)
       localStorage.setItem('access_token', JSON.stringify(response.token))
       setSnackbar({ open: true, message: 'Login successful!', type: 'success' })
       

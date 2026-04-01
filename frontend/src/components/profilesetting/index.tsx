@@ -379,7 +379,7 @@ const ProfileMenu = () => {
 
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
-        <MenuItem disableRipple sx={{ cursor: 'default', '&:hover': { bgcolor: 'transparent' } }}>
+        <MenuItem disableRipple sx={{ cursor: 'default', '&:hover': { bgcolor: '#0000' } }}>
           <CountrySelector />
         </MenuItem>
 

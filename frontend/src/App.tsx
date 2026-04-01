@@ -18,9 +18,10 @@ import InactivityWarningModal from './components/inactivity-modal'
 import Login from './pages/login'
 import DashboardLayout from './components/shared-layout'
 import TrackingScreen from './pages/TrackingScreen'
-import UserManagement from './pages/UserManagementApi'
+import UserManagement from './pages/UserManagement'
 import BaseManagement from './pages/BaseManagement'
 import VehicleManagement from './pages/VehicleManagement'
+import UserManagementApi from './pages/UserManagementApi'
 function App() {
   const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
     authenticationPath: '/login',
@@ -44,7 +45,7 @@ const theme = createTheme({
       dark: '#5a3785',
     },
     background: {
-      default: 'transparent', // important for gradient
+      default: '#0000', // important for gradient
       paper: mode === 'dark' ? '#1e1e2f' : '#ffffff',
     },
     text: {
@@ -180,7 +181,7 @@ useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
             <Route path="/" element={<ProtectedRoute {...defaultProtectedRouteProps} outlet={<DashboardLayout />} />}>
               <Route index element={<TrackingScreen />}></Route>
              <Route path="tracking" element={<TrackingScreen />} />
-               <Route path="user" element={<UserManagement />} />
+               <Route path="user" element={<UserManagementApi />} />
                <Route path="bases" element={<BaseManagement />} />
                <Route path="vehicles" element={<VehicleManagement />} />
             

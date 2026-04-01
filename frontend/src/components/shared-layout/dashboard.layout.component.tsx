@@ -47,7 +47,7 @@ import { Logo } from '../../assets/images'
 
 
 const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: 'transparent',
+  backgroundColor: '#0000',
   padding: theme.spacing(1),
   textAlign: 'center',
   boxShadow: '0px 0px',
@@ -74,13 +74,7 @@ const MainContent = styled(Box)({
 
 // Sidebar menu structure
 const SIDEBAR_MENUS = [
-  {
-    label: 'Dashboard',
-    name: 'Dashboard',
-    icon: <DashboardIcon fontSize="small" />,
-    path: '/dashboard',
-    section: 'main',
-  },
+  
   {
     label: 'User',
     name: 'User',
@@ -268,7 +262,7 @@ const DashboardLayout = () => {
               width: '4px',
             },
             '&::-webkit-scrollbar-track': {
-              backgroundColor: 'transparent',
+              backgroundColor: '#0000',
             },
             '&::-webkit-scrollbar-thumb': {
               backgroundColor: '#888',
@@ -300,7 +294,7 @@ const DashboardLayout = () => {
                   mb: 1,
                   backgroundColor: selectedMenu === item.label 
                     ? (mode === 'dark' ? '#1e3a5f' : '#2c4c6c')
-                    : 'transparent',
+                    : '#0000',
                   '&:hover': {
                     backgroundColor: mode === 'dark' ? '#1e3a5f' : '#2c4c6c',
                   },

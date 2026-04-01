@@ -182,7 +182,7 @@ const init = () => {
 const get = async (url: string) => {
   try {
     const { data } = await instance.get(url)
-    return response.data
+    return data
   } catch (error) {
     throw error
   }
@@ -196,7 +196,7 @@ const post = async (url: string, object: any) => {
       },
     })
 
-    return data
+    return response?.data
   } catch (error) {
     throw error
   }
