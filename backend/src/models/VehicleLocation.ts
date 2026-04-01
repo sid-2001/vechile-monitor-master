@@ -4,23 +4,28 @@ import { auditPlugin } from "../plugins/auditPlugin";
 
 export interface IVehicleLocation extends Document, AuditFields {
   vehicleId: Schema.Types.ObjectId;
+  deviceId: string;
+  time: Date;
   latitude: number;
   longitude: number;
+  elevation?: number;
+  angle?: number;
   speed: number;
-  locationTime: Date;
+  ignition: boolean;
 }
 
-const vehicleLocationSchema = new Schema<IVehicleLocation>(
-  {
-    vehicleId: { type: Schema.Types.ObjectId, ref: "Vehicle", required: true },
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
-    speed: { type: Number, default: 0 },
-    locationTime: { type: Date, required: true }
-  },
-  { timestamps: false }
-);
+const schema = new Schema<IVehicleLocation>({
+  vehicleId: { type: Schema.Types.ObjectId, ref: "Vehicle", required: true, index: true },
+  deviceId: { type: String, required: true },
+  time: { type: Date, required: true, index: true },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  elevation: Number,
+  angle: Number,
+  speed: { type: Number, default: 0 },
+  ignition: { type: Boolean, default: false }
+});
 
-vehicleLocationSchema.plugin(auditPlugin);
+schema.plugin(auditPlugin);
 
-export const VehicleLocation = model<IVehicleLocation>("VehicleLocation", vehicleLocationSchema);
+export const VehicleLocation = model<IVehicleLocation>("VehicleLocation", schema);

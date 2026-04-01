@@ -4,23 +4,24 @@ import { auditPlugin } from "../plugins/auditPlugin";
 
 export interface IBase extends Document, AuditFields {
   name: string;
-  code: string;
-  city: string;
-  state: string;
-  isActive: boolean;
+  location: { latitude: number; longitude: number };
+  address: { state: string; country: string; city: string; pincode: string };
 }
 
-const baseSchema = new Schema<IBase>(
-  {
-    name: { type: String, required: true, trim: true },
-    code: { type: String, required: true, unique: true, trim: true },
-    city: { type: String, required: true, trim: true },
-    state: { type: String, required: true, trim: true },
-    isActive: { type: Boolean, default: true }
+const schema = new Schema<IBase>({
+  name: { type: String, required: true, trim: true },
+  location: {
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true }
   },
-  { timestamps: false }
-);
+  address: {
+    state: { type: String, required: true, trim: true },
+    country: { type: String, default: "India" },
+    city: { type: String, required: true, trim: true },
+    pincode: { type: String, required: true, trim: true }
+  }
+});
 
-baseSchema.plugin(auditPlugin);
+schema.plugin(auditPlugin);
 
-export const Base = model<IBase>("Base", baseSchema);
+export const Base = model<IBase>("Base", schema);

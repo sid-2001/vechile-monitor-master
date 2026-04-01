@@ -1,41 +1,12 @@
 import { Router } from "express";
-import { createUser, deleteUser, getUserById, listUsers, updateUser } from "../controllers/userController";
+import { userController } from "../controllers/user.controller";
+import { validateBody } from "../middleware/validationMiddleware";
+import { userSchema } from "../validators/schemas";
 
 const router = Router();
-
-/**
- * @swagger
- * /api/users:
- *   post:
- *     summary: Create user
- *     tags: [Users]
- *     security: [{ bearerAuth: [] }]
- *   get:
- *     summary: List users
- *     tags: [Users]
- *     security: [{ bearerAuth: [] }]
- */
-router.post("/", createUser);
-router.get("/", listUsers);
-
-/**
- * @swagger
- * /api/users/{id}:
- *   get:
- *     summary: Get user by id
- *     tags: [Users]
- *     security: [{ bearerAuth: [] }]
- *   put:
- *     summary: Update user
- *     tags: [Users]
- *     security: [{ bearerAuth: [] }]
- *   delete:
- *     summary: Delete user
- *     tags: [Users]
- *     security: [{ bearerAuth: [] }]
- */
-router.get("/:id", getUserById);
-router.put("/:id", updateUser);
-router.delete("/:id", deleteUser);
-
+router.post("/", validateBody(userSchema), (req, res) => userController.create(req, res));
+router.get("/", (req, res) => userController.list(req, res));
+router.get("/:id", (req, res) => userController.byId(req, res));
+router.put("/:id", (req, res) => userController.update(req, res));
+router.delete("/:id", (req, res) => userController.remove(req, res));
 export default router;

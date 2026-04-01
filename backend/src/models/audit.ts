@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { SchemaDefinitionProperty } from "mongoose";
 
 export interface AuditFields {
   createdBy: string;
@@ -13,19 +13,15 @@ export interface AuditFields {
   modifiedUtcDateTime?: Date;
 }
 
-export const auditFieldsSchemaDefinition = {
-  createdBy: { type: String, maxlength: 20, required: true },
-  createdLocalDateTime: { type: Date, required: true },
-  createdOffset: { type: String, maxlength: 10, required: true },
-  createdTimezone: { type: String, maxlength: 50, required: true },
-  createdUtcDateTime: { type: Date, required: true },
+export const auditFieldsSchemaDefinition: Record<string, SchemaDefinitionProperty<unknown>> = {
+  createdBy: { type: String, maxlength: 20, default: "SYSTEM" },
+  createdLocalDateTime: { type: Date },
+  createdOffset: { type: String, maxlength: 10 },
+  createdTimezone: { type: String, maxlength: 50 },
+  createdUtcDateTime: { type: Date },
   modifiedBy: { type: String, maxlength: 20 },
   modifiedLocalDateTime: { type: Date },
   modifiedOffset: { type: String, maxlength: 10 },
   modifiedTimezone: { type: String, maxlength: 50 },
   modifiedUtcDateTime: { type: Date }
-};
-
-export type AuditableSchema = Schema & {
-  options: Schema["options"] & { currentUser?: string };
 };
