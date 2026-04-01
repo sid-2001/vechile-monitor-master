@@ -5,23 +5,17 @@ export interface TimeMetadata {
   timezone: string;
 }
 
-const formatOffset = (minutesOffset: number): string => {
-  const sign = minutesOffset >= 0 ? "+" : "-";
-  const absMinutes = Math.abs(minutesOffset);
-  const hh = String(Math.floor(absMinutes / 60)).padStart(2, "0");
-  const mm = String(absMinutes % 60).padStart(2, "0");
-  return `${sign}${hh}:${mm}`;
-};
-
 export const getTimeMetadata = (): TimeMetadata => {
   const now = new Date();
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  const offset = formatOffset(-now.getTimezoneOffset());
+  const offsetMinutes = -now.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, "0");
+  const minutes = String(Math.abs(offsetMinutes) % 60).padStart(2, "0");
 
   return {
-    localDateTime: now,
-    utcDateTime: new Date(now.toISOString()),
-    offset,
-    timezone
+    localDateTime: new Date(now.getTime() - now.getTimezoneOffset() * 60000),
+    utcDateTime: now,
+    offset: `${sign}${hours}:${minutes}`,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
   };
 };

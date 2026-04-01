@@ -92,7 +92,15 @@ const SIDEBAR_MENUS = [
     label: 'Master',
     name: 'Master',
     icon: <MenuBookIcon fontSize="small" />,
-    path: '/master',
+    path: '/bases',
+    section: 'master',
+  },
+
+  {
+    label: 'Vehicle',
+    name: 'Vehicle',
+    icon: <TrackChangesIcon fontSize="small" />,
+    path: '/vehicles',
     section: 'master',
   },
   {

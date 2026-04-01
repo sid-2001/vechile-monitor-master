@@ -2,11 +2,14 @@ import { Query, Schema } from "mongoose";
 import { auditFieldsSchemaDefinition } from "../models/audit";
 import { getTimeMetadata } from "../utils/time";
 
-const applyCreateAudit = (schema: Schema): void => {
+export const auditPlugin = (schema: Schema): void => {
+  schema.add(auditFieldsSchemaDefinition);
+
   schema.pre("save", function (next) {
     const actor = this.$locals.currentUser || "SYSTEM";
+    const time = getTimeMetadata();
+
     if (this.isNew) {
-      const time = getTimeMetadata();
       this.set({
         createdBy: actor,
         createdLocalDateTime: time.localDateTime,
@@ -15,7 +18,6 @@ const applyCreateAudit = (schema: Schema): void => {
         createdTimezone: time.timezone
       });
     } else if (this.isModified()) {
-      const time = getTimeMetadata();
       this.set({
         modifiedBy: actor,
         modifiedLocalDateTime: time.localDateTime,
@@ -26,35 +28,24 @@ const applyCreateAudit = (schema: Schema): void => {
     }
     next();
   });
-};
 
-const applyUpdateAudit = (schema: Schema): void => {
-  const handler = function (this: Query<unknown, unknown>, next: () => void): void {
+  const setUpdateAudit = function (this: Query<unknown, unknown>, next: () => void): void {
     const actor = (this.getOptions() as { currentUser?: string }).currentUser || "SYSTEM";
     const time = getTimeMetadata();
-    const update = this.getUpdate() as Record<string, unknown> & {
-      $set?: Record<string, unknown>;
+    const update = (this.getUpdate() || {}) as Record<string, unknown> & { $set?: Record<string, unknown> };
+    update.$set = {
+      ...(update.$set || {}),
+      modifiedBy: actor,
+      modifiedLocalDateTime: time.localDateTime,
+      modifiedUtcDateTime: time.utcDateTime,
+      modifiedOffset: time.offset,
+      modifiedTimezone: time.timezone
     };
-
-    const $set = update.$set || {};
-    $set.modifiedBy = actor;
-    $set.modifiedLocalDateTime = time.localDateTime;
-    $set.modifiedUtcDateTime = time.utcDateTime;
-    $set.modifiedOffset = time.offset;
-    $set.modifiedTimezone = time.timezone;
-
-    update.$set = $set;
     this.setUpdate(update);
     next();
   };
 
-  schema.pre("findOneAndUpdate", handler);
-  schema.pre("updateOne", handler);
-  schema.pre("updateMany", handler);
-};
-
-export const auditPlugin = (schema: Schema): void => {
-  schema.add(auditFieldsSchemaDefinition);
-  applyCreateAudit(schema);
-  applyUpdateAudit(schema);
+  schema.pre("findOneAndUpdate", setUpdateAudit);
+  schema.pre("updateOne", setUpdateAudit);
+  schema.pre("updateMany", setUpdateAudit);
 };

@@ -33,12 +33,8 @@ console.log("hello")
 
     try {
       setLoading(true)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      loginservice.login({username,password});
-      
-      localStorage.setItem('access_token', 'mock_token')
+      const response = await loginservice.login({ username, password })
+      localStorage.setItem('access_token', JSON.stringify(response.token))
       setSnackbar({ open: true, message: 'Login successful!', type: 'success' })
       
       setTimeout(() => {
@@ -82,7 +78,7 @@ console.log("hello")
 
           <form onSubmit={(e) => { e.preventDefault(); handleLogin() }}>
             <TextField
-              label="U"
+              label="Username"
               fullWidth
               margin="normal"
               value={username}

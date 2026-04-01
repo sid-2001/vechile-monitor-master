@@ -182,7 +182,7 @@ const init = () => {
 const get = async (url: string) => {
   try {
     const { data } = await instance.get(url)
-    return data
+    return response.data
   } catch (error) {
     throw error
   }
@@ -190,7 +190,7 @@ const get = async (url: string) => {
 
 const post = async (url: string, object: any) => {
   try {
-    const data = await instance.post(url, object, {
+    const response = await instance.post(url, object, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -204,8 +204,8 @@ const post = async (url: string, object: any) => {
 
 const put = async (url: string, object: any) => {
   try {
-    const data = await instance.put(url, object)
-    return data
+    const response = await instance.put(url, object)
+    return response.data
   } catch (error) {
     throw error
   }

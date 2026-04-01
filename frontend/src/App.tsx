@@ -18,7 +18,9 @@ import InactivityWarningModal from './components/inactivity-modal'
 import Login from './pages/login'
 import DashboardLayout from './components/shared-layout'
 import TrackingScreen from './pages/TrackingScreen'
-import UserManagement from './pages/UserManagement/indext'
+import UserManagement from './pages/UserManagementApi'
+import BaseManagement from './pages/BaseManagement'
+import VehicleManagement from './pages/VehicleManagement'
 function App() {
   const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
     authenticationPath: '/login',
@@ -179,6 +181,8 @@ useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
               <Route index element={<TrackingScreen />}></Route>
              <Route path="tracking" element={<TrackingScreen />} />
                <Route path="user" element={<UserManagement />} />
+               <Route path="bases" element={<BaseManagement />} />
+               <Route path="vehicles" element={<VehicleManagement />} />
             
             </Route>
 

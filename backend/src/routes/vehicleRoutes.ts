@@ -1,41 +1,12 @@
 import { Router } from "express";
-import { vehicleController } from "../controllers/vehicleController";
+import { vehicleController } from "../controllers/vehicle.controller";
+import { validateBody } from "../middleware/validationMiddleware";
+import { vehicleSchema } from "../validators/schemas";
 
 const router = Router();
-
-/**
- * @swagger
- * /api/vehicles:
- *   post:
- *     summary: Create vehicle
- *     tags: [Vehicles]
- *     security: [{ bearerAuth: [] }]
- *   get:
- *     summary: List vehicles
- *     tags: [Vehicles]
- *     security: [{ bearerAuth: [] }]
- */
-router.post("/", vehicleController.create);
-router.get("/", vehicleController.list);
-
-/**
- * @swagger
- * /api/vehicles/{id}:
- *   get:
- *     summary: Get vehicle by id
- *     tags: [Vehicles]
- *     security: [{ bearerAuth: [] }]
- *   put:
- *     summary: Update vehicle
- *     tags: [Vehicles]
- *     security: [{ bearerAuth: [] }]
- *   delete:
- *     summary: Delete vehicle
- *     tags: [Vehicles]
- *     security: [{ bearerAuth: [] }]
- */
-router.get("/:id", vehicleController.getById);
-router.put("/:id", vehicleController.update);
-router.delete("/:id", vehicleController.remove);
-
+router.post("/", validateBody(vehicleSchema), (req, res) => vehicleController.create(req, res));
+router.get("/", (req, res) => vehicleController.list(req, res));
+router.get("/:id", (req, res) => vehicleController.byId(req, res));
+router.put("/:id", (req, res) => vehicleController.update(req, res));
+router.delete("/:id", (req, res) => vehicleController.remove(req, res));
 export default router;
