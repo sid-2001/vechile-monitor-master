@@ -6,6 +6,11 @@ import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 
 const VEHICLE_TYPES = ['TRUCK', 'CAR', 'BUS', 'VAN', 'BIKE']
 const VEHICLE_SUB_TYPES = ['HEAVY', 'MEDIUM', 'LIGHT']
+const SAMPLE_LOCATION_HISTORY = [
+  { latitude: 28.6139, longitude: 77.2090, speed: 32 },
+  { latitude: 28.6228, longitude: 77.2197, speed: 40 },
+  { latitude: 28.6311, longitude: 77.2311, speed: 36 }
+]
 
 const VehicleManagement = () => {
   const [rows, setRows] = useState<any[]>([])
@@ -36,6 +41,7 @@ const VehicleManagement = () => {
   useEffect(() => { load() }, [])
 
   const create = async () => {
+    const selectedDevice = devices.find((d: any) => d.imei === form.deviceId || d._id === form.deviceId)
     const vehicle = await vehicleMonitorService.createVehicle({
       vehicleNumber: form.vehicleNumber,
       licensePlate: form.licensePlate,
@@ -52,12 +58,28 @@ const VehicleManagement = () => {
     })
 
     if (form.deviceId) {
-      const selectedDevice = devices.find((d: any) => d.imei === form.deviceId || d._id === form.deviceId)
       if (selectedDevice?._id) await vehicleMonitorService.linkDevice(selectedDevice._id, vehicle._id)
+    }
+    const locationDeviceId = selectedDevice?._id || form.deviceId
+    if (vehicle?._id && locationDeviceId) {
+      const now = Date.now()
+      await Promise.all(
+        SAMPLE_LOCATION_HISTORY.map((point, index) =>
+          vehicleMonitorService.createVehicleLocation({
+            vehicleId: vehicle._id,
+            deviceId: locationDeviceId,
+            time: new Date(now - (SAMPLE_LOCATION_HISTORY.length - index) * 60000).toISOString(),
+            latitude: point.latitude,
+            longitude: point.longitude,
+            speed: point.speed,
+            ignition: true
+          })
+        )
+      )
     }
 
     setForm({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: 'Tata', manufacturerModel: 'Signa', manufacturerVariant: 'LPT', baseId: '', driverId: '', deviceId: '' })
-    setSnack('Vehicle created successfully')
+    setSnack('Vehicle created successfully with sample location history')
     load()
   }
 
@@ -113,9 +135,9 @@ const VehicleManagement = () => {
 
   return <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}><Typography variant='h5' mb={2}>Vehicle Management</Typography>{error && <Alert severity='error'>{error}</Alert>}<Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Vehicle Number' value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Type' value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>{VEHICLE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Sub Type' value={form.subType} onChange={e => setForm({ ...form, subType: e.target.value })}>{VEHICLE_SUB_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Manufacturer' value={form.manufacturerName} onChange={e => setForm({ ...form, manufacturerName: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Model' value={form.manufacturerModel} onChange={e => setForm({ ...form, manufacturerModel: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Variant' value={form.manufacturerVariant} onChange={e => setForm({ ...form, manufacturerVariant: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Driver' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid></Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
 
-  <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md'>
-    <DialogTitle>Edit Vehicle</DialogTitle>
-    <DialogContent>
+  <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md' PaperProps={{ sx: { bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: 'primary.main' } }}>
+    <DialogTitle sx={{ bgcolor: 'primary.main', color: 'common.white' }}>Edit Vehicle</DialogTitle>
+    <DialogContent sx={{ pt: 2 }}>
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
         <Grid item xs={12} md={6}><TextField fullWidth label='Vehicle Number' value={editForm.vehicleNumber} onChange={e => setEditForm({ ...editForm, vehicleNumber: e.target.value })} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label='License Plate' value={editForm.licensePlate} onChange={e => setEditForm({ ...editForm, licensePlate: e.target.value })} /></Grid>
@@ -132,7 +154,7 @@ const VehicleManagement = () => {
     <DialogActions><Button onClick={() => setEditOpen(false)}>Cancel</Button><Button variant='contained' onClick={update}>Update</Button></DialogActions>
   </Dialog>
 
-  <Snackbar open={!!snack} autoHideDuration={2500} onClose={() => setSnack('')}><MuiAlert severity='success' variant='filled' onClose={() => setSnack('')}>{snack}</MuiAlert></Snackbar>
+  <Snackbar open={!!snack} autoHideDuration={2500} onClose={() => setSnack('')}><MuiAlert severity='success' variant='filled' onClose={() => setSnack('')} sx={{ bgcolor: 'primary.main', color: 'common.white' }}>{snack}</MuiAlert></Snackbar>
   </Box>
 }
 

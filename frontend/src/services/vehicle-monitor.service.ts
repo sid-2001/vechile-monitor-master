@@ -19,6 +19,7 @@ export const vehicleMonitorService = {
   updateDevice: (id: string, payload: Record<string, unknown>) => api1.put(`/devices/${id}`, payload),
   deleteDevice: (id: string) => api1.del(`/devices/${id}`),
   linkDevice: (deviceId: string, vehicleId: string | null) => api1.put(`/devices/${deviceId}/link`, { vehicleId }),
+  createVehicleLocation: (payload: Record<string, unknown>) => api1.post('/vehicle-locations', payload),
   getVehicleLocations: (params?: Record<string, unknown>) => {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/vehicle-locations${query.toString() ? `?${query.toString()}` : ''}`)
