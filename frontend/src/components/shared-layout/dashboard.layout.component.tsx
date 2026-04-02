@@ -1,4 +1,4 @@
-import { ThemeProvider, useTheme } from '@mui/material/styles'
+import { ThemeProvider } from '@mui/material/styles'
 import {
   Box,
   Typography,
@@ -7,183 +7,524 @@ import {
   IconButton,
   AppBar,
   ListItemIcon,
-  ListItemText,
   Toolbar,
   Tooltip,
+  DialogContent,
+  Dialog,
   Divider,
+  createTheme,
   Drawer,
   useMediaQuery,
 } from '@mui/material'
-import { styled } from '@mui/system'
+import { styled, useTheme } from '@mui/system'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useRecoilState } from 'recoil'
 import { themeModeState } from '../../states/state'
 import { LocalStorageService } from '../../helpers/local-storage-service'
-import { ArrowBack, Brightness4, Brightness7, Menu as MenuIcon, SyncAltRounded } from '@mui/icons-material'
+import {
+  ArrowBack,
+  Brightness4,
+  Brightness7,
+  ExpandLess,
+  ExpandMore,
+  SyncAltRounded,
+  Menu as MenuIcon,
+} from '@mui/icons-material'
 import { useState, useEffect } from 'react'
+import Backdrop from '@mui/material/Backdrop'
 import LogoutIcon from '@mui/icons-material/Logout'
+import Stack from '@mui/material/Stack'
+import CircularProgress from '@mui/material/CircularProgress'
+import Paper from '@mui/material/Paper'
+
+import ConfirmationModal from '../logout/logout.component'
 import ProfileMenu from '../profilesetting'
+
+// Icons for sidebar
 import SettingsIcon from '@mui/icons-material/Settings'
 import PersonIcon from '@mui/icons-material/Person'
+import DashboardIcon from '@mui/icons-material/Dashboard'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import { Logo } from '../../assets/images'
-import ConfirmationModal from '../logout/logout.component'
+
+const Item = styled(Paper)(({ theme }) => ({
+  backgroundColor: 'transparent',
+  padding: theme.spacing(1),
+  textAlign: 'center',
+  boxShadow: 'none',
+}))
+
+const LoaderBackdrop = ({ openloader }: { openloader: boolean }) => (
+  <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={openloader}>
+    <CircularProgress color="inherit" />
+  </Backdrop>
+)
 
 const local_service: any = new LocalStorageService()
-const DRAWER_WIDTH = 250
 
-const MainContent = styled(Box)({
-  flex: 1,
-  padding: '1.25rem',
-  '@media (min-width: 900px)': {
-    marginLeft: 80,
-    padding: '1.5rem'
-  }
+const DashboardContainer = styled(Box)({
+  display: 'flex',
+  minHeight: 'calc(100vh - 10vh)',
 })
 
+const MainContent = styled(Box)(({ theme }) => ({
+  flex: 1,
+  padding: theme.spacing(3),
+  transition: 'margin-left 0.3s',
+  marginLeft: 80,
+  width: 'calc(100% - 80px)',
+  overflowX: 'auto',
+  backgroundColor: theme.palette.background.default,
+  [theme.breakpoints.down('md')]: {
+    marginLeft: 0,
+    padding: theme.spacing(2),
+    width: '100%',
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(1.5),
+  },
+}))
+
+// Sidebar menu structure
 const SIDEBAR_MENUS = [
-  { label: 'User', name: 'User', icon: <PersonIcon fontSize='small' />, path: '/user' },
-  { label: 'Master', name: 'Master', icon: <MenuBookIcon fontSize='small' />, path: '/bases' },
-  { label: 'Vehicle', name: 'Vehicle', icon: <TrackChangesIcon fontSize='small' />, path: '/vehicles' },
-  { label: 'Onboard Devices', name: 'Onboard Devices', icon: <TrackChangesIcon fontSize='small' />, path: '/devices' },
-  { label: 'Tracking', name: 'Tracking', icon: <TrackChangesIcon fontSize='small' />, path: '/tracking' },
-  { label: 'Settings', name: 'Settings', icon: <SettingsIcon fontSize='small' />, path: '/settings' },
+  {
+    label: 'User',
+    name: 'User',
+    icon: <PersonIcon fontSize="small" />,
+    path: '/user',
+    section: 'user',
+  },
+  {
+    label: 'Master',
+    name: 'Master',
+    icon: <MenuBookIcon fontSize="small" />,
+    path: '/bases',
+    section: 'master',
+  },
+  {
+    label: 'Vehicle',
+    name: 'Vehicle',
+    icon: <TrackChangesIcon fontSize="small" />,
+    path: '/vehicles',
+    section: 'master',
+  },
+  {
+    label: 'Onboard Devices',
+    name: 'Onboard Devices',
+    icon: <TrackChangesIcon fontSize="small" />,
+    path: '/devices',
+    section: 'master',
+  },
+  {
+    label: 'Tracking',
+    name: 'Tracking',
+    icon: <TrackChangesIcon fontSize="small" />,
+    path: '/tracking',
+    section: 'tracking',
+  },
+  {
+    label: 'Settings',
+    name: 'Settings',
+    icon: <SettingsIcon fontSize="small" />,
+    path: '/settings',
+    section: 'settings',
+  },
 ]
 
 const DashboardLayout = () => {
   const [mode, setMode] = useRecoilState(themeModeState)
-  const [selectedMenu, setSelectedMenu] = useState('Tracking')
+  const [selectedMenu, setSelectedMenu] = useState('Dashboard')
+  const [openloader, setOpenloader] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [expandedSections, setExpandedSections] = useState({
+    user: true,
+    master: true,
+    tracking: false,
+    settings: false,
+  })
+
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'))
 
-  useEffect(() => {
-    const token = local_service.get_accesstoken()
-    if (!token) navigate('/login')
-  }, [navigate])
+  const handleModalClose = () => {
+    setIsModalOpen(!isModalOpen)
+  }
+
+  const handleLogout = () => {
+    navigate('/login')
+    localStorage.clear()
+    sessionStorage.clear()
+  }
 
   const handleMenuClick = (menu: any) => {
     setSelectedMenu(menu.label)
     navigate(menu.path)
-    if (isMobile) setMobileOpen(false)
+    if (isMobile) {
+      setMobileDrawerOpen(false)
+    }
   }
 
-  const renderMenuList = (compact = false) => (
-    <List sx={{ py: 1 }}>
-      {SIDEBAR_MENUS.map((item, index) => (
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  useEffect(() => {
+    const token = local_service.get_accesstoken()
+    if (!token) {
+      navigate('/login')
+    }
+  }, [navigate])
+
+  // Sidebar Content Component (reused for both desktop and mobile)
+  const SidebarContent = () => (
+    <Box
+      sx={{
+        width: isMobile ? 240 : 80,
+        height: '100%',
+        backgroundColor: mode === 'dark' 
+          ? theme.palette.background.paper 
+          : theme.palette.primary.dark,
+        overflowY: 'auto',
+        transition: 'width 0.3s',
+        display: 'flex',
+        flexDirection: 'column',
+        '&::-webkit-scrollbar': {
+          width: '4px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: theme.palette.mode === 'dark' ? '#555' : '#aaa',
+          borderRadius: '4px',
+        },
+      }}
+    >
+      <List
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          textAlign: isMobile ? 'left' : 'center',
+          py: 2,
+        }}
+      >
+        {SIDEBAR_MENUS.map((item, index) => (
+          <ListItem
+            button
+            key={index}
+            selected={selectedMenu === item.label}
+            sx={{
+              flexDirection: isMobile ? 'row' : 'column',
+              justifyContent: isMobile ? 'flex-start' : 'center',
+              alignItems: 'center',
+              py: isMobile ? 1.5 : 2,
+              px: isMobile ? 2 : 1,
+              borderRadius: 1,
+              mx: isMobile ? 1 : 1,
+              mb: 1,
+              gap: isMobile ? 2 : 0,
+              backgroundColor: selectedMenu === item.label 
+                ? (mode === 'dark' 
+                    ? theme.palette.action.selected 
+                    : theme.palette.action.hover)
+                : 'transparent',
+              '&:hover': {
+                backgroundColor: mode === 'dark' 
+                  ? theme.palette.action.hover 
+                  : theme.palette.action.selected,
+              },
+            }}
+            onClick={() => handleMenuClick(item)}
+          >
+            <ListItemIcon
+              sx={{
+                justifyContent: 'center',
+                color: selectedMenu === item.label 
+                  ? theme.palette.primary.contrastText 
+                  : (mode === 'dark' 
+                      ? theme.palette.text.secondary 
+                      : theme.palette.grey[300]),
+                minWidth: 'auto',
+                mb: isMobile ? 0 : 1,
+                mr: isMobile ? 2 : 0,
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
+            <Typography
+              variant={isMobile ? "body2" : "caption"}
+              sx={{
+                color: selectedMenu === item.label 
+                  ? theme.palette.primary.contrastText 
+                  : (mode === 'dark' 
+                      ? theme.palette.text.secondary 
+                      : theme.palette.grey[300]),
+                fontSize: isMobile ? '0.875rem' : '0.7rem',
+                textAlign: isMobile ? 'left' : 'center',
+                lineHeight: 1.2,
+                fontWeight: selectedMenu === item.label ? 500 : 400,
+              }}
+            >
+              {item.name}
+            </Typography>
+          </ListItem>
+        ))}
+
+        <Divider sx={{ 
+          my: 2, 
+          backgroundColor: mode === 'dark' 
+            ? theme.palette.divider 
+            : 'rgba(255,255,255,0.1)' 
+        }} />
+
+        {/* Logout Button */}
         <ListItem
-          key={index}
-          onClick={() => handleMenuClick(item)}
+          button
           sx={{
-            cursor: 'pointer',
-            borderRadius: 2,
-            mx: 1,
-            mb: 0.5,
-            justifyContent: compact ? 'center' : 'flex-start',
-            backgroundColor: selectedMenu === item.label ? (mode === 'dark' ? '#1e3a5f' : '#dbeafe') : 'transparent',
-            '&:hover': { backgroundColor: mode === 'dark' ? '#1e3a5f' : '#e2e8f0' }
+            flexDirection: isMobile ? 'row' : 'column',
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            alignItems: 'center',
+            py: isMobile ? 1.5 : 2,
+            px: isMobile ? 2 : 1,
+            borderRadius: 1,
+            mx: isMobile ? 1 : 1,
+            gap: isMobile ? 2 : 0,
+            '&:hover': {
+              backgroundColor: mode === 'dark' 
+                ? theme.palette.error.dark 
+                : theme.palette.error.light,
+            },
           }}
+          onClick={() => setIsModalOpen(true)}
         >
-          <ListItemIcon sx={{ minWidth: compact ? 'auto' : 36, color: mode === 'dark' ? '#e2e8f0' : '#0f172a' }}>{item.icon}</ListItemIcon>
-          {!compact && <ListItemText primary={item.name} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />}
+          <ListItemIcon
+            sx={{
+              justifyContent: 'center',
+              color: theme.palette.error.main,
+              minWidth: 'auto',
+              mb: isMobile ? 0 : 1,
+              mr: isMobile ? 2 : 0,
+            }}
+          >
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <Typography
+            variant={isMobile ? "body2" : "caption"}
+            sx={{
+              color: theme.palette.error.main,
+              fontSize: isMobile ? '0.875rem' : '0.7rem',
+              textAlign: isMobile ? 'left' : 'center',
+            }}
+          >
+            Logout
+          </Typography>
         </ListItem>
-      ))}
-      <Divider sx={{ my: 1 }} />
-      <ListItem onClick={() => setIsModalOpen(true)} sx={{ cursor: 'pointer', borderRadius: 2, mx: 1, color: '#ef4444' }}>
-        <ListItemIcon sx={{ minWidth: compact ? 'auto' : 36, color: '#ef4444' }}><LogoutIcon fontSize='small' /></ListItemIcon>
-        {!compact && <ListItemText primary='Logout' />}
-      </ListItem>
-    </List>
+      </List>
+    </Box>
   )
 
   return (
     <ThemeProvider theme={theme}>
+      <LoaderBackdrop openloader={openloader} />
+      
+      {/* Header */}
       <AppBar
-        position='sticky'
+        position="sticky"
+        elevation={1}
         sx={{
-          minHeight: '64px',
-          backgroundColor: mode === 'dark' ? theme.palette.secondary.main : theme.palette.primary.main,
+          minHeight: isSmallScreen ? '64px' : '10vh',
+          height: isSmallScreen ? 'auto' : '10vh',
+          backgroundColor: mode === 'dark' 
+            ? theme.palette.background.paper 
+            : theme.palette.primary.main,
+          color: mode === 'dark' 
+            ? theme.palette.text.primary 
+            : theme.palette.primary.contrastText,
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important', px: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isMobile && (
-              <IconButton color='inherit' onClick={() => setMobileOpen(true)}>
-                <MenuIcon />
-              </IconButton>
-            )}
-            <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-              <IconButton onClick={() => setMode(mode === 'light' ? 'dark' : 'light')} color='inherit'>
-                {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+        <Toolbar sx={{ minHeight: isSmallScreen ? '64px !important' : 'auto' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              gap: isSmallScreen ? 1 : 2,
+            }}
+          >
+            {/* Left side - Menu button (mobile) and controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: isSmallScreen ? 1 : 2 }}>
+              {/* Mobile Menu Button */}
+              {isMobile && (
+                <Tooltip title="Menu">
+                  <IconButton
+                    onClick={() => setMobileDrawerOpen(true)}
+                    color="inherit"
+                  >
+                    <MenuIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                <IconButton
+                  onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+                  color="inherit"
+                  sx={{
+                    transition: 'transform 0.3s',
+                    '&:hover': { transform: 'rotate(180deg)' },
+                  }}
+                >
+                  {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                </IconButton>
+              </Tooltip>
+
+              {!isSmallScreen && (
+                <>
+                  <Tooltip title="Refresh">
+                    <IconButton
+                      onClick={() => window.location.reload()}
+                      color="inherit"
+                      sx={{
+                        transition: 'transform 0.3s',
+                        '&:hover': { transform: 'rotate(180deg)' },
+                      }}
+                    >
+                      <SyncAltRounded />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Go Back">
+                    <IconButton
+                      onClick={() => window.history.back()}
+                      color="inherit"
+                    >
+                      <ArrowBack />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+            </Box>
+
+            {/* Center - Logo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+                <img
+                  src={Logo} 
+                  alt="Logo" 
+                  height={isSmallScreen ? 40 : 60} 
+                  width={isSmallScreen ? 40 : 60} 
+                  style={{ objectFit: 'contain' }}
+                />
+              </Link>
+            </Box>
+
+            {/* Right side - Profile */}
+            <ProfileMenu />
+          </Box>
+        </Toolbar>
+
+        {/* Bottom Action Bar for Mobile */}
+        {isSmallScreen && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              padding: '0.5rem',
+              backgroundColor: mode === 'dark' 
+                ? theme.palette.background.paper 
+                : theme.palette.primary.dark,
+              borderTop: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            <Tooltip title="Refresh">
+              <IconButton
+                onClick={() => window.location.reload()}
+                color="inherit"
+                size="small"
+              >
+                <SyncAltRounded fontSize="small" />
               </IconButton>
             </Tooltip>
-            {!isMobile && (
-              <>
-                <Tooltip title='Refresh'>
-                  <IconButton onClick={() => window.location.reload()} color='inherit'><SyncAltRounded /></IconButton>
-                </Tooltip>
-                <Tooltip title='Go Back'>
-                  <IconButton onClick={() => window.history.back()} color='inherit'><ArrowBack /></IconButton>
-                </Tooltip>
-              </>
-            )}
-          </Box>
 
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <Link to='/'><img src={Logo} alt='Logo' height={48} width={48} /></Link>
+            <Tooltip title="Go Back">
+              <IconButton
+                onClick={() => window.history.back()}
+                color="inherit"
+                size="small"
+              >
+                <ArrowBack fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
-
-          <ProfileMenu />
-        </Toolbar>
+        )}
       </AppBar>
 
-      <Box sx={{ display: 'flex' }}>
+      {/* Main Container */}
+      <DashboardContainer>
+        {/* Desktop Sidebar */}
         {!isMobile && (
           <Box
             sx={{
-              width: 80,
-              backgroundColor: mode === 'dark' ? '#0A1C2C' : '#f8fafc',
               position: 'fixed',
-              top: 64,
+              top: '10vh',
               left: 0,
-              height: 'calc(100vh - 64px)',
-              borderRight: '1px solid rgba(148,163,184,0.3)',
-              zIndex: 1200,
+              width: 80,
+              height: 'calc(100vh - 10vh)',
+              zIndex: theme.zIndex.drawer,
             }}
           >
-            {renderMenuList(true)}
+            <SidebarContent />
           </Box>
         )}
 
-        <Drawer anchor='left' open={mobileOpen} onClose={() => setMobileOpen(false)} sx={{ display: { md: 'none' } }}>
-          <Box sx={{ width: DRAWER_WIDTH, bgcolor: mode === 'dark' ? '#0A1C2C' : '#fff', height: '100%' }}>
-            <Box sx={{ p: 2 }}><Typography variant='h6'>Menu</Typography></Box>
-            {renderMenuList(false)}
+        {/* Mobile Drawer */}
+        <Drawer
+          anchor="left"
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': {
+              width: 240,
+              backgroundColor: mode === 'dark' 
+                ? theme.palette.background.paper 
+                : theme.palette.primary.dark,
+              top: 'auto',
+              height: '100%',
+            },
+          }}
+        >
+          <Box sx={{ pt: 2 }}>
+            <SidebarContent />
           </Box>
         </Drawer>
 
+        {/* Main Content */}
         <MainContent>
           <Outlet />
         </MainContent>
 
+        {/* Logout Confirmation Modal */}
         {isModalOpen && (
           <ConfirmationModal
             isOpen={isModalOpen}
-            message='Do you really want to logout?'
-            handleConfirm={() => {
-              navigate('/login')
-              localStorage.clear()
-              sessionStorage.clear()
-            }}
-            handleClose={() => setIsModalOpen(false)}
-            confirmBtnText='Logout'
+            message="Do you really want to logout?"
+            handleConfirm={handleLogout}
+            handleClose={handleModalClose}
+            confirmBtnText="Logout"
             showIcon={true}
           />
         )}
-      </Box>
+      </DashboardContainer>
     </ThemeProvider>
   )
 }
