@@ -76,7 +76,7 @@ const TrackingScreen = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
       <Typography variant='h5' mb={2}>Live Tracking</Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }}>{error}</Alert>}
       <Card sx={{ mb: 2 }}>

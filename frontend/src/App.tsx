@@ -114,6 +114,38 @@ const theme = createTheme({
       },
     },
 
+
+    MuiTextField: {
+      defaultProps: {
+        size: 'small',
+        variant: 'outlined',
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          backgroundColor: mode === 'dark' ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+          borderRadius: 10,
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 0.35)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'dark' ? '#93c5fd' : '#3b82f6',
+          },
+        },
+        input: {
+          color: mode === 'dark' ? '#e2e8f0' : '#0f172a',
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: mode === 'dark' ? '#cbd5e1' : '#334155',
+        },
+      },
+    },
+
     MuiCard: {
       styleOverrides: {
         root: {

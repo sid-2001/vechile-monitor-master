@@ -70,6 +70,10 @@ const MainContent = styled(Box)({
   padding: '1.5rem',
   marginLeft: 80,
   transition: 'margin-left 0.3s',
+  '@media (max-width: 900px)': {
+    marginLeft: 0,
+    padding: '1rem',
+  }
 })
 
 // Sidebar menu structure
@@ -267,6 +271,9 @@ const DashboardLayout = () => {
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1200,
+            '@media (max-width: 900px)': {
+              width: 64,
+            },
             '&::-webkit-scrollbar': {
               width: '4px',
             },
