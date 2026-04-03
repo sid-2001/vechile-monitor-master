@@ -68,7 +68,10 @@ const DeviceManagement = () => {
       <Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={3}><TextField fullWidth label='Device Name' value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='IMEI' value={form.imei} onChange={e => setForm({ ...form, imei: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='SIM Number' value={form.simNumber} onChange={e => setForm({ ...form, simNumber: e.target.value })} /></Grid><Grid item xs={12} md={3}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Onboard Device</Button></Grid></Grid></CardContent></Card>
       <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='sm'>
+      <Dialog sx={{
+bgcolor:'primary.main'
+
+      }}  open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='sm'>
         <DialogTitle>Edit Device</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>

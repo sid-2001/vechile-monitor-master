@@ -371,6 +371,68 @@ const StyledFab = styled(Fab)(({ theme }) => ({
   },
 }))
 
+// Styled Select with theme colors
+const StyledSelect = styled(Select)(({ theme }) => ({
+  borderRadius: 12,
+  backgroundColor: alpha(theme.palette.background.paper, 0.9),
+  transition: 'all 0.3s ease',
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: alpha(theme.palette.primary.main, 0.3),
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+    borderWidth: 2,
+  },
+}))
+
+// Styled Menu Item
+const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
+  borderRadius: 8,
+  margin: '4px 8px',
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+    transform: 'translateX(4px)',
+  },
+  '&.Mui-selected': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.12),
+    color: theme.palette.primary.main,
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.primary.main, 0.16),
+    },
+  },
+}))
+
+// Styled Dialog with theme gradient
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: 24,
+    background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.background.default, 0.95)} 100%)`,
+    boxShadow: `0 25px 50px -12px ${alpha(theme.palette.common.black, 0.25)}`,
+    overflow: 'hidden',
+  },
+}))
+
+// Styled Dialog Title
+const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+  color: theme.palette.common.white,
+  padding: theme.spacing(2, 3),
+}))
+
+// Styled FormControl
+const StyledFormControl = styled(FormControl)(({ theme }) => ({
+  '& .MuiInputLabel-root': {
+    color: theme.palette.text.secondary,
+    '&.Mui-focused': {
+      color: theme.palette.primary.main,
+    },
+  },
+}))
+
 const UserManagement: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -589,7 +651,7 @@ const UserManagement: React.FC = () => {
               animation: `${fadeInUp} 0.6s ease-out`,
             }}
           >
-            User Management
+            User Managementu
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ animation: `${fadeInUp} 0.6s ease-out 0.1s both` }}>
             Manage system users, roles, and permissions with ease
@@ -597,168 +659,9 @@ const UserManagement: React.FC = () => {
         </Box>
       </Fade>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
-        {statCards.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={2.4} key={stat.title}>
-            <Grow in timeout={400 + index * 100}>
-              <AnimatedCard elevation={0} sx={{ borderRadius: 4, border: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {stat.title}
-                      </Typography>
-                      <Typography variant="h4" fontWeight="bold" sx={{ color: stat.color }}>
-                        {stat.value}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ 
-                      p: 1.5, 
-                      borderRadius: 3, 
-                      bgcolor: stat.bg,
-                      color: stat.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      {React.cloneElement(stat.icon, { sx: { fontSize: 28 } })}
-                    </Box>
-                  </Box>
-                </CardContent>
-              </AnimatedCard>
-            </Grow>
-          </Grid>
-        ))}
-      </Grid>
-
+  
       {/* Search and Filters */}
-      <GlassPaper elevation={0} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <SearchTextField
-              fullWidth
-              placeholder="Search by User ID, Name, Battalion..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size={isMobile ? "small" : "medium"}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          
-          {isMobile && (
-            <Grid item xs={6}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<FilterIcon />}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                Filters {showFilters ? '▲' : '▼'}
-              </Button>
-            </Grid>
-          )}
-          
-          <Grid item xs={isMobile ? 6 : 12} md={isMobile ? 6 : 8}>
-            <Stack direction="row" spacing={1} justifyContent={isMobile ? "flex-end" : "flex-start"}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog('add')}
-                sx={{ 
-                  borderRadius: 3,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  boxShadow: theme.shadows[2],
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[6],
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {isMobile ? 'Add' : 'Add User'}
-              </Button>
-              <Tooltip title="Refresh">
-                <IconButton 
-                  onClick={() => {
-                    setUsers(mockUsers)
-                    setSnackbar({ open: true, message: 'Data refreshed', type: 'info' })
-                  }}
-                  sx={{ 
-                    borderRadius: 2,
-                    transition: 'all 0.3s ease',
-                    '&:hover': { transform: 'rotate(180deg)' },
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Grid>
-        </Grid>
-
-        <Collapse in={showFilters}>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  label="Status"
-                  sx={{ borderRadius: 2 }}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  label="Role"
-                  sx={{ borderRadius: 2 }}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="user">User</MenuItem>
-                  <MenuItem value="viewer">Viewer</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Battalion</InputLabel>
-                <Select
-                  value={battalionFilter}
-                  onChange={(e) => setBattalionFilter(e.target.value)}
-                  label="Battalion"
-                  sx={{ borderRadius: 2 }}
-                >
-                  {battalions.map(battalion => (
-                    <MenuItem key={battalion} value={battalion}>
-                      {battalion === 'all' ? 'All' : battalion}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Collapse>
-      </GlassPaper>
+   
 
       {/* User Table */}
       <GlassPaper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden' }}>
@@ -836,6 +739,7 @@ const UserManagement: React.FC = () => {
                           setRoleFilter('all')
                           setBattalionFilter('all')
                         }}
+                        sx={{ textTransform: 'none' }}
                       >
                         Clear filters
                       </Button>
@@ -1003,36 +907,28 @@ const UserManagement: React.FC = () => {
         />
       </GlassPaper>
 
-      {/* Add/Edit User Dialog */}
-      <Dialog 
+      {/* Add/Edit/View User Dialog - Themed */}
+      <StyledDialog 
         open={openDialog} 
         onClose={handleCloseDialog} 
         maxWidth="md" 
         fullWidth
         TransitionComponent={Slide}
         TransitionProps={{ direction: 'up' }}
-        PaperProps={{
-          sx: { borderRadius: 4, overflow: 'hidden' }
-        }}
       >
-        <Box sx={{ 
-          bgcolor: theme.palette.primary.main, 
-          color: 'white', 
-          p: 2,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <Typography variant="h6" fontWeight="bold">
-            {dialogMode === 'add' && 'Add New User'}
-            {dialogMode === 'edit' && 'Edit User'}
-            {dialogMode === 'view' && 'User Details'}
-          </Typography>
-          <IconButton onClick={handleCloseDialog} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <DialogContent sx={{ p: 3 }}>
+        <StyledDialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" fontWeight="bold">
+              {dialogMode === 'add' && 'Add New User'}
+              {dialogMode === 'edit' && 'Edit User'}
+              {dialogMode === 'view' && 'User Details'}
+            </Typography>
+            <IconButton onClick={handleCloseDialog} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </StyledDialogTitle>
+        <DialogContent sx={{ p: 3, mt: 2 }}>
           <Grid container spacing={2.5}>
             <Grid item xs={12} md={6}>
               <TextField
@@ -1043,7 +939,21 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: theme.palette.primary.main,
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1055,7 +965,20 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: theme.palette.primary.main,
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -1067,7 +990,17 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -1079,7 +1012,17 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1092,7 +1035,17 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1104,39 +1057,67 @@ const UserManagement: React.FC = () => {
                 disabled={dialogMode === 'view'}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={dialogMode === 'view'}>
-                <InputLabel>Role</InputLabel>
-                <Select
+              <StyledFormControl fullWidth disabled={dialogMode === 'view'}>
+                <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>Role</InputLabel>
+                <StyledSelect
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                   label="Role"
-                  sx={{ borderRadius: 2 }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 3,
+                        mt: 1,
+                        boxShadow: theme.shadows[4],
+                        backgroundColor: alpha(theme.palette.background.paper, 0.98),
+                      }
+                    }
+                  }}
                 >
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="user">User</MenuItem>
-                  <MenuItem value="viewer">Viewer</MenuItem>
-                </Select>
-              </FormControl>
+                  <StyledMenuItem value="admin">Admin</StyledMenuItem>
+                  <StyledMenuItem value="manager">Manager</StyledMenuItem>
+                  <StyledMenuItem value="user">User</StyledMenuItem>
+                  <StyledMenuItem value="viewer">Viewer</StyledMenuItem>
+                </StyledSelect>
+              </StyledFormControl>
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={dialogMode === 'view'}>
-                <InputLabel>Status</InputLabel>
-                <Select
+              <StyledFormControl fullWidth disabled={dialogMode === 'view'}>
+                <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>Status</InputLabel>
+                <StyledSelect
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                   label="Status"
-                  sx={{ borderRadius: 2 }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 3,
+                        mt: 1,
+                        boxShadow: theme.shadows[4],
+                        backgroundColor: alpha(theme.palette.background.paper, 0.98),
+                      }
+                    }
+                  }}
                 >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                </Select>
-              </FormControl>
+                  <StyledMenuItem value="active">Active</StyledMenuItem>
+                  <StyledMenuItem value="inactive">Inactive</StyledMenuItem>
+                  <StyledMenuItem value="pending">Pending</StyledMenuItem>
+                </StyledSelect>
+              </StyledFormControl>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -1146,7 +1127,17 @@ const UserManagement: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 disabled={dialogMode === 'view'}
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1157,7 +1148,17 @@ const UserManagement: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                 disabled={dialogMode === 'view'}
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -1168,13 +1169,36 @@ const UserManagement: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 disabled={dialogMode === 'view'}
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                  },
+                }}
               />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={handleCloseDialog} variant="outlined" sx={{ borderRadius: 2, textTransform: 'none' }}>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+          <Button 
+            onClick={handleCloseDialog} 
+            variant="outlined" 
+            sx={{ 
+              borderRadius: 2, 
+              textTransform: 'none',
+              borderColor: alpha(theme.palette.primary.main, 0.5),
+              color: theme.palette.text.primary,
+              '&:hover': {
+                borderColor: theme.palette.primary.main,
+                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+              },
+            }}
+          >
             Cancel
           </Button>
           {dialogMode !== 'view' && (
@@ -1182,34 +1206,68 @@ const UserManagement: React.FC = () => {
               onClick={handleSaveUser} 
               variant="contained" 
               disabled={loading}
-              sx={{ borderRadius: 2, textTransform: 'none', px: 4 }}
+              sx={{ 
+                borderRadius: 2, 
+                textTransform: 'none', 
+                px: 4,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                '&:hover': {
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.shadows[4],
+                },
+                transition: 'all 0.2s ease',
+              }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Save'}
+              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save'}
             </Button>
           )}
         </DialogActions>
-      </Dialog>
+      </StyledDialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
-          <ErrorOutlineIcon sx={{ fontSize: 48, color: theme.palette.error.main, mb: 1 }} />
-          <Typography variant="h6">Confirm Delete</Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Typography textAlign="center" color="text.secondary">
+      {/* Delete Confirmation Dialog - Themed */}
+      <StyledDialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <StyledDialogTitle sx={{ textAlign: 'center', pt: 3, background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)` }}>
+          <ErrorOutlineIcon sx={{ fontSize: 48, color: 'white', mb: 1 }} />
+          <Typography variant="h6" sx={{ color: 'white' }}>Confirm Delete</Typography>
+        </StyledDialogTitle>
+        <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
             Are you sure you want to delete this user? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ pb: 3, justifyContent: 'center', gap: 2 }}>
-          <Button onClick={() => setDeleteConfirmOpen(false)} variant="outlined" sx={{ borderRadius: 2 }}>
+          <Button 
+            onClick={() => setDeleteConfirmOpen(false)} 
+            variant="outlined" 
+            sx={{ 
+              borderRadius: 2,
+              borderColor: alpha(theme.palette.error.main, 0.5),
+              '&:hover': {
+                borderColor: theme.palette.error.main,
+                backgroundColor: alpha(theme.palette.error.main, 0.04),
+              },
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirmDelete} variant="contained" color="error" sx={{ borderRadius: 2 }}>
+          <Button 
+            onClick={handleConfirmDelete} 
+            variant="contained" 
+            color="error" 
+            sx={{ 
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${theme.palette.error.dark} 0%, ${theme.palette.error.main} 100%)`,
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
             Delete
           </Button>
         </DialogActions>
-      </Dialog>
+      </StyledDialog>
 
       {/* Snackbar */}
       <Snackbar

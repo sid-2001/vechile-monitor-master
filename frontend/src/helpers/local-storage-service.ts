@@ -30,14 +30,14 @@ class LocalStorageService {
   }
 
   get_staff_access() {
-    let staff_record: any = this.get('staff_access')
+    let staff_record: any = this.get('user')
     
     return JSON.parse(staff_record)
   }
 
   get_staff_id() {
-    let staff_record: any = this.get('staff_access')
-    return JSON.parse(staff_record)?.staffId;
+    let staff_record: any = this.get('user')
+    return JSON.parse(staff_record)?._id;
   }
   
   get_staff_country() {

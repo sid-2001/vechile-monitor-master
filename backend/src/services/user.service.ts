@@ -29,7 +29,7 @@ export class UserService {
 
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }
 
-  async login(username: string, password: string): Promise<{ token: string }> {
+  async login(username: string, password: string): Promise<{ token: string ,user:any}> {
     try{
 
     const user = await User.findOne({ username });
@@ -53,7 +53,7 @@ export class UserService {
     await user.save();
 
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, env.jwtSecret, { expiresIn: "1d" });
-    return { token };
+    return { token,user };
   }catch(err){
 
     console.log(err)

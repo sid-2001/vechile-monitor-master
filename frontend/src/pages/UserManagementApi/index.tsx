@@ -3,6 +3,7 @@ import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogCon
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
+import { useTheme } from '@emotion/react'
 
 const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
@@ -11,6 +12,7 @@ const UserManagementApi = () => {
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
+  const theme=useTheme();
 
   const [form, setForm] = useState({ username: '', password: 'User@1234', first: '', last: '', mobile: '', email: '', role: 'OPERATOR', baseId: '' })
   const [editForm, setEditForm] = useState({ username: '', first: '', last: '', mobile: '', email: '', role: 'OPERATOR', baseId: '', status: 'ACTIVE' })
@@ -88,12 +90,85 @@ const UserManagementApi = () => {
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
-      <Typography variant='h5' mb={2}>User Management</Typography>
+      <Typography variant='h5' mb={2}>User Managements</Typography>
       {error && <Alert severity='error'>{error}</Alert>}
-      <Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Username' value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='First Name' value={form.first} onChange={(e) => setForm({ ...form, first: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Last Name' value={form.last} onChange={(e) => setForm({ ...form, last: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Mobile' value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Email' value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Role' value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}><MenuItem value='ADMIN'>ADMIN</MenuItem><MenuItem value='DRIVER'>DRIVER</MenuItem><MenuItem value='OPERATOR'>OPERATOR</MenuItem></TextField></Grid><Grid item xs={12} md={3}><TextField fullWidth select label='Base' value={form.baseId} onChange={(e) => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add User</Button></Grid></Grid></CardContent></Card>
+      <Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Username' value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='First Name' value={form.first} onChange={(e) => setForm({ ...form, first: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Last Name' value={form.last} onChange={(e) => setForm({ ...form, last: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Mobile' value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Email' value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Grid>
+      
+<Grid item xs={12} md={2}>
+  <TextField 
+    fullWidth 
+    select 
+    label='Role' 
+    value={form.role} 
+    onChange={(e) => setForm({ ...form, role: e.target.value })}
+    sx={{
+'& .MuiSelect-icon': {
+      color: 'white', // White arrow icon
+    },
+
+    }}
+   
+     SelectProps={{
+    MenuProps: {
+      PaperProps: {
+        sx: {
+          backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : 'white',
+          '& .MuiMenuItem-root': {
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+            },
+          },
+        },
+      },
+    },
+  }}
+  >
+    <MenuItem value='ADMIN'>ADMIN</MenuItem>
+    <MenuItem value='DRIVER'>DRIVER</MenuItem>
+    <MenuItem value='OPERATOR'>OPERATOR</MenuItem>
+  </TextField>
+</Grid>
+      
+      <Grid item xs={12} md={3}>
+        
+        
+        <TextField fullWidth select 
+        
+            sx={{
+'& .MuiSelect-icon': {
+      color: 'white', // White arrow icon
+    },
+
+    }}
+   
+     SelectProps={{
+    MenuProps: {
+      PaperProps: {
+        sx: {
+          backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : 'white',
+          '& .MuiMenuItem-root': {
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+            },
+          },
+        },
+      },
+    },
+  }}
+        
+        label='Base' value={form.baseId} onChange={(e) => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add User</Button></Grid></Grid>
+        
+        
+        </CardContent></Card>
       <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={columns} /></div></CardContent></Card>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md'>
+      <Dialog 
+      
+    
+      
+      open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md'>
         <DialogTitle>Edit User</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>

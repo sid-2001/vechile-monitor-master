@@ -29,6 +29,8 @@ import {
   ExpandMore,
   SyncAltRounded,
   Menu as MenuIcon,
+  LocationSearching,
+  DeveloperBoard,
 } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
 import Backdrop from '@mui/material/Backdrop'
@@ -36,6 +38,7 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import Stack from '@mui/material/Stack'
 import CircularProgress from '@mui/material/CircularProgress'
 import Paper from '@mui/material/Paper'
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 
 import ConfirmationModal from '../logout/logout.component'
 import ProfileMenu from '../profilesetting'
@@ -47,7 +50,10 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import { Logo } from '../../assets/images'
-
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddLocationIcon from '@mui/icons-material/AddLocation';
+import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
   padding: theme.spacing(1),
@@ -96,23 +102,23 @@ const SIDEBAR_MENUS = [
     section: 'user',
   },
   {
-    label: 'Master',
-    name: 'Master',
-    icon: <MenuBookIcon fontSize="small" />,
+    label: 'Base',
+    name: 'Base',
+    icon: <AddLocationIcon fontSize="small" />,
     path: '/bases',
     section: 'master',
   },
   {
     label: 'Vehicle',
     name: 'Vehicle',
-    icon: <TrackChangesIcon fontSize="small" />,
+    icon: <DirectionsBusIcon ontSize="small" />,
     path: '/vehicles',
     section: 'master',
   },
   {
     label: 'Onboard Devices',
     name: 'Onboard Devices',
-    icon: <TrackChangesIcon fontSize="small" />,
+    icon: <DeveloperBoardIcon fontSize="small" />,
     path: '/devices',
     section: 'master',
   },
@@ -123,13 +129,7 @@ const SIDEBAR_MENUS = [
     path: '/tracking',
     section: 'tracking',
   },
-  {
-    label: 'Settings',
-    name: 'Settings',
-    icon: <SettingsIcon fontSize="small" />,
-    path: '/settings',
-    section: 'settings',
-  },
+
 ]
 
 const DashboardLayout = () => {
@@ -397,7 +397,7 @@ const DashboardLayout = () => {
                         '&:hover': { transform: 'rotate(180deg)' },
                       }}
                     >
-                      <SyncAltRounded />
+                      <RefreshIcon />
                     </IconButton>
                   </Tooltip>
 

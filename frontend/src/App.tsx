@@ -165,18 +165,85 @@ const theme = createTheme({
         },
       },
     },
-
-    MuiDialog: {
-      styleOverrides: {
-        root: {
-          "& .MuiBackdrop-root": {
-            background:
-              'linear-gradient(135deg, rgba(49,62,23,0.8), rgba(27,12,12,0.9))',
-            backdropFilter: 'blur(6px)',
-          },
-        },
+MuiDialog: {
+  styleOverrides: {
+    root: {
+      "& .MuiBackdrop-root": {
+        background:
+          mode === 'dark'
+            ? 'linear-gradient(135deg, rgba(49,62,23,0.8), rgba(27,12,12,0.9))'
+            : 'linear-gradient(135deg,  rgba(49,62,23,0.8), rgba(88, 49, 49, 0.8))',
+        backdropFilter: 'blur(6px)',
       },
     },
+
+    paper: {
+      background:
+        mode === 'dark'
+          ? 'linear-gradient(135deg, rgba(76,92,45,0.3), rgba(27,12,12,0.8))'
+          : 'linear-gradient(135deg,  rgba(76,92,45,0.3), rgba(245,245,245,0.95))',
+
+      color: mode === 'dark' ? '#ffffff' : '#1a1a1a',
+
+      border: mode === 'dark'
+        ? '1px solid rgba(255,222,66,0.2)'
+        : '1px solid rgba(0,0,0,0.1)',
+
+      backdropFilter: 'blur(12px)',
+      borderRadius: '16px',
+    },
+  },
+},
+
+
+
+MuiSelect: {
+  styleOverrides: {
+    icon: {
+      color: '#ffffff', // white dropdown arrow
+    },
+  },
+},
+
+MuiMenu: {
+  styleOverrides: {
+    paper: {
+      backgroundColor:
+        mode === 'dark' ? '#1e1e1e' : '#ffffff',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '10px',
+    },
+  },
+},
+
+MuiMenuItem: {
+  styleOverrides: {
+    root: {
+      color: mode === 'dark' ? '#ffffff' : '#000000',
+
+      '&:hover': {
+        backgroundColor:
+          mode === 'dark'
+            ? 'rgba(255, 255, 255, 0.1)'
+            : 'rgba(0, 0, 0, 0.04)',
+      },
+
+      '&.Mui-selected': {
+        backgroundColor:
+          mode === 'dark'
+            ? 'rgba(255, 222, 66, 0.15)'
+            : 'rgba(0, 0, 0, 0.08)',
+      },
+
+      '&.Mui-selected:hover': {
+        backgroundColor:
+          mode === 'dark'
+            ? 'rgba(255, 222, 66, 0.25)'
+            : 'rgba(0, 0, 0, 0.12)',
+      },
+    },
+  },
+},
   },
 });
 const handleInactivity = () => {
