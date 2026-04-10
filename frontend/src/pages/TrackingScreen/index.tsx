@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
@@ -56,8 +56,6 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import CloseIcon from '@mui/icons-material/Close'
-
-const BACKEND_URL = import.meta.env.VITE_APP_BACKEND
 
 // Fix for default Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -185,6 +183,28 @@ const TrackingScreen = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
 
+  const buildVehiclesWithLatestLocations = (vehicleItems: any[], locationItems: any[]) => {
+    const latestByVehicle = new Map<string, any>()
+    ;(locationItems || []).forEach((loc: any) => {
+      if (!latestByVehicle.has(String(loc.vehicleId))) latestByVehicle.set(String(loc.vehicleId), loc)
+    })
+
+    return (vehicleItems || []).map((v: any) => {
+      const loc = latestByVehicle.get(v._id)
+      return {
+        id: v._id,
+        vehicleNumber: v.vehicleNumber,
+        deviceId: v.deviceId,
+        status: loc?.ignition ? 'moving' : 'stopped',
+        speed: loc?.speed || 0,
+        lat: loc?.latitude,
+        lng: loc?.longitude,
+        lastUpdated: loc?.time,
+        address: loc?.address || 'Location unavailable'
+      }
+    })
+  }
+
   const loadVehicles = async () => {
     try {
       setLoading(true)
@@ -193,25 +213,7 @@ const TrackingScreen = () => {
         vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
       ])
 
-      const latestByVehicle = new Map<string, any>()
-      ;(locationRes.items || []).forEach((loc: any) => {
-        if (!latestByVehicle.has(String(loc.vehicleId))) latestByVehicle.set(String(loc.vehicleId), loc)
-      })
-
-      setVehicles((vehicleRes.items || []).map((v: any) => {
-        const loc = latestByVehicle.get(v._id)
-        return {
-          id: v._id,
-          vehicleNumber: v.vehicleNumber,
-          deviceId: v.deviceId,
-          status: loc?.ignition ? 'moving' : 'stopped',
-          speed: loc?.speed || 0,
-          lat: loc?.latitude,
-          lng: loc?.longitude,
-          lastUpdated: loc?.time,
-          address: loc?.address || 'Location unavailable'
-        }
-      }))
+      setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
       setError('')
       setLastRefresh(new Date())
     } catch (e: any) {
@@ -226,23 +228,25 @@ const TrackingScreen = () => {
   }, [])
 
   useEffect(() => {
-    if (!BACKEND_URL) return
-    const source = new EventSource(`${BACKEND_URL}/vehicle-locations/stream`)
-    source.onmessage = (event) => {
-      const payload = JSON.parse(event.data)
-      setVehicles((prev) => prev.map((v) => String(v.id) === String(payload.vehicleId) ? {
-        ...v,
-        lat: payload.latitude,
-        lng: payload.longitude,
-        speed: payload.speed,
-        status: payload.ignition ? 'moving' : 'stopped',
-        lastUpdated: payload.time
-      } : v))
+    const refreshLatestLocations = async () => {
+      try {
+        const [vehicleRes, locationRes] = await Promise.all([
+          vehicleMonitorService.getVehicles(),
+          vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
+        ])
+
+        setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
+        setLastRefresh(new Date())
+      } catch (e) {
+        console.error('Unable to refresh latest vehicle locations', e)
+      }
     }
-    source.onerror = () => {
-      console.error('SSE connection error')
-    }
-    return () => { source.close() }
+
+    const intervalId = setInterval(() => {
+      refreshLatestLocations()
+    }, 2000)
+
+    return () => clearInterval(intervalId)
   }, [])
 
   const markers = useMemo(() => vehicles.filter((v) => v.lat && v.lng), [vehicles])
