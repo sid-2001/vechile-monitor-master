@@ -36,6 +36,8 @@ import {
 import {
   MapContainer,
   Marker,
+  Polygon,
+  Circle,
   Popup,
   TileLayer,
   Tooltip as LeafletTooltip,
@@ -57,6 +59,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import CloseIcon from '@mui/icons-material/Close'
 import { socket } from "../../services/socket";
+import { geofenceStorage, type GeofenceArea } from '../../helpers/geofence-storage'
 
 // Fix for default Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -119,7 +122,15 @@ const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
 }
 
 // Map Component to be reused
-const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loading }) => {
+const geofenceStyle = {
+  color: '#FFDE42',
+  weight: 3,
+  dashArray: '8 8',
+  fillColor: '#FFDE42',
+  fillOpacity: 0.08
+}
+
+const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: boolean }> = ({ markers, geofences, loading }) => {
   const theme = useTheme()
   
   return (
@@ -221,6 +232,13 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
             </LeafletTooltip>
           </Marker>
         ))}
+        {geofences.map((fence) =>
+          fence.shape === 'polygon' && fence.points ? (
+            <Polygon key={fence.id} positions={fence.points} pathOptions={geofenceStyle} />
+          ) : fence.shape === 'circle' && fence.center && fence.radius ? (
+            <Circle key={fence.id} center={fence.center} radius={fence.radius} pathOptions={geofenceStyle} />
+          ) : null
+        )}
         <MapBounds markers={markers} />
       </MapContainer>
     </Box>
@@ -261,6 +279,7 @@ const TrackingScreen = () => {
   const [searchingHistory, setSearchingHistory] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
+  const [geofences, setGeofences] = useState<GeofenceArea[]>([])
 
   const buildVehiclesWithLatestLocations = (vehicleItems: any[], locationItems: any[]) => {
     const latestByVehicle = new Map<string, any>()
@@ -301,6 +320,13 @@ const TrackingScreen = () => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    setGeofences(geofenceStorage.getAll())
+    const refreshGeofences = () => setGeofences(geofenceStorage.getAll())
+    window.addEventListener('focus', refreshGeofences)
+    return () => window.removeEventListener('focus', refreshGeofences)
+  }, [])
 
   // useEffect(() => {
   //   loadVehicles()
@@ -374,7 +400,7 @@ const TrackingScreen = () => {
     setVehicles((prev) => {
   const map = new Map(prev.map(v => [v.id, v]));
 
-  updatedVehicles.forEach((v) => {
+  updatedVehicles.forEach((v: any) => {
     const old = map.get(v.id);
 
     if (old && old.lat && old.lng) {
@@ -675,7 +701,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
             </Box>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ height: { xs: 400, sm: 500, md: 600 }, position: 'relative' }}>
-                <LiveMap markers={markers} loading={loading} />
+                  <LiveMap markers={markers} geofences={geofences} loading={loading} />
               </Box>
             </CardContent>
           </Card>
@@ -883,7 +909,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                 </Box>
               </Stack>
             </Box>
-            <LiveMap markers={markers} loading={loading} />
+                          <LiveMap markers={markers} geofences={geofences} loading={loading} />
           </Box>
         </DialogContent>
       </Dialog>

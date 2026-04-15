@@ -25,6 +25,7 @@ import BaseManagement from './pages/BaseManagement'
 import VehicleManagement from './pages/VehicleManagement'
 import UserManagementApi from './pages/UserManagementApi'
 import DeviceManagement from './pages/DeviceManagement'
+import GeofenceManagement from './pages/GeofenceManagement'
 import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
@@ -408,6 +409,7 @@ socket.on("vehicle:sos:closed", (data) => {
                <Route path="bases" element={<BaseManagement />} />
                <Route path="vehicles" element={<VehicleManagement />} />
                <Route path="devices" element={<DeviceManagement />} />
+               <Route path="geofence" element={<GeofenceManagement />} />
             
             </Route>
 
