@@ -3,6 +3,8 @@ import './App.css'
 
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { useSetRecoilState } from "recoil";
+import { alertState, alertTextState, alertTypeState } from "./states/state";
 import { ThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import type { ProtectedRouteProps } from './helpers/protected-route'
@@ -23,6 +25,11 @@ import BaseManagement from './pages/BaseManagement'
 import VehicleManagement from './pages/VehicleManagement'
 import UserManagementApi from './pages/UserManagementApi'
 import DeviceManagement from './pages/DeviceManagement'
+import { socket } from "./services/socket";
+import { useEffect } from 'react'
+import { toast } from "react-toastify";
+
+
 function App() {
   const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
     authenticationPath: '/login',
@@ -31,6 +38,9 @@ function App() {
   const [inactivity, setinactivityTiming] = useRecoilState(inactivityTiming)
   const [warningOpen, setWarningOpen] = useState(false)
   const local_service: any = new LocalStorageService()
+ const setAlertOpen = useSetRecoilState(alertState);
+const setAlertText = useSetRecoilState(alertTextState);
+const setAlertType = useSetRecoilState(alertTypeState);
 
 const theme = createTheme({
   palette: {
@@ -260,20 +270,129 @@ const handleInactivity = () => {
       window.location.reload()
     }
   }, [])
-  const INACTIVITY_TIME = 1 * 60 * 1000 // 1 minutes
-  // ✅ Enable auto logout (30 min inactivity)
-  // useAutoLogout(handleLogout, Number(inactivity) * 60000 > INACTIVITY_TIME ? Number(inactivity) * 60000 : INACTIVITY_TIME)
-useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
-  ? Number(inactivity) * 60000
-  : INACTIVITY_TIME)
+//   const INACTIVITY_TIME = 1 * 60 * 1000 // 1 minutes
+//   // ✅ Enable auto logout (30 min inactivity)
+//   // useAutoLogout(handleLogout, Number(inactivity) * 60000 > INACTIVITY_TIME ? Number(inactivity) * 60000 : INACTIVITY_TIME)
+// useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
+//   ? Number(inactivity) * 60000
+//   : INACTIVITY_TIME)
 
+useEffect(() => {
+  console.log("🟡 Initializing socket...");
+
+  socket.connect();
+
+  socket.on("connect", () => {
+  console.log("✅ SOCKET CONNECTED:", socket.id);
+});
+
+// 👇 OUTSIDE CONNECT
+// socket.on("vehicle:sos:created", (data) => {
+//   console.log("🚨 RECEIVED SOS CREATED", data);
+  
+
+//   const token = localStorage.getItem("access_token");
+
+//   toast.error(`🚨 SOS ALERT - ${data.vehicleNumber}`, {
+//     autoClose: false, // 
+//     closeOnClick: false,
+//     draggable: false,
+
+//    onClose: async () => {
+//   try {
+//     const token = JSON.parse(localStorage.getItem("access_token") || "");
+
+//     const res = await fetch(
+//       `http://localhost:5000/api/sos/close/${data.sosId}`,
+//       {
+//         method: "PUT",
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+
+//     if (!res.ok) {
+//       throw new Error("API failed");
+//     }
+
+//     console.log("✅ SOS closed SUCCESSFULLY");
+//   } catch (err) {
+//     console.error("❌ Close API FAILED", err);
+//   }
+// },
+//   });
+// });
+socket.on("vehicle:sos:created", (data) => {
+  console.log("🚨 RECEIVED SOS CREATED", data);
+
+  // 🔥 DEBUG (IMPORTANT)
+  console.log("👉 vehicleNumber:", data.vehicleNumber);
+  console.log("👉 FULL DATA:", data);
+
+  // ✅ SAFE VALUE
+  const vehicleName =
+    data.vehicleNumber ||   // correct case
+    data.vehicle_number || // fallback case
+    data.name ||           // fallback
+    data.vehicleId;        // last fallback
+
+  toast.error(`🚨 SOS ALERT - ${vehicleName}`, {
+    autoClose: false,
+    closeOnClick: false,
+    draggable: false,
+
+    onClose: async () => {
+      try {
+        const token = JSON.parse(localStorage.getItem("access_token") || "");
+
+        const res = await fetch(
+          `http://localhost:5000/api/sos/close/${data.sosId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("API failed");
+
+        console.log("✅ SOS closed SUCCESSFULLY");
+      } catch (err) {
+        console.error("❌ Close API FAILED", err);
+      }
+    },
+  });
+});
+
+socket.on("vehicle:sos:closed", (data) => {
+  console.log("✅ RECEIVED SOS CLOSED", data);
+
+  setAlertText(`SOS Closed - ${data.vehicleNumber} by ${data.closedBy}`);
+  setAlertType("success");
+  setAlertOpen(true);
+  console.log(alertState)
+});
+
+  return () => {
+    socket.off("connect");
+    socket.off("vehicle:sos:created");
+    socket.off("vehicle:sos:closed");
+  };
+}, []);
   return (
     <>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {/* <LoaderBackdrop /> */}
         {/* <Message /> */}
-        <ToastContainer />
+        <ToastContainer
+  position="top-center"
+  autoClose={false} // 
+  closeOnClick={false}
+  draggable={false}
+/>
         <CustomSnackbar />
         <InactivityWarningModal
   open={warningOpen}

@@ -23,7 +23,23 @@ router.get("/stream", (req, res) => {
     res.end();
   });
 });
-router.post("/", authMiddleware, validateBody(vehicleLocationSchema), (req, res) => vehicleLocationController.create(req, res));
-router.get("/", authMiddleware, (req, res) => vehicleLocationController.list(req, res));
+router.post(
+  "/",
+  (req, res, next) => {
+    console.log(" ROUTE HIT", req.headers.authorization);
+    next();
+  },
+  authMiddleware,
+  (req, res, next) => {
+    console.log(" AFTER AUTH");
+    next();
+  },
+  validateBody(vehicleLocationSchema),
+  (req, res, next) => {
+    console.log(" AFTER VALIDATION", req.body);
+    next();
+  },
+  (req, res) => vehicleLocationController.create(req, res)
+);router.get("/", authMiddleware, (req, res) => vehicleLocationController.list(req, res));
 router.get("/latest/:vehicleId", authMiddleware, (req, res) => vehicleLocationController.latest(req, res));
 export default router;

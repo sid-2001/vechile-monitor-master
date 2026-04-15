@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -56,6 +56,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import CloseIcon from '@mui/icons-material/Close'
+import { socket } from "../../services/socket";
 
 // Fix for default Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -67,9 +68,10 @@ L.Icon.Default.mergeOptions({
 
 // Custom moving vehicle icon (green)
 const movingIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  // iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
+  iconSize: [35, 35],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
@@ -77,25 +79,42 @@ const movingIcon = new L.Icon({
 
 // Custom stopped vehicle icon (red)
 const stoppedIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  // iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  //  iconSize: [18, 18],
+  // iconAnchor: [9, 9],
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 })
 
 // Component to auto-fit map bounds
+// const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
+//   const map = useMap()
+//   useEffect(() => {
+//     if (markers.length > 0) {
+//       const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]))
+//       map.fitBounds(bounds, { padding: [50, 50] })
+//     } else {
+//       map.setView([20.5937, 78.9629], 5)
+//     }
+//   }, [markers, map])
+//   return null
+// }
 const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
   const map = useMap()
+  const hasFitted = useRef(false)
+
   useEffect(() => {
-    if (markers.length > 0) {
+    if (!hasFitted.current && markers.length > 0) {
       const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]))
       map.fitBounds(bounds, { padding: [50, 50] })
-    } else {
-      map.setView([20.5937, 78.9629], 5)
+      hasFitted.current = true
     }
   }, [markers, map])
+
   return null
 }
 
@@ -109,11 +128,19 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
         <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }} />
       )}
       <MapContainer
-        center={[20.5937, 78.9629]}
-        zoom={5}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={true}
-      >
+  center={[22.9734, 78.6569]}
+  zoom={5}
+  // minZoom={4}
+  minZoom={5}
+  maxZoom={18}
+  maxBounds={[
+    [6, 67],
+  [38, 98]
+  ]}
+  maxBoundsViscosity={1.0}
+  style={{ height: '100%', width: '100%' }}
+  zoomControl={true}
+>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -125,7 +152,7 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
             icon={v.status === 'moving' ? movingIcon : stoppedIcon}
           >
             <Popup>
-              <Box sx={{ minWidth: 200, p: 0.5 }}>
+              <Box sx={{ minWidth: 200, p: 0.5 , color: 'black'}}>
                 <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <DirectionsCarIcon fontSize="small" color="primary" />
                   {v.vehicleNumber}
@@ -144,15 +171,45 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
                       Status: <strong style={{ color: v.status === 'moving' ? '#2e7d32' : '#d32f2f' }}>{v.status.toUpperCase()}</strong>
                     </Typography>
                   </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LocationOnIcon fontSize="small" color="primary" />
+                      
+                      <Typography variant="body2">
+                        Lat: <strong>{v.lat?.toFixed(6)}</strong>
+                      </Typography>
+
+                      <Typography variant="body2">
+                        |
+                      </Typography>
+
+                      <Typography variant="body2">
+                        Lng: <strong>{v.lng?.toFixed(6)}</strong>
+                      </Typography>
+                    </Box>
+
+                  
                   {v.lastUpdated && (
                     <Typography variant="caption" color="text.secondary">
-                      Updated: {new Date(v.lastUpdated).toLocaleString()}
+                      {/* Updated: {new Date(v.lastUpdated).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata"
+                     })} */}
+                     Updated: {new Date(v.lastUpdated).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                    hour12: true,
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
                     </Typography>
                   )}
+                  <Typography variant="body2">
+  Direction: <strong>{v.angle ?? 0}°</strong>
+</Typography>
                 </Stack>
               </Box>
             </Popup>
-            <LeafletTooltip
+            <LeafletTooltip 
               direction="top"
               offset={[0, -20]}
               opacity={0.9}
@@ -170,7 +227,29 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
   )
 }
 
+
+const smoothMove = (start: any, end: any, duration = 1000, onUpdate: any) => {
+  const startTime = performance.now();
+
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const progress = t * (2 - t); 
+
+    const lat = start.lat + (end.lat - start.lat) * progress;
+    const lng = start.lng + (end.lng - start.lng) * progress;
+
+    onUpdate(lat, lng);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  };
+
+  requestAnimationFrame(animate);
+};
 const TrackingScreen = () => {
+  const vehicleMapRef = useRef(new Map());
   const theme = useTheme()
   const [vehicles, setVehicles] = useState<any[]>([])
   const [selectedVehicle, setSelectedVehicle] = useState('')
@@ -223,31 +302,133 @@ const TrackingScreen = () => {
     }
   }
 
-  useEffect(() => {
-    loadVehicles()
-  }, [])
+  // useEffect(() => {
+  //   loadVehicles()
+  // }, [])
+
+
 
   useEffect(() => {
-    const refreshLatestLocations = async () => {
-      try {
-        const [vehicleRes, locationRes] = await Promise.all([
-          vehicleMonitorService.getVehicles(),
-          vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
-        ])
+  console.log(" Listening for vehicleLocationBulkUpdate");
 
-        setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
-        setLastRefresh(new Date())
-      } catch (e) {
-        console.error('Unable to refresh latest vehicle locations', e)
-      }
+  socket.on("vehicleLocationBulkUpdate", (data) => {
+    console.log(" SOCKET RAW DATA:", data);
+
+    // const updatedVehicles = data.map((loc: any) => ({
+      
+    //   id: String(loc.vehicleId),
+    //   // vehicleNumber: String(loc.vehicleId),
+    //   // vehicleNumber: loc.vehicleNumber || String(loc.vehicleId),
+    //   vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || "Unknown",
+    //   status: loc.ignition ? 'moving' : 'stopped',
+    //   ignition: loc.ignition,
+    //   speed: loc.speed,
+    //   lat: loc.latitude,
+    //   lng: loc.longitude,
+    //   lastUpdated: loc.time
+    // }));
+
+    const updatedVehicles = data.map((loc: any) => {
+
+  // 🔥 STEP A: map update karo agar vehicleNumber mila
+  if (loc.vehicleNumber) {
+    vehicleMapRef.current.set(String(loc.vehicleId), loc.vehicleNumber);
+  }
+
+  return {
+    id: String(loc.vehicleId),
+    vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
+    status: loc.ignition ? 'moving' : 'stopped',
+    ignition: loc.ignition,
+    speed: loc.speed,
+    lat: loc.latitude,
+    lng: loc.longitude,
+    angle: loc.angle,
+    lastUpdated: loc.time
+  };
+});
+    console.log("UPDATED VEHICLES:", updatedVehicles);
+
+    // 🔥 IMPORTANT: smooth update instead of replace
+    // setVehicles((prev) => {
+    //   const map = new Map(prev.map(v => [v.id, v]));
+
+    //   updatedVehicles.forEach((v) => {
+    //     const old = map.get(v.id);
+
+    //     if (old) {
+    //       map.set(v.id, {
+    //         ...old,
+    //         ...v,
+    //         lat: old.lat + (v.lat - old.lat) * 0.2,
+    //         lng: old.lng + (v.lng - old.lng) * 0.2
+    //       });
+    //     } else {
+    //       map.set(v.id, v);
+    //     }
+    //   });
+
+    //   return Array.from(map.values());
+    // });
+
+    setVehicles((prev) => {
+  const map = new Map(prev.map(v => [v.id, v]));
+
+  updatedVehicles.forEach((v) => {
+    const old = map.get(v.id);
+
+    if (old && old.lat && old.lng) {
+      smoothMove(
+        { lat: old.lat, lng: old.lng },
+        { lat: v.lat, lng: v.lng },
+        1000,
+        (lat: number, lng: number) => {
+          setVehicles((current) =>
+            current.map((item) =>
+              item.id === v.id ? { ...item, ...v, lat, lng } : item
+            )
+          );
+        }
+      );
+    } else {
+      map.set(v.id, v);
     }
+  });
 
-    const intervalId = setInterval(() => {
-      refreshLatestLocations()
-    }, 2000)
+  return Array.from(map.values());
+});
 
-    return () => clearInterval(intervalId)
-  }, [])
+    setLastRefresh(new Date());
+  });
+
+  return () => {
+    socket.off("vehicleLocationBulkUpdate");
+  };
+}, []);
+
+
+
+  // useEffect(() => {
+  //   const refreshLatestLocations = async () => {
+  //     try {
+  //       const [vehicleRes, locationRes] = await Promise.all([
+  //         vehicleMonitorService.getVehicles(),
+  //         vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
+  //       ])
+
+  //       setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
+  //       setLastRefresh(new Date())
+  //     } catch (e) {
+  //       console.error('Unable to refresh latest vehicle locations', e)
+  //     }
+  //   }
+
+  //   const intervalId = setInterval(() => {
+  //     refreshLatestLocations()
+  //   }, 2000)
+
+  //   return () => clearInterval(intervalId)
+  // }, [])
 
   const markers = useMemo(() => vehicles.filter((v) => v.lat && v.lng), [vehicles])
 
@@ -270,9 +451,9 @@ const TrackingScreen = () => {
       setSearchingHistory(false)
     }
   }
-
-  const movingVehicles = vehicles.filter(v => v.status === 'moving')
-  const stoppedVehicles = vehicles.filter(v => v.status === 'stopped')
+const movingVehicles = vehicles.filter(v => v.ignition === true)
+  // const movingVehicles = vehicles.filter(v => v.status === 'moving' && v.speed > 0)
+  const stoppedVehicles = vehicles.filter(v => v.ignition === false)
 
   return (
     <Box sx={{ maxWidth: 1800, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
@@ -354,7 +535,7 @@ const TrackingScreen = () => {
       </Grid>
 
       {/* History Search Card */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
+      {/* <Card sx={{ mb: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
         <CardContent>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
             <HistoryIcon color="primary" />
@@ -362,20 +543,60 @@ const TrackingScreen = () => {
           </Stack>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={4}>
-              <Select
-                fullWidth
-                value={selectedVehicle}
-                onChange={(e) => setSelectedVehicle(e.target.value)}
-                displayEmpty
-                sx={{ borderRadius: 2 }}
-              >
+             <Select
+  fullWidth
+  value={selectedVehicle}
+  onChange={(e) => setSelectedVehicle(e.target.value)}
+  displayEmpty
+  sx={{
+    borderRadius: 2,
+    backgroundColor: '#fff',
+    
+    // FIX TEXT COLOR
+    color: '#000',
+
+    // FIX INPUT TEXT
+    '& .MuiSelect-select': {
+      color: '#000',
+    },
+
+    // FIX BORDER
+    '.MuiOutlinedInput-notchedOutline': {
+      borderColor: '#ccc',
+    },
+
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#1976d2',
+    },
+
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#1976d2',
+    },
+
+    // FIX ICON (arrow)
+    '.MuiSvgIcon-root': {
+      color: '#000',
+    }
+  }}
+>
                 <MenuItem value="">Select Vehicle</MenuItem>
                 {vehicles.map(v => (
                   <MenuItem key={v.id} value={v.id}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <FiberManualRecordIcon sx={{ fontSize: 12, color: v.status === 'moving' ? 'success.main' : 'error.main' }} />
                       <span>{v.vehicleNumber}</span>
-                      {v.speed > 0 && <Chip label={`${v.speed} km/h`} size="small" variant="outlined" />}
+                      {v.speed > 0 && <Chip
+  label={`${v.speed} km/h`}
+  size="small"
+  variant="outlined"
+  sx={{
+    color: '#000', 
+    borderColor: '#000', 
+    '& .MuiChip-label': {
+      color: '#000',
+    }
+  }}
+/>}
                     </Stack>
                   </MenuItem>
                 ))}
@@ -424,7 +645,7 @@ const TrackingScreen = () => {
             </Box>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Map and Vehicles Grid */}
       <Grid container spacing={3}>
@@ -554,7 +775,7 @@ const TrackingScreen = () => {
           </Card>
 
           {/* History Points Summary */}
-          <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2] }}>
+          {/* <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2] }}>
             <CardContent>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 History Points
@@ -594,7 +815,7 @@ const TrackingScreen = () => {
                 </Box>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
         </Grid>
       </Grid>
 

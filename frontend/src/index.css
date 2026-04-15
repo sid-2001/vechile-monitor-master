@@ -34,3 +34,22 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
+
+
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.leaflet-popup-content {
+  color: #000000 !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Force all inner elements */
+.leaflet-popup-content * {
+  color: #000000 !important;
+}

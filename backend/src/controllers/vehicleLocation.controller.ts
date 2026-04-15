@@ -22,6 +22,6 @@ export class VehicleLocationController {
     const item = await vehicleLocationService.latest(req.params.vehicleId);
     if (!item) return void res.status(404).json({ message: "No location data" });
     res.json(item);
-  }
+  } 
 }
 export const vehicleLocationController = new VehicleLocationController();

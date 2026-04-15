@@ -55,6 +55,7 @@ schema.pre("save", function (next) {
   if (!this.vehicleId) {
     this.vehicleId = `VH-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 1000)}`;
   }
+  
   next();
 });
 

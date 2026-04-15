@@ -8,6 +8,7 @@ import deviceRoutes from "./routes/deviceRoutes";
 import { authMiddleware } from "./middleware/authMiddleware";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { loggingMiddleware } from "./middleware/loggingMiddleware";
+import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
 import cors from "cors";
 const app = express();
 
@@ -28,6 +29,9 @@ app.use("/users", authMiddleware, userRoutes);
 app.use("/vehicles", authMiddleware, vehicleRoutes);
 app.use("/vehicle-locations", vehicleLocationRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
+
+
+app.use("/api/sos", vehicleSOSRoutes);
 app.use(errorMiddleware);
 
 export default app;

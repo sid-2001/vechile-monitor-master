@@ -9,4 +9,5 @@ router.get("/", (req, res) => vehicleController.list(req, res));
 router.get("/:id", (req, res) => vehicleController.byId(req, res));
 router.put("/:id", (req, res) => vehicleController.update(req, res));
 router.delete("/:id", (req, res) => vehicleController.remove(req, res));
+router.put("/:id/sos", (req, res) =>vehicleController.toggleSOS(req, res));
 export default router;
