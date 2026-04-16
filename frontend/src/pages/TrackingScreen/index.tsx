@@ -36,7 +36,6 @@ import {
 import {
   MapContainer,
   Marker,
-  Polygon,
   Circle,
   Popup,
   TileLayer,
@@ -59,7 +58,13 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import CloseIcon from '@mui/icons-material/Close'
 import { socket } from "../../services/socket";
-import { geofenceStorage, type GeofenceArea } from '../../helpers/geofence-storage'
+
+type GeofenceArea = {
+  _id: string
+  name: string
+  center: { latitude: number; longitude: number }
+  radius: number
+}
 
 // Fix for default Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -233,10 +238,13 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
           </Marker>
         ))}
         {geofences.map((fence) =>
-          fence.shape === 'polygon' && fence.points ? (
-            <Polygon key={fence.id} positions={fence.points} pathOptions={geofenceStyle} />
-          ) : fence.shape === 'circle' && fence.center && fence.radius ? (
-            <Circle key={fence.id} center={fence.center} radius={fence.radius} pathOptions={geofenceStyle} />
+          fence.center && fence.radius ? (
+            <Circle
+              key={fence._id}
+              center={[fence.center.latitude, fence.center.longitude]}
+              radius={fence.radius}
+              pathOptions={geofenceStyle}
+            />
           ) : null
         )}
         <MapBounds markers={markers} />
@@ -321,9 +329,18 @@ const TrackingScreen = () => {
     }
   }
 
+  const loadGeofences = async () => {
+    try {
+      const data = await vehicleMonitorService.getGeofences()
+      setGeofences(data.items || [])
+    } catch (e) {
+      console.error('Unable to load geofences', e)
+    }
+  }
+
   useEffect(() => {
-    setGeofences(geofenceStorage.getAll())
-    const refreshGeofences = () => setGeofences(geofenceStorage.getAll())
+    loadGeofences()
+    const refreshGeofences = () => loadGeofences()
     window.addEventListener('focus', refreshGeofences)
     return () => window.removeEventListener('focus', refreshGeofences)
   }, [])

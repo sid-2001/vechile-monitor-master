@@ -55,6 +55,7 @@ import AddLocationIcon from '@mui/icons-material/AddLocation';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 import PolylineIcon from '@mui/icons-material/Polyline';
+import TimelineIcon from '@mui/icons-material/Timeline';
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
   padding: theme.spacing(1),
@@ -135,6 +136,13 @@ const SIDEBAR_MENUS = [
     name: 'Geofence',
     icon: <PolylineIcon fontSize="small" />,
     path: '/geofence',
+    section: 'tracking',
+  },
+  {
+    label: 'Location History',
+    name: 'Location History',
+    icon: <TimelineIcon fontSize="small" />,
+    path: '/location-history',
     section: 'tracking',
   },
 

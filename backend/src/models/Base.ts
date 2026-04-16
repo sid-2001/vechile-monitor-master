@@ -6,6 +6,7 @@ export interface IBase extends Document, AuditFields {
   name: string;
   location: { latitude: number; longitude: number };
   address: { state: string; country: string; city: string; pincode: string };
+  geofenceId?: Schema.Types.ObjectId;
 }
 
 const schema = new Schema<IBase>({
@@ -19,7 +20,8 @@ const schema = new Schema<IBase>({
     country: { type: String, default: "India" },
     city: { type: String, required: true, trim: true },
     pincode: { type: String, required: true, trim: true }
-  }
+  },
+  geofenceId: { type: Schema.Types.ObjectId, ref: "Geofence", required: false }
 });
 
 schema.plugin(auditPlugin);

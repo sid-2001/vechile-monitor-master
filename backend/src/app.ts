@@ -9,6 +9,7 @@ import { authMiddleware } from "./middleware/authMiddleware";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { loggingMiddleware } from "./middleware/loggingMiddleware";
 import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
+import geofenceRoutes from "./routes/geofenceRoutes";
 import cors from "cors";
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/users", authMiddleware, userRoutes);
 app.use("/vehicles", authMiddleware, vehicleRoutes);
 app.use("/vehicle-locations", vehicleLocationRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
+app.use("/geofences", authMiddleware, geofenceRoutes);
 
 
 app.use("/api/sos", vehicleSOSRoutes);
