@@ -97,7 +97,6 @@ export const initSocket = (server: HttpServer): Server => {
 
       try {
         const cursor = VehicleLocation.find(filter).sort({ time: 1 }).cursor({ batchSize: 1000 });
-        cursor.addCursorFlag("noCursorTimeout", true);
         let count = 0;
         let batch: any[] = [];
 
