@@ -62,6 +62,7 @@ import { socket } from "../../services/socket";
 type GeofenceArea = {
   _id: string
   name: string
+  baseId?: string | { _id: string; name?: string }
   center: { latitude: number; longitude: number }
   radius: number
 }
@@ -288,6 +289,11 @@ const TrackingScreen = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
   const [geofences, setGeofences] = useState<GeofenceArea[]>([])
+  const [geofenceAlert, setGeofenceAlert] = useState('')
+  const vehicleOutStateRef = useRef<Record<string, boolean>>({})
+  const geofencesRef = useRef<GeofenceArea[]>([])
+
+  const getBaseId = (value: any) => (typeof value === 'string' ? value : value?._id)
 
   const buildVehiclesWithLatestLocations = (vehicleItems: any[], locationItems: any[]) => {
     const latestByVehicle = new Map<string, any>()
@@ -301,6 +307,7 @@ const TrackingScreen = () => {
         id: v._id,
         vehicleNumber: v.vehicleNumber,
         deviceId: v.deviceId,
+        baseId: v.baseId,
         status: loc?.ignition ? 'moving' : 'stopped',
         speed: loc?.speed || 0,
         lat: loc?.latitude,
@@ -344,6 +351,10 @@ const TrackingScreen = () => {
     window.addEventListener('focus', refreshGeofences)
     return () => window.removeEventListener('focus', refreshGeofences)
   }, [])
+
+  useEffect(() => {
+    geofencesRef.current = geofences
+  }, [geofences])
 
   // useEffect(() => {
   //   loadVehicles()
@@ -421,6 +432,15 @@ const TrackingScreen = () => {
     const old = map.get(v.id);
 
     if (old && old.lat && old.lng) {
+      const matchedGeofence = geofencesRef.current.find((fence) => getBaseId(fence.baseId) && getBaseId(fence.baseId) === old.baseId)
+      if (matchedGeofence?.center) {
+        const distance = L.latLng(v.lat, v.lng).distanceTo(L.latLng(matchedGeofence.center.latitude, matchedGeofence.center.longitude))
+        const isOut = distance > matchedGeofence.radius
+        if (isOut && !vehicleOutStateRef.current[v.id]) {
+          setGeofenceAlert(`${old.vehicleNumber || v.id} go out of base`)
+        }
+        vehicleOutStateRef.current[v.id] = isOut
+      }
       smoothMove(
         { lat: old.lat, lng: old.lng },
         { lat: v.lat, lng: v.lng },
@@ -525,6 +545,11 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+      {geofenceAlert && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setGeofenceAlert('')}>
+          {geofenceAlert}
         </Alert>
       )}
 

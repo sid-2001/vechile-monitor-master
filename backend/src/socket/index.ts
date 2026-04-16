@@ -32,6 +32,7 @@ import { vehicleLocationService } from "../services/vehicleLocation.service";
 import { VehicleLocation } from "../models/VehicleLocation";
 
 let io: Server;
+let globalVehicleBroadcastInterval: NodeJS.Timeout | null = null;
 
 type HistorySubscription = {
   key: string;
@@ -54,23 +55,25 @@ const closeHistorySubscription = async (socketId: string) => {
 
 export const initSocket = (server: HttpServer): Server => {
   io = new Server(server, {
+    transports: ["websocket", "polling"],
+    pingInterval: 25000,
+    pingTimeout: 60000,
     cors: { origin: "*" },
   });
 
-  io.on("connection", (socket: any) => {
-    console.log("✅ Client connected:", socket.id);
-
-    const interval = setInterval(async () => {
+  if (!globalVehicleBroadcastInterval) {
+    globalVehicleBroadcastInterval = setInterval(async () => {
       try {
-        const latestVehicles =
-          await vehicleLocationService.getLatestLocationsOfAllVehicles();
-
-        socket.emit("vehicleLocationBulkUpdate", latestVehicles);
-
+        const latestVehicles = await vehicleLocationService.getLatestLocationsOfAllVehicles();
+        io.emit("vehicleLocationBulkUpdate", latestVehicles);
       } catch (err) {
         console.error("❌ SOCKET ERROR:", err);
       }
     }, 1000);
+  }
+
+  io.on("connection", (socket: any) => {
+    console.log("✅ Client connected:", socket.id);
 
     socket.on("locationHistory:subscribe", async (payload: { vehicleId?: string; from?: string; to?: string }) => {
       if (!payload?.vehicleId || !payload?.from || !payload?.to) {
@@ -96,6 +99,8 @@ export const initSocket = (server: HttpServer): Server => {
       socket.emit("locationHistory:reset", { key: `${payload.vehicleId}:${payload.from}:${payload.to}` });
 
       try {
+        const total = await VehicleLocation.countDocuments(filter);
+        socket.emit("locationHistory:start", { total });
         const cursor = VehicleLocation.find(filter).sort({ time: 1 }).cursor({ batchSize: 1000 });
         let count = 0;
         let batch: any[] = [];
@@ -150,7 +155,6 @@ export const initSocket = (server: HttpServer): Server => {
 
     socket.on("disconnect", async () => {
       console.log("❌ Client disconnected:", socket.id);
-      clearInterval(interval);
       await closeHistorySubscription(socket.id);
     });
   });

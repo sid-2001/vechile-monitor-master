@@ -27,6 +27,7 @@ import UserManagementApi from './pages/UserManagementApi'
 import DeviceManagement from './pages/DeviceManagement'
 import GeofenceManagement from './pages/GeofenceManagement'
 import LocationHistory from './pages/LocationHistory'
+import LocationSimulator from './pages/LocationSimulator'
 import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
@@ -412,6 +413,7 @@ socket.on("vehicle:sos:closed", (data) => {
                <Route path="devices" element={<DeviceManagement />} />
                <Route path="geofence" element={<GeofenceManagement />} />
                <Route path="location-history" element={<LocationHistory />} />
+               <Route path="location-simulator" element={<LocationSimulator />} />
             
             </Route>
 
