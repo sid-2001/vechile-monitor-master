@@ -27,16 +27,37 @@
 
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
+import { Types } from "mongoose";
 import { vehicleLocationService } from "../services/vehicleLocation.service";
+import { VehicleLocation } from "../models/VehicleLocation";
 
 let io: Server;
+
+type HistorySubscription = {
+  key: string;
+  changeStream?: any;
+};
+
+const historySubscriptions = new Map<string, HistorySubscription>();
+
+const closeHistorySubscription = async (socketId: string) => {
+  const existing = historySubscriptions.get(socketId);
+  if (!existing) return;
+  try {
+    await existing.changeStream?.close();
+  } catch (error) {
+    console.error("❌ Failed to close location history stream", error);
+  } finally {
+    historySubscriptions.delete(socketId);
+  }
+};
 
 export const initSocket = (server: HttpServer): Server => {
   io = new Server(server, {
     cors: { origin: "*" },
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", (socket: any) => {
     console.log("✅ Client connected:", socket.id);
 
     const interval = setInterval(async () => {
@@ -51,9 +72,75 @@ export const initSocket = (server: HttpServer): Server => {
       }
     }, 1000);
 
-    socket.on("disconnect", () => {
+    socket.on("locationHistory:subscribe", async (payload: { vehicleId?: string; from?: string; to?: string }) => {
+      if (!payload?.vehicleId || !payload?.from || !payload?.to) {
+        socket.emit("locationHistory:error", { message: "vehicleId, from and to are required" });
+        return;
+      }
+      if (!Types.ObjectId.isValid(payload.vehicleId)) {
+        socket.emit("locationHistory:error", { message: "Invalid vehicleId" });
+        return;
+      }
+
+      await closeHistorySubscription(socket.id);
+
+      const fromDate = new Date(payload.from);
+      const toDate = new Date(payload.to);
+      const vehicleObjectId = new Types.ObjectId(payload.vehicleId);
+
+      const filter = {
+        vehicleId: vehicleObjectId,
+        time: { $gte: fromDate, $lte: toDate }
+      };
+
+      socket.emit("locationHistory:reset", { key: `${payload.vehicleId}:${payload.from}:${payload.to}` });
+
+      try {
+        const cursor = VehicleLocation.find(filter).sort({ time: 1 }).cursor();
+        let count = 0;
+
+        for await (const doc of cursor) {
+          socket.emit("locationHistory:record", doc);
+          count += 1;
+        }
+
+        socket.emit("locationHistory:done", { count });
+
+        const pipeline = [
+          {
+            $match: {
+              operationType: "insert",
+              "fullDocument.vehicleId": vehicleObjectId,
+              "fullDocument.time": { $gte: fromDate, $lte: toDate }
+            }
+          }
+        ];
+
+        const changeStream = VehicleLocation.watch(pipeline, { fullDocument: "updateLookup" });
+        changeStream.on("change", (change) => {
+          if (change.fullDocument) {
+            socket.emit("locationHistory:record", change.fullDocument);
+          }
+        });
+
+        historySubscriptions.set(socket.id, {
+          key: `${payload.vehicleId}:${payload.from}:${payload.to}`,
+          changeStream
+        });
+      } catch (error) {
+        console.error("❌ Failed to stream location history", error);
+        socket.emit("locationHistory:error", { message: "Failed to stream location history" });
+      }
+    });
+
+    socket.on("locationHistory:unsubscribe", async () => {
+      await closeHistorySubscription(socket.id);
+    });
+
+    socket.on("disconnect", async () => {
       console.log("❌ Client disconnected:", socket.id);
       clearInterval(interval);
+      await closeHistorySubscription(socket.id);
     });
   });
 

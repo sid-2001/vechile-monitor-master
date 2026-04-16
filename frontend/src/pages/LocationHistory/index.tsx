@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
+import { socket } from '../../services/socket'
 import 'leaflet/dist/leaflet.css'
 
 type VehicleOption = { _id: string; vehicleNumber: string }
@@ -44,31 +45,47 @@ const LocationHistory = () => {
 
   useEffect(() => {
     loadVehicles()
+
+    const onReset = () => setPoints([])
+    const onRecord = (record: LocationPoint) => {
+      setPoints((prev) => [...prev, record])
+    }
+    const onDone = () => setLoading(false)
+    const onError = (payload: { message?: string }) => {
+      setLoading(false)
+      setError(payload?.message || 'Failed to stream location history')
+    }
+
+    socket.on('locationHistory:reset', onReset)
+    socket.on('locationHistory:record', onRecord)
+    socket.on('locationHistory:done', onDone)
+    socket.on('locationHistory:error', onError)
+
+    return () => {
+      socket.emit('locationHistory:unsubscribe')
+      socket.off('locationHistory:reset', onReset)
+      socket.off('locationHistory:record', onRecord)
+      socket.off('locationHistory:done', onDone)
+      socket.off('locationHistory:error', onError)
+    }
   }, [])
 
-  const fetchHistory = async () => {
+  const fetchHistory = () => {
     if (!selectedVehicle || !fromDate || !toDate) {
       setError('Please select vehicle and both date-time filters')
       return
     }
 
-    try {
-      setLoading(true)
-      const data = await vehicleMonitorService.getVehicleLocations({
-        vehicleId: selectedVehicle,
-        from: new Date(fromDate).toISOString(),
-        to: new Date(toDate).toISOString(),
-        limit: 1000,
-        sortBy: 'time',
-        sortOrder: 'asc'
-      })
-      setPoints(data.items || [])
-      setError('')
-    } catch (e: any) {
-      setError(e?.error_message || 'Failed to load location history')
-    } finally {
-      setLoading(false)
-    }
+    setError('')
+    setLoading(true)
+    setPoints([])
+
+    socket.emit('locationHistory:unsubscribe')
+    socket.emit('locationHistory:subscribe', {
+      vehicleId: selectedVehicle,
+      from: new Date(fromDate).toISOString(),
+      to: new Date(toDate).toISOString()
+    })
   }
 
   const mapCenter = useMemo<[number, number]>(() => {
@@ -78,7 +95,7 @@ const LocationHistory = () => {
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography variant='h4' mb={2}>Location History</Typography>
+      <Typography variant='h4' mb={2}>Location History (Socket Stream)</Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }}>{String(error)}</Alert>}
 
       <Card sx={{ mb: 2 }}>
@@ -119,7 +136,7 @@ const LocationHistory = () => {
             </Grid>
             <Grid item xs={12} md={2}>
               <Button fullWidth variant='contained' onClick={fetchHistory} disabled={loading} sx={{ height: '56px' }}>
-                {loading ? 'Loading...' : 'Show History'}
+                {loading ? 'Streaming...' : 'Stream History'}
               </Button>
             </Grid>
           </Grid>
