@@ -96,12 +96,24 @@ export const initSocket = (server: HttpServer): Server => {
       socket.emit("locationHistory:reset", { key: `${payload.vehicleId}:${payload.from}:${payload.to}` });
 
       try {
-        const cursor = VehicleLocation.find(filter).sort({ time: 1 }).cursor();
+        const cursor = VehicleLocation.find(filter).sort({ time: 1 }).cursor({ batchSize: 1000 });
+        cursor.addCursorFlag("noCursorTimeout", true);
         let count = 0;
+        let batch: any[] = [];
 
         for await (const doc of cursor) {
-          socket.emit("locationHistory:record", doc);
+          batch.push(doc);
           count += 1;
+
+          if (batch.length >= 500) {
+            socket.emit("locationHistory:batch", batch);
+            batch = [];
+            await new Promise<void>((resolve) => setImmediate(resolve));
+          }
+        }
+
+        if (batch.length > 0) {
+          socket.emit("locationHistory:batch", batch);
         }
 
         socket.emit("locationHistory:done", { count });
@@ -119,7 +131,7 @@ export const initSocket = (server: HttpServer): Server => {
         const changeStream = VehicleLocation.watch(pipeline, { fullDocument: "updateLookup" });
         changeStream.on("change", (change) => {
           if (change.fullDocument) {
-            socket.emit("locationHistory:record", change.fullDocument);
+            socket.emit("locationHistory:batch", [change.fullDocument]);
           }
         });
 

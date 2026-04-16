@@ -47,8 +47,9 @@ const LocationHistory = () => {
     loadVehicles()
 
     const onReset = () => setPoints([])
-    const onRecord = (record: LocationPoint) => {
-      setPoints((prev) => [...prev, record])
+    const onBatch = (records: LocationPoint[]) => {
+      if (!Array.isArray(records) || records.length === 0) return
+      setPoints((prev) => [...prev, ...records])
     }
     const onDone = () => setLoading(false)
     const onError = (payload: { message?: string }) => {
@@ -57,14 +58,14 @@ const LocationHistory = () => {
     }
 
     socket.on('locationHistory:reset', onReset)
-    socket.on('locationHistory:record', onRecord)
+    socket.on('locationHistory:batch', onBatch)
     socket.on('locationHistory:done', onDone)
     socket.on('locationHistory:error', onError)
 
     return () => {
       socket.emit('locationHistory:unsubscribe')
       socket.off('locationHistory:reset', onReset)
-      socket.off('locationHistory:record', onRecord)
+      socket.off('locationHistory:batch', onBatch)
       socket.off('locationHistory:done', onDone)
       socket.off('locationHistory:error', onError)
     }
@@ -148,13 +149,13 @@ const LocationHistory = () => {
           <Card>
             <CardContent>
               <Box sx={{ height: 520, borderRadius: 2, overflow: 'hidden' }}>
-                <MapContainer center={mapCenter} zoom={8} style={{ height: '100%', width: '100%' }}>
+                <MapContainer center={mapCenter} zoom={8} preferCanvas style={{ height: '100%', width: '100%' }}>
                   <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
                   {points.map((point, idx) => (
                     <CircleMarker
                       key={point._id || `${point.time}-${idx}`}
                       center={[point.latitude, point.longitude]}
-                      radius={5}
+                      radius={3}
                       pathOptions={{ color: '#FFDE42', fillOpacity: 0.8 }}
                     >
                       <Popup>
