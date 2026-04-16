@@ -1,6 +1,12 @@
 import api1 from './apis/api1'
 
 export interface ApiListResponse<T> { items: T[]; total?: number; page?: number; limit?: number }
+export interface GeofencePayload {
+  name: string
+  baseId: string
+  center: { latitude: number; longitude: number }
+  radius: number
+}
 
 export const vehicleMonitorService = {
   login: (payload: { username: string; password: string }) => api1.post('/auth/login', payload),
@@ -23,5 +29,12 @@ export const vehicleMonitorService = {
   getVehicleLocations: (params?: Record<string, unknown>) => {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/vehicle-locations${query.toString() ? `?${query.toString()}` : ''}`)
-  }
+  },
+  getGeofences: (params?: Record<string, unknown>) => {
+    const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
+    return api1.get(`/geofences${query.toString() ? `?${query.toString()}` : ''}`)
+  },
+  createGeofence: (payload: GeofencePayload) => api1.post('/geofences', payload),
+  updateGeofence: (id: string, payload: Partial<GeofencePayload>) => api1.put(`/geofences/${id}`, payload),
+  deleteGeofence: (id: string) => api1.del(`/geofences/${id}`)
 }

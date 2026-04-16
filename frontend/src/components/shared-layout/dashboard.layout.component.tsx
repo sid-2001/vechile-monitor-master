@@ -54,6 +54,9 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AddLocationIcon from '@mui/icons-material/AddLocation';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
+import PolylineIcon from '@mui/icons-material/Polyline';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
   padding: theme.spacing(1),
@@ -127,6 +130,27 @@ const SIDEBAR_MENUS = [
     name: 'Tracking',
     icon: <TrackChangesIcon fontSize="small" />,
     path: '/tracking',
+    section: 'tracking',
+  },
+  {
+    label: 'Geofence',
+    name: 'Geofence',
+    icon: <PolylineIcon fontSize="small" />,
+    path: '/geofence',
+    section: 'tracking',
+  },
+  {
+    label: 'Location History',
+    name: 'Location History',
+    icon: <TimelineIcon fontSize="small" />,
+    path: '/location-history',
+    section: 'tracking',
+  },
+  {
+    label: 'Location Simulator',
+    name: 'Location Sim',
+    icon: <MyLocationIcon fontSize="small" />,
+    path: '/location-simulator',
     section: 'tracking',
   },
 

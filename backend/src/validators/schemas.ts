@@ -9,7 +9,7 @@ export const resetSchema: ValidatorFn = (body: any) => (!body?.username || !body
 export const baseSchema: ValidatorFn = (body: any) => {
   const errors: string[] = [];
   if (!body?.name) errors.push("name is required");
-  if (!body?.location?.latitude || !body?.location?.longitude) errors.push("location latitude and longitude are required");
+  if (body?.location?.latitude === undefined || body?.location?.longitude === undefined) errors.push("location latitude and longitude are required");
   if (!body?.address?.state || !body?.address?.city || !body?.address?.pincode) errors.push("address.state/city/pincode required");
   return errors;
 };
@@ -32,5 +32,14 @@ export const vehicleSchema: ValidatorFn = (body: any) => {
 export const vehicleLocationSchema: ValidatorFn = (body: any) => {
   const errors: string[] = [];
   ["vehicleId", "deviceId", "time", "latitude", "longitude", "speed", "ignition"].forEach((f) => !has(body, f) && errors.push(`${f} is required`));
+  return errors;
+};
+
+export const geofenceSchema: ValidatorFn = (body: any) => {
+  const errors: string[] = [];
+  if (!body?.name) errors.push("name is required");
+  if (!body?.baseId) errors.push("baseId is required");
+  if (body?.center?.latitude === undefined || body?.center?.longitude === undefined) errors.push("center latitude and longitude are required");
+  if (body?.radius === undefined || Number(body.radius) <= 0) errors.push("radius should be greater than 0");
   return errors;
 };

@@ -36,6 +36,7 @@ import {
 import {
   MapContainer,
   Marker,
+  Circle,
   Popup,
   TileLayer,
   Tooltip as LeafletTooltip,
@@ -57,6 +58,14 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import CloseIcon from '@mui/icons-material/Close'
 import { socket } from "../../services/socket";
+
+type GeofenceArea = {
+  _id: string
+  name: string
+  baseId?: string | { _id: string; name?: string }
+  center: { latitude: number; longitude: number }
+  radius: number
+}
 
 // Fix for default Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -119,7 +128,15 @@ const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
 }
 
 // Map Component to be reused
-const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loading }) => {
+const geofenceStyle = {
+  color: '#FFDE42',
+  weight: 3,
+  dashArray: '8 8',
+  fillColor: '#FFDE42',
+  fillOpacity: 0.08
+}
+
+const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: boolean }> = ({ markers, geofences, loading }) => {
   const theme = useTheme()
   
   return (
@@ -221,6 +238,16 @@ const LiveMap: React.FC<{ markers: any[]; loading?: boolean }> = ({ markers, loa
             </LeafletTooltip>
           </Marker>
         ))}
+        {geofences.map((fence) =>
+          fence.center && fence.radius ? (
+            <Circle
+              key={fence._id}
+              center={[fence.center.latitude, fence.center.longitude]}
+              radius={fence.radius}
+              pathOptions={geofenceStyle}
+            />
+          ) : null
+        )}
         <MapBounds markers={markers} />
       </MapContainer>
     </Box>
@@ -261,6 +288,12 @@ const TrackingScreen = () => {
   const [searchingHistory, setSearchingHistory] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
+  const [geofences, setGeofences] = useState<GeofenceArea[]>([])
+  const [geofenceAlert, setGeofenceAlert] = useState('')
+  const vehicleOutStateRef = useRef<Record<string, boolean>>({})
+  const geofencesRef = useRef<GeofenceArea[]>([])
+
+  const getBaseId = (value: any) => (typeof value === 'string' ? value : value?._id)
 
   const buildVehiclesWithLatestLocations = (vehicleItems: any[], locationItems: any[]) => {
     const latestByVehicle = new Map<string, any>()
@@ -274,6 +307,7 @@ const TrackingScreen = () => {
         id: v._id,
         vehicleNumber: v.vehicleNumber,
         deviceId: v.deviceId,
+        baseId: v.baseId,
         status: loc?.ignition ? 'moving' : 'stopped',
         speed: loc?.speed || 0,
         lat: loc?.latitude,
@@ -301,6 +335,26 @@ const TrackingScreen = () => {
       setLoading(false)
     }
   }
+
+  const loadGeofences = async () => {
+    try {
+      const data = await vehicleMonitorService.getGeofences()
+      setGeofences(data.items || [])
+    } catch (e) {
+      console.error('Unable to load geofences', e)
+    }
+  }
+
+  useEffect(() => {
+    loadGeofences()
+    const refreshGeofences = () => loadGeofences()
+    window.addEventListener('focus', refreshGeofences)
+    return () => window.removeEventListener('focus', refreshGeofences)
+  }, [])
+
+  useEffect(() => {
+    geofencesRef.current = geofences
+  }, [geofences])
 
   // useEffect(() => {
   //   loadVehicles()
@@ -374,10 +428,19 @@ const TrackingScreen = () => {
     setVehicles((prev) => {
   const map = new Map(prev.map(v => [v.id, v]));
 
-  updatedVehicles.forEach((v) => {
+  updatedVehicles.forEach((v: any) => {
     const old = map.get(v.id);
 
     if (old && old.lat && old.lng) {
+      const matchedGeofence = geofencesRef.current.find((fence) => getBaseId(fence.baseId) && getBaseId(fence.baseId) === old.baseId)
+      if (matchedGeofence?.center) {
+        const distance = L.latLng(v.lat, v.lng).distanceTo(L.latLng(matchedGeofence.center.latitude, matchedGeofence.center.longitude))
+        const isOut = distance > matchedGeofence.radius
+        if (isOut && !vehicleOutStateRef.current[v.id]) {
+          setGeofenceAlert(`${old.vehicleNumber || v.id} go out of base`)
+        }
+        vehicleOutStateRef.current[v.id] = isOut
+      }
       smoothMove(
         { lat: old.lat, lng: old.lng },
         { lat: v.lat, lng: v.lng },
@@ -482,6 +545,11 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+      {geofenceAlert && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setGeofenceAlert('')}>
+          {geofenceAlert}
         </Alert>
       )}
 
@@ -675,7 +743,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
             </Box>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ height: { xs: 400, sm: 500, md: 600 }, position: 'relative' }}>
-                <LiveMap markers={markers} loading={loading} />
+                  <LiveMap markers={markers} geofences={geofences} loading={loading} />
               </Box>
             </CardContent>
           </Card>
@@ -883,7 +951,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                 </Box>
               </Stack>
             </Box>
-            <LiveMap markers={markers} loading={loading} />
+                          <LiveMap markers={markers} geofences={geofences} loading={loading} />
           </Box>
         </DialogContent>
       </Dialog>
