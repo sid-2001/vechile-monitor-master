@@ -250,6 +250,7 @@ export class VehicleLocationService {
     from: Date;
     to: Date;
     bucket: "month" | "week" | "day" | "hour" | "minute" | "second";
+    binSize?: number;
     excludeSimulation?: boolean;
   }) {
     const matchStage: Record<string, unknown> = {
@@ -268,7 +269,7 @@ export class VehicleLocationService {
         $group: {
           _id: {
             vehicleId: "$vehicleId",
-            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket } },
+            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize: params.binSize || 1 } },
           },
           vehicleId: { $first: "$vehicleId" },
           latitude: { $first: "$latitude" },

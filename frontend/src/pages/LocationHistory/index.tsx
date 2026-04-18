@@ -58,8 +58,10 @@ const bucketLabelMap: Record<BucketType, string> = {
   day: 'Day wise',
   hour: 'Hourly',
   minute: 'Minute wise',
-  second: 'Second wise',
+  second: '5-second wise',
 }
+
+const getBinSizeByZoom = (zoom: number) => (zoom >= 16 ? 5 : 1)
 
 const toInputDate = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -77,6 +79,7 @@ const LocationHistory = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
+  const [binSize, setBinSize] = useState(1)
 
   const zoomLoadTimer = useRef<number | null>(null)
 
@@ -99,6 +102,7 @@ const LocationHistory = () => {
     }
 
     const activeBucket = overrideBucket || bucket
+    const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
 
     try {
       setLoading(true)
@@ -108,10 +112,12 @@ const LocationHistory = () => {
         from: new Date(fromDate).toISOString(),
         to: new Date(toDate).toISOString(),
         bucket: activeBucket,
+        binSize: activeBinSize,
         excludeSimulation: true,
       })
       setPoints(data.items || [])
       setBucket(activeBucket)
+      setBinSize(activeBinSize)
     } catch (e: any) {
       setError(e?.error_message || 'Failed to load timeline data')
     } finally {
@@ -246,7 +252,7 @@ const LocationHistory = () => {
           </Grid>
 
           <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
-            <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}`} />
+            <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}${bucket === "second" ? ` (${binSize}s)` : ""}`} />
             <Chip label={`Zoom: ${zoomLevel}`} />
             <Chip label={`Loaded points: ${points.length.toLocaleString()}`} />
             <Chip label='Flow: Month → Week → Day → Hour → Minute → Second' />
@@ -261,7 +267,7 @@ const LocationHistory = () => {
             <CardContent>
               <Typography variant='h6' mb={1}>Smooth Loader Summary</Typography>
               <Typography variant='body2'>At first load, monthly timeline data is fetched for selected date range.</Typography>
-              <Typography variant='body2'>As you zoom in, data is re-fetched in smoother finer buckets (weekly/day/hour/minute/second) with debounce for fluid UX.</Typography>
+              <Typography variant='body2'>As you zoom in, data is re-fetched in smoother finer buckets (weekly/day/hour/minute/5-second) with debounce for fluid UX.</Typography>
               <Typography variant='body2'>This avoids plotting raw millions directly and keeps map performance stable.</Typography>
             </CardContent>
           </Card>

@@ -36,6 +36,7 @@ export class VehicleLocationController {
     const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = req.query.to ? new Date(String(req.query.to)) : new Date();
     const bucket = String(req.query.bucket || 'month') as "month" | "week" | "day" | "hour" | "minute" | "second";
+    const binSize = Math.max(1, Number(req.query.binSize || 1));
 
     if (!vehicleIds.length) {
       res.json({ items: [], total: 0 });
@@ -47,6 +48,7 @@ export class VehicleLocationController {
       from,
       to,
       bucket,
+      binSize,
       excludeSimulation: req.query.excludeSimulation !== 'false',
     });
 
