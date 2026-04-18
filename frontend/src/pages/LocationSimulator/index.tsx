@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Alert, Box, Button, Card, CardContent, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Circle, MapContainer, Marker, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
@@ -16,6 +17,7 @@ const markerIcon = new L.Icon({
 })
 
 const LocationSimulator = () => {
+  const navigate = useNavigate()
   const [vehicles, setVehicles] = useState<VehicleItem[]>([])
   const [geofences, setGeofences] = useState<GeofenceItem[]>([])
   const [vehicleId, setVehicleId] = useState('')
@@ -96,6 +98,13 @@ const LocationSimulator = () => {
     }
   }
 
+  const endSimulation = () => {
+    setRecording(false)
+    setSpeed(40)
+    setIgnition(true)
+    navigate('/tracking')
+  }
+
   const testOutOfFence = async () => {
     if (!geofences.length) return
     const fence = geofences[0]
@@ -139,6 +148,7 @@ const LocationSimulator = () => {
               <Stack direction='row' spacing={1} flexWrap='wrap'>
                 <Button variant='contained' disabled={!vehicleId || recording} onClick={() => setRecording(true)}>Start Recording</Button>
                 <Button variant='outlined' color='error' disabled={!recording} onClick={() => setRecording(false)}>Stop</Button>
+                <Button variant='outlined' color='success' disabled={!vehicleId} onClick={endSimulation}>End Simulation (Back to Live)</Button>
                 <Button variant='contained' color='warning' disabled={!vehicleId} onClick={testOverspeed}>Test Overspeed</Button>
                 <Button variant='contained' color='error' disabled={!vehicleId} onClick={testHarshBraking}>Test Harsh Braking</Button>
                 <Button variant='contained' color='secondary' disabled={!vehicleId || !geofences.length} onClick={testOutOfFence}>Test Geofence In/Out</Button>
