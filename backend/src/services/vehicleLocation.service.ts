@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { VehicleLocation, IVehicleLocation } from "../models/VehicleLocation";
 import { Geofence } from "../models/Geofence";
 import { GeofenceLog } from "../models/GeofenceLog";
@@ -241,6 +242,74 @@ export class VehicleLocationService {
       speedLogs,
       brakingLogs,
     };
+  }
+
+
+  async getTimeline(params: {
+    vehicleIds: string[];
+    from: Date;
+    to: Date;
+    bucket: "month" | "week" | "day" | "hour" | "minute" | "second";
+    excludeSimulation?: boolean;
+  }) {
+    const matchStage: Record<string, unknown> = {
+      vehicleId: { $in: params.vehicleIds.map((id) => new Types.ObjectId(id)) },
+      time: { $gte: params.from, $lte: params.to },
+    };
+
+    if (params.excludeSimulation !== false) {
+      matchStage.source = { $ne: "simulation" };
+    }
+
+    return VehicleLocation.aggregate([
+      { $match: matchStage },
+      { $sort: { vehicleId: 1, time: -1 } },
+      {
+        $group: {
+          _id: {
+            vehicleId: "$vehicleId",
+            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket } },
+          },
+          vehicleId: { $first: "$vehicleId" },
+          latitude: { $first: "$latitude" },
+          longitude: { $first: "$longitude" },
+          speed: { $first: "$speed" },
+          ignition: { $first: "$ignition" },
+          time: { $first: "$time" },
+          source: { $first: "$source" },
+        },
+      },
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "vehicleId",
+          foreignField: "_id",
+          as: "vehicleData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$vehicleData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          vehicleId: 1,
+          vehicleNumber: "$vehicleData.vehicleNumber",
+          latitude: 1,
+          longitude: 1,
+          speed: 1,
+          ignition: 1,
+          time: 1,
+          source: 1,
+          bucketTime: "$_id.bucketTime",
+        },
+      },
+      { $sort: { bucketTime: 1 } },
+      { $limit: 500000 },
+    ]);
   }
 
   async getLatestLocationsOfAllVehicles() {

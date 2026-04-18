@@ -30,5 +30,27 @@ export class VehicleLocationController {
     const data = await vehicleLocationService.getAnalytics(req.params.vehicleId);
     res.json(data);
   }
+
+  async timeline(req: Request, res: Response): Promise<void> {
+    const vehicleIds = String(req.query.vehicleIds || '').split(',').map((id) => id.trim()).filter(Boolean);
+    const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const to = req.query.to ? new Date(String(req.query.to)) : new Date();
+    const bucket = String(req.query.bucket || 'month') as "month" | "week" | "day" | "hour" | "minute" | "second";
+
+    if (!vehicleIds.length) {
+      res.json({ items: [], total: 0 });
+      return;
+    }
+
+    const items = await vehicleLocationService.getTimeline({
+      vehicleIds,
+      from,
+      to,
+      bucket,
+      excludeSimulation: req.query.excludeSimulation !== 'false',
+    });
+
+    res.json({ items, total: items.length });
+  }
 }
 export const vehicleLocationController = new VehicleLocationController();
