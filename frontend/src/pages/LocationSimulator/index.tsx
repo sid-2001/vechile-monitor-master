@@ -58,7 +58,8 @@ const LocationSimulator = () => {
       longitude: override?.longitude ?? position[1],
       speed: override?.speed ?? speed,
       ignition: override?.ignition ?? ignition,
-      angle: Math.floor(Math.random() * 360)
+      angle: Math.floor(Math.random() * 360),
+      source: "simulation"
     })
     setPointsCreated((prev) => prev + 1)
   }

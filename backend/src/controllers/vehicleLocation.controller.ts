@@ -10,6 +10,8 @@ export class VehicleLocationController {
     const options = buildQueryOptions(req);
     const filter: Record<string, unknown> = {};
     if (req.query.vehicleId) filter.vehicleId = req.query.vehicleId;
+    if (req.query.source) filter.source = req.query.source;
+    if (req.query.excludeSource) filter.source = { $ne: req.query.excludeSource };
     if (req.query.from || req.query.to) {
       filter.time = {};
       if (req.query.from) (filter.time as Record<string, unknown>).$gte = new Date(String(req.query.from));

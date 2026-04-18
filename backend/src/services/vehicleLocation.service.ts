@@ -181,6 +181,7 @@ export class VehicleLocationService {
       speed: saved.speed,
       ignition: saved.ignition,
       time: saved.time,
+      source: saved.source || "live",
     });
 
     return saved;
@@ -255,6 +256,7 @@ export class VehicleLocationService {
           ignition: { $first: "$ignition" },
           time: { $first: "$time" },
           angle: { $first: "$angle" },
+          source: { $first: "$source" },
         },
       },
       {

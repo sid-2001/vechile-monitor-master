@@ -8,6 +8,7 @@ export const emitVehicleLocationUpdate = (payload: {
   speed: number;
   ignition: boolean;
   time: Date;
+  source?: "live" | "simulation";
 }): void => {
   const io = getIo();
   io.emit("vehicleLocationUpdate", payload);
@@ -21,6 +22,7 @@ export const emitAllVehicleLocationUpdate = (payload: {
   speed: number;
   ignition: boolean;
   time: Date;
+  source?: "live" | "simulation";
 }[]): void => {
   const io = getIo();
   io.emit("vehicleLocationBulkUpdate", payload);
@@ -57,6 +59,7 @@ export const emitGeofenceAlert = (payload: {
   geofenceName: string;
   eventType: "enter" | "exit";
   time: Date;
+  source?: "live" | "simulation";
 }): void => {
   const io = getIo();
   io.emit("vehicle:geofence:alert", payload);
@@ -70,6 +73,7 @@ export const emitVehicleSpeedAlert = (payload: {
   latitude: number;
   longitude: number;
   time: Date;
+  source?: "live" | "simulation";
 }): void => {
   const io = getIo();
   io.emit("vehicle:speed:alert", payload);
@@ -83,6 +87,7 @@ export const emitVehicleHarshBrakingAlert = (payload: {
   latitude: number;
   longitude: number;
   time: Date;
+  source?: "live" | "simulation";
 }): void => {
   const io = getIo();
   io.emit("vehicle:braking:alert", payload);

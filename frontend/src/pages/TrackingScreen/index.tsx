@@ -323,7 +323,7 @@ const TrackingScreen = () => {
       setLoading(true)
       const [vehicleRes, locationRes] = await Promise.all([
         vehicleMonitorService.getVehicles(),
-        vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
+        vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc', excludeSource: 'simulation' })
       ])
 
       setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
@@ -356,17 +356,17 @@ const TrackingScreen = () => {
     geofencesRef.current = geofences
   }, [geofences])
 
-  // useEffect(() => {
-  //   loadVehicles()
-  // }, [])
-
-
+  useEffect(() => {
+    loadVehicles()
+  }, [])
 
   useEffect(() => {
   console.log(" Listening for vehicleLocationBulkUpdate");
 
   socket.on("vehicleLocationBulkUpdate", (data) => {
     console.log(" SOCKET RAW DATA:", data);
+    const liveData = (data || []).filter((loc: any) => loc?.source !== 'simulation')
+    if (!liveData.length) return
 
     // const updatedVehicles = data.map((loc: any) => ({
       
@@ -382,7 +382,7 @@ const TrackingScreen = () => {
     //   lastUpdated: loc.time
     // }));
 
-    const updatedVehicles = data.map((loc: any) => {
+    const updatedVehicles = liveData.map((loc: any) => {
 
   // 🔥 STEP A: map update karo agar vehicleNumber mila
   if (loc.vehicleNumber) {
@@ -476,7 +476,7 @@ const TrackingScreen = () => {
   //     try {
   //       const [vehicleRes, locationRes] = await Promise.all([
   //         vehicleMonitorService.getVehicles(),
-  //         vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc' })
+  //         vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc', excludeSource: 'simulation' })
   //       ])
 
   //       setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
