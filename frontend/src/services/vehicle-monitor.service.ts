@@ -30,6 +30,7 @@ export const vehicleMonitorService = {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/vehicle-locations${query.toString() ? `?${query.toString()}` : ''}`)
   },
+  getVehicleAnalytics: (vehicleId: string) => api1.get(`/vehicle-locations/analytics/${vehicleId}`),
   getGeofences: (params?: Record<string, unknown>) => {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/geofences${query.toString() ? `?${query.toString()}` : ''}`)

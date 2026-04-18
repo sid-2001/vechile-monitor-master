@@ -50,3 +50,40 @@ export const emitVehicleSOSClosed = (payload: {
   const io = getIo();
   io.emit("vehicle:sos:closed", payload);
 };
+
+export const emitGeofenceAlert = (payload: {
+  vehicleId: string;
+  vehicleNumber: string;
+  geofenceName: string;
+  eventType: "enter" | "exit";
+  time: Date;
+}): void => {
+  const io = getIo();
+  io.emit("vehicle:geofence:alert", payload);
+};
+
+export const emitVehicleSpeedAlert = (payload: {
+  vehicleId: string;
+  vehicleNumber: string;
+  speed: number;
+  maxSpeed: number;
+  latitude: number;
+  longitude: number;
+  time: Date;
+}): void => {
+  const io = getIo();
+  io.emit("vehicle:speed:alert", payload);
+};
+
+export const emitVehicleHarshBrakingAlert = (payload: {
+  vehicleId: string;
+  vehicleNumber: string;
+  previousSpeed: number;
+  speed: number;
+  latitude: number;
+  longitude: number;
+  time: Date;
+}): void => {
+  const io = getIo();
+  io.emit("vehicle:braking:alert", payload);
+};
