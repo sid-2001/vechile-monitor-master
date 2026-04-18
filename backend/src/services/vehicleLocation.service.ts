@@ -310,7 +310,7 @@ export class VehicleLocationService {
       },
       { $sort: { bucketTime: 1 } },
       { $limit: 500000 },
-    ]);
+    ]).allowDiskUse(true);
   }
 
   async getLatestLocationsOfAllVehicles() {
@@ -348,7 +348,7 @@ export class VehicleLocationService {
           vehicleNumber: "$vehicleData.vehicleNumber",
         },
       },
-    ]);
+    ]).allowDiskUse(true);
   }
 }
 
