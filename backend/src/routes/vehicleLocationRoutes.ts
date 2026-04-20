@@ -42,4 +42,6 @@ router.post(
   (req, res) => vehicleLocationController.create(req, res)
 );router.get("/", authMiddleware, (req, res) => vehicleLocationController.list(req, res));
 router.get("/latest/:vehicleId", authMiddleware, (req, res) => vehicleLocationController.latest(req, res));
+router.get("/analytics/:vehicleId", authMiddleware, (req, res) => vehicleLocationController.analytics(req, res));
+router.get("/timeline", authMiddleware, (req, res) => vehicleLocationController.timeline(req, res));
 export default router;

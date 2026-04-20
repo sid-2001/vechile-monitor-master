@@ -57,6 +57,7 @@ import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 import PolylineIcon from '@mui/icons-material/Polyline';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import InsightsIcon from '@mui/icons-material/Insights';
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
   padding: theme.spacing(1),
@@ -151,6 +152,13 @@ const SIDEBAR_MENUS = [
     name: 'Location Sim',
     icon: <MyLocationIcon fontSize="small" />,
     path: '/location-simulator',
+    section: 'tracking',
+  },
+  {
+    label: 'Analytics',
+    name: 'Analytics',
+    icon: <InsightsIcon fontSize="small" />,
+    path: '/analytics',
     section: 'tracking',
   },
 

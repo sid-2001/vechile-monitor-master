@@ -28,6 +28,7 @@ import DeviceManagement from './pages/DeviceManagement'
 import GeofenceManagement from './pages/GeofenceManagement'
 import LocationHistory from './pages/LocationHistory'
 import LocationSimulator from './pages/LocationSimulator'
+import AnalyticsScreen from './pages/Analytics'
 import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
@@ -378,10 +379,26 @@ socket.on("vehicle:sos:closed", (data) => {
   console.log(alertState)
 });
 
+socket.on("vehicle:geofence:alert", (data) => {
+  const action = data.eventType === 'enter' ? 'entered' : 'exited'
+  toast.info(`📍 ${data.vehicleNumber} ${action} ${data.geofenceName}`)
+})
+
+socket.on("vehicle:speed:alert", (data) => {
+  toast.warn(`⚠️ Overspeed: ${data.vehicleNumber} at ${data.speed} km/h (limit ${data.maxSpeed})`)
+})
+
+socket.on("vehicle:braking:alert", (data) => {
+  toast.warn(`🛑 Harsh braking: ${data.vehicleNumber} (${data.previousSpeed} → ${data.speed} km/h)`)
+})
+
   return () => {
     socket.off("connect");
     socket.off("vehicle:sos:created");
     socket.off("vehicle:sos:closed");
+    socket.off("vehicle:geofence:alert");
+    socket.off("vehicle:speed:alert");
+    socket.off("vehicle:braking:alert");
   };
 }, []);
   return (
@@ -414,6 +431,7 @@ socket.on("vehicle:sos:closed", (data) => {
                <Route path="geofence" element={<GeofenceManagement />} />
                <Route path="location-history" element={<LocationHistory />} />
                <Route path="location-simulator" element={<LocationSimulator />} />
+               <Route path="analytics" element={<AnalyticsScreen />} />
             
             </Route>
 

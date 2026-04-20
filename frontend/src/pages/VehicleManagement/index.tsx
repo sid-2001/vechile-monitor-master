@@ -22,8 +22,8 @@ const VehicleManagement = () => {
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
 
-  const [form, setForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: 'Tata', manufacturerModel: 'Signa', manufacturerVariant: 'LPT', baseId: '', driverId: '', deviceId: '' })
-  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '' })
+  const [form, setForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: 'Tata', manufacturerModel: 'Signa', manufacturerVariant: 'LPT', baseId: '', driverId: '', deviceId: '', maxSpeed: '120' })
+  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120' })
 
   const load = async () => {
     try {
@@ -53,7 +53,7 @@ const VehicleManagement = () => {
       manufacturer: { name: form.manufacturerName, model: form.manufacturerModel, variant: form.manufacturerVariant },
       manufacturing: { year: 2022, fuelType: 'Diesel', engineNumber: `${form.vehicleNumber}-E`, chassisNumber: `${form.vehicleNumber}-C` },
       physical: { color: 'White', category: 'Commercial', dimensions: { length: 10, width: 3, height: 4, unit: 'm' }, loadCapacity: 1000, axles: 2 },
-      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: 120, minSpeed: 0 },
+      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(form.maxSpeed || 120), minSpeed: 0 },
       status: { isActive: true }
     })
 
@@ -78,7 +78,7 @@ const VehicleManagement = () => {
       )
     }
 
-    setForm({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: 'Tata', manufacturerModel: 'Signa', manufacturerVariant: 'LPT', baseId: '', driverId: '', deviceId: '' })
+    setForm({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: 'Tata', manufacturerModel: 'Signa', manufacturerVariant: 'LPT', baseId: '', driverId: '', deviceId: '', maxSpeed: '120' })
     setSnack('Vehicle created successfully with sample location history')
     load()
   }
@@ -95,7 +95,8 @@ const VehicleManagement = () => {
       manufacturerVariant: row.manufacturer?.variant || '',
       baseId: row.baseId?._id || row.baseId || '',
       driverId: row.driverId?._id || row.driverId || '',
-      deviceId: row.deviceId || ''
+      deviceId: row.deviceId || '',
+      maxSpeed: String(row.performance?.maxSpeed || 120)
     })
     setEditOpen(true)
   }
@@ -109,7 +110,8 @@ const VehicleManagement = () => {
       baseId: editForm.baseId,
       driverId: editForm.driverId,
       deviceId: editForm.deviceId,
-      manufacturer: { name: editForm.manufacturerName, model: editForm.manufacturerModel, variant: editForm.manufacturerVariant }
+      manufacturer: { name: editForm.manufacturerName, model: editForm.manufacturerModel, variant: editForm.manufacturerVariant },
+      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0 }
     })
     setEditOpen(false)
     setSnack('Vehicle updated successfully')
@@ -133,7 +135,7 @@ const VehicleManagement = () => {
     { field: 'actions', headerName: 'Actions', flex: 1, sortable: false, renderCell: ({ row }) => <Stack direction='row' spacing={1}><Button size='small' onClick={() => openEdit(row)}>Edit</Button><Button size='small' color='error' onClick={() => onDelete(row.id)}>Delete</Button></Stack> }
   ]
 
-  return <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%'}}><Typography variant='h5' mb={2}>Vehicle Management</Typography>{error && <Alert severity='error'>{error}</Alert>}<Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Vehicle Number' value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Type' value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>{VEHICLE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Sub Type' value={form.subType} onChange={e => setForm({ ...form, subType: e.target.value })}>{VEHICLE_SUB_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Manufacturer' value={form.manufacturerName} onChange={e => setForm({ ...form, manufacturerName: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Model' value={form.manufacturerModel} onChange={e => setForm({ ...form, manufacturerModel: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Variant' value={form.manufacturerVariant} onChange={e => setForm({ ...form, manufacturerVariant: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Driver' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid></Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
+  return <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%'}}><Typography variant='h5' mb={2}>Vehicle Management</Typography>{error && <Alert severity='error'>{error}</Alert>}<Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={2}><TextField fullWidth label='Vehicle Number' value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Type' value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>{VEHICLE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Sub Type' value={form.subType} onChange={e => setForm({ ...form, subType: e.target.value })}>{VEHICLE_SUB_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Manufacturer' value={form.manufacturerName} onChange={e => setForm({ ...form, manufacturerName: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Model' value={form.manufacturerModel} onChange={e => setForm({ ...form, manufacturerModel: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Variant' value={form.manufacturerVariant} onChange={e => setForm({ ...form, manufacturerVariant: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Driver' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth type='number' label='Max Speed (km/h)' value={form.maxSpeed} onChange={e => setForm({ ...form, maxSpeed: e.target.value })} /></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid></Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
 
   <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md' PaperProps={{ sx: { bgcolor: 'primary.main', color: 'text.primary', border: '1px solid', borderColor: 'primary.main' } }}>
     <DialogTitle sx={{  color: 'common.white' }}>Edit Vehicle</DialogTitle>
@@ -148,7 +150,7 @@ const VehicleManagement = () => {
         <Grid item xs={12} md={4}><TextField fullWidth label='Model' value={editForm.manufacturerModel} onChange={e => setEditForm({ ...editForm, manufacturerModel: e.target.value })} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth label='Variant' value={editForm.manufacturerVariant} onChange={e => setEditForm({ ...editForm, manufacturerVariant: e.target.value })} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth select label='Driver' value={editForm.driverId} onChange={e => setEditForm({ ...editForm, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label='Device ID' value={editForm.deviceId} onChange={e => setEditForm({ ...editForm, deviceId: e.target.value })} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label='Device ID' value={editForm.deviceId} onChange={e => setEditForm({ ...editForm, deviceId: e.target.value })} /></Grid><Grid item xs={12} md={6}><TextField fullWidth type='number' label='Max Speed (km/h)' value={editForm.maxSpeed} onChange={e => setEditForm({ ...editForm, maxSpeed: e.target.value })} /></Grid>
       </Grid>
     </DialogContent>
     <DialogActions><Button onClick={() => setEditOpen(false)}>Cancel</Button><Button variant='contained' onClick={update}>Update</Button></DialogActions>

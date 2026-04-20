@@ -12,6 +12,7 @@ export interface IVehicleLocation extends Document, AuditFields {
   angle?: number;
   speed: number;
   ignition: boolean;
+  source?: "live" | "simulation";
 }
 
 const schema = new Schema<IVehicleLocation>({
@@ -23,7 +24,8 @@ const schema = new Schema<IVehicleLocation>({
   elevation: Number,
   angle: Number,
   speed: { type: Number, default: 0 },
-  ignition: { type: Boolean, default: false }
+  ignition: { type: Boolean, default: false },
+  source: { type: String, enum: ["live", "simulation"], default: "live", index: true }
 });
 
 schema.plugin(auditPlugin);
