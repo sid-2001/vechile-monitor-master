@@ -147,20 +147,20 @@ const SIDEBAR_MENUS = [
     path: '/location-history',
     section: 'tracking',
   },
-  {
-    label: 'Location Simulator',
-    name: 'Location Sim',
-    icon: <MyLocationIcon fontSize="small" />,
-    path: '/location-simulator',
-    section: 'tracking',
-  },
-  {
-    label: 'Analytics',
-    name: 'Analytics',
-    icon: <InsightsIcon fontSize="small" />,
-    path: '/analytics',
-    section: 'tracking',
-  },
+  // {
+  //   label: 'Location Simulator',
+  //   name: 'Location Sim',
+  //   icon: <MyLocationIcon fontSize="small" />,
+  //   path: '/location-simulator',
+  //   section: 'tracking',
+  // },
+  // {
+  //   label: 'Analytics',
+  //   name: 'Analytics',
+  //   icon: <InsightsIcon fontSize="small" />,
+  //   path: '/analytics',
+  //   section: 'tracking',
+  // },
 
 ]
 
