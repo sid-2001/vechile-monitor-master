@@ -105,6 +105,10 @@ export class VehicleLocationService {
     }
   }
 
+   private async getVehicleById(vehicleId: string) {
+    return Vehicle.findById(vehicleId).lean();
+  }
+
   private async handleSpeedAndBrakingEvents(saved: IVehicleLocation, vehicleDoc: any, vehicleNumber: string): Promise<void> {
     const maxSpeed = Number(vehicleDoc?.performance?.maxSpeed || 0);
 
@@ -350,6 +354,131 @@ export class VehicleLocationService {
       },
     ]).allowDiskUse(true);
   }
+
+
+//   async getTimeline(params) {
+//   const matchStage = {
+//     vehicleId: { $in: params.vehicleIds.map(id => new Types.ObjectId(id)) },
+//     time: { $gte: params.from, $lte: params.to },
+//   };
+
+//   if (params.excludeSimulation !== false) {
+//     matchStage.source = { $ne: "simulation" };
+//   }
+
+//   return VehicleLocation.aggregate([
+//     { $match: matchStage },
+
+//     // ✅ Reduce data early
+//     {
+//       $project: {
+//         vehicleId: 1,
+//         latitude: 1,
+//         longitude: 1,
+//         speed: 1,
+//         ignition: 1,
+//         time: 1,
+//         source: 1,
+//         bucketTime: {
+//           $dateTrunc: {
+//             date: "$time",
+//             unit: params.bucket,
+//             binSize: params.binSize || 1,
+//           },
+//         },
+//       },
+//     },
+
+//     // ✅ Use $top instead of sort+group
+//     {
+//       $group: {
+//         _id: {
+//           vehicleId: "$vehicleId",
+//           bucketTime: "$bucketTime",
+//         },
+//         latest: {
+//           $top: {
+//             sortBy: { time: -1 },
+//             output: "$$ROOT",
+//           },
+//         },
+//       },
+//     },
+
+//     { $replaceRoot: { newRoot: "$latest" } },
+
+//     {
+//       $lookup: {
+//         from: "vehicles",
+//         localField: "vehicleId",
+//         foreignField: "_id",
+//         as: "vehicleData",
+//       },
+//     },
+//     {
+//       $unwind: {
+//         path: "$vehicleData",
+//         preserveNullAndEmptyArrays: true,
+//       },
+//     },
+
+//     {
+//       $addFields: {
+//         vehicleNumber: "$vehicleData.vehicleNumber",
+//       },
+//     },
+
+//     { $sort: { bucketTime: 1 } },
+
+//     // ⚠️ reduce this
+//     { $limit: 100000 },
+//   ]).allowDiskUse(true);
+// }
+//   async getLatestLocationsOfAllVehicles() {
+//   return VehicleLocation.aggregate([
+//     {
+//       $group: {
+//         _id: "$vehicleId",
+//         latest: {
+//           $top: {
+//             sortBy: { time: -1 },
+//             output: {
+//               vehicleId: "$vehicleId",
+//               latitude: "$latitude",
+//               longitude: "$longitude",
+//               speed: "$speed",
+//               ignition: "$ignition",
+//               time: "$time",
+//               angle: "$angle",
+//               source: "$source",
+//             },
+//           },
+//         },
+//       },
+//     },
+//     { $replaceRoot: { newRoot: "$latest" } },
+
+//     {
+//       $lookup: {
+//         from: "vehicles",
+//         localField: "vehicleId",
+//         foreignField: "_id",
+//         as: "vehicleData",
+//       },
+//     },
+//     {
+//       $unwind: {
+//         path: "$vehicleData",
+//         preserveNullAndEmptyArrays: true,
+//       },
+//     },
+//     {
+//       $addFields: {
+//         vehicleNumber: "$vehicleData.vehicleNumber",
+//       },
+//     },
+//   ]).allowDiskUse(true);
+// }
 }
 
 export const vehicleLocationService = new VehicleLocationService();
