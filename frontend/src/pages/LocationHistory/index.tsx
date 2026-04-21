@@ -345,17 +345,8 @@ const LocationHistory = () => {
       </Card>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={8}><Card><CardContent>{mapElement}</CardContent></Card></Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant='h6' mb={1}>Smooth Loader Summary</Typography>
-              <Typography variant='body2'>At first load, monthly timeline data is fetched for selected date range.</Typography>
-              <Typography variant='body2'>As you zoom in, data is re-fetched in smoother finer buckets (weekly/day/hour/minute/5-second) with debounce for fluid UX.</Typography>
-              <Typography variant='body2'>This avoids plotting raw millions directly and keeps map performance stable.</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Grid item xs={12} md={12}><Card><CardContent>{mapElement}</CardContent></Card></Grid>
+     
       </Grid>
 
       <Dialog fullScreen open={fullscreenOpen} onClose={() => setFullscreenOpen(false)}>
