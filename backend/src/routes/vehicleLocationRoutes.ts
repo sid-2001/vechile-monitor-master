@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { vehicleLocationController } from "../controllers/vehicleLocation.controller";
+import { asyncHandler } from "../middleware/asyncHandler";
 import { validateBody } from "../middleware/validationMiddleware";
 import { vehicleLocationSchema } from "../validators/schemas";
 import { getIo } from "../socket";
@@ -23,25 +24,9 @@ router.get("/stream", (req, res) => {
     res.end();
   });
 });
-router.post(
-  "/",
-  (req, res, next) => {
-    console.log(" ROUTE HIT", req.headers.authorization);
-    next();
-  },
-  authMiddleware,
-  (req, res, next) => {
-    console.log(" AFTER AUTH");
-    next();
-  },
-  validateBody(vehicleLocationSchema),
-  (req, res, next) => {
-    console.log(" AFTER VALIDATION", req.body);
-    next();
-  },
-  (req, res) => vehicleLocationController.create(req, res)
-);router.get("/", authMiddleware, (req, res) => vehicleLocationController.list(req, res));
-router.get("/latest/:vehicleId", authMiddleware, (req, res) => vehicleLocationController.latest(req, res));
-router.get("/analytics/:vehicleId", authMiddleware, (req, res) => vehicleLocationController.analytics(req, res));
-router.get("/timeline", authMiddleware, (req, res) => vehicleLocationController.timeline(req, res));
+router.post("/", authMiddleware, validateBody(vehicleLocationSchema), asyncHandler((req, res) => vehicleLocationController.create(req, res)));
+router.get("/", authMiddleware, asyncHandler((req, res) => vehicleLocationController.list(req, res)));
+router.get("/latest/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.latest(req, res)));
+router.get("/analytics/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.analytics(req, res)));
+router.get("/timeline", authMiddleware, asyncHandler((req, res) => vehicleLocationController.timeline(req, res)));
 export default router;

@@ -5,6 +5,14 @@ import { env } from "./config/env";
 import { runDefaultSeed } from "./seed/defaultSeeder";
 import { initSocket } from "./socket";
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Promise Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});
+
 const start = async (): Promise<void> => {
   try {
     await connectDb();
