@@ -22,6 +22,8 @@ export interface IVehicle extends Document, AuditFields {
   baseId: Schema.Types.ObjectId;
   driverId?: Schema.Types.ObjectId;
   onSOS: boolean;
+  lastSeen: { type: Date, default: null }
+  live:{ type: Boolean, default: false },
   status: { isActive: boolean; lastSOS?: { time: Date; location: { lat: number; lng: number } } };
 }
 
