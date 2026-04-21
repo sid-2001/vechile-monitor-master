@@ -34,6 +34,9 @@ app.use("/geofences", authMiddleware, geofenceRoutes);
 
 
 app.use("/api/sos", vehicleSOSRoutes);
+app.use((_req, res) => {
+  res.status(404).json({ message: "Route not found", code: "NOT_FOUND" });
+});
 app.use(errorMiddleware);
 
 export default app;

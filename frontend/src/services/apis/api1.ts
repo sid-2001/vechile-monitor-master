@@ -5,6 +5,7 @@ import { LocalStorageService } from '../../helpers/local-storage-service'
 import { BaseError } from '../../types/error.type'
 import { logger } from '../../helpers/logger'
 import { publicIpv4 } from 'public-ip';
+import { emitApiError } from './api-error-events';
 
 const { VITE_APP_BACKEND } = import.meta.env
 
@@ -130,23 +131,31 @@ instance.interceptors.response.use(
     return response
   },
   async (error) => {
-    console.log(error.status)
+    const status = error?.response?.status
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      (typeof error?.response?.data === 'string' ? error.response.data : '') ||
+      error?.message ||
+      'Request failed'
 
-    if (error.status === 401) {
+    if (status === 401) {
       try {
         const newToken = await refreshToken()
         error.config.headers['Authorization'] = 'Bearer ' + newToken
         return instance.request(error.config) // Retry the original request
       } catch (refreshError) {
+        emitApiError('Session expired. Please login again.')
         localStorage.clear()
         window.location.replace('/login')
         return Promise.reject(refreshError)
       }
     } else {
       const err = new BaseError()
-      err.error_message = error?.response?.data || 'Bad Response'
-      err.error_code = String(error.response.status)
+      err.error_message = backendMessage
+      err.error_code = String(status || 500)
       logger.error('Response Interceptor Error:', err)
+      emitApiError(String(backendMessage))
       return Promise.reject(err)
     }
   },

@@ -32,6 +32,7 @@ import AnalyticsScreen from './pages/Analytics'
 import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
+import { API_ERROR_EVENT } from './services/apis/api-error-events';
 
 
 function App() {
@@ -280,6 +281,20 @@ const handleInactivity = () => {
 // useAutoLogout(handleInactivity, Number(inactivity) * 60000 > INACTIVITY_TIME
 //   ? Number(inactivity) * 60000
 //   : INACTIVITY_TIME)
+
+useEffect(() => {
+  const onApiError = (event: Event) => {
+    const message = (event as CustomEvent<{ message?: string }>).detail?.message || 'Something went wrong'
+    setAlertText(message)
+    setAlertType('error')
+    setAlertOpen(true)
+  }
+
+  window.addEventListener(API_ERROR_EVENT, onApiError as EventListener)
+  return () => {
+    window.removeEventListener(API_ERROR_EVENT, onApiError as EventListener)
+  }
+}, [setAlertOpen, setAlertText, setAlertType])
 
 useEffect(() => {
   console.log("🟡 Initializing socket...");

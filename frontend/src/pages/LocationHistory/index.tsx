@@ -151,6 +151,48 @@ const LocationHistory = () => {
     setSelectedVehicleIds(ids)
   }
 
+  const handleFromDateChange = (value: string) => {
+    const nextFrom = new Date(value)
+    const currentTo = new Date(toDate)
+    if (Number.isNaN(nextFrom.getTime())) {
+      setFromDate(value)
+      return
+    }
+
+    let normalizedTo = currentTo
+    if (nextFrom > currentTo) {
+      normalizedTo = new Date(nextFrom.getTime() + HISTORY_WINDOW_MS)
+    }
+
+    if (normalizedTo.getTime() - nextFrom.getTime() > HISTORY_WINDOW_MS) {
+      normalizedTo = new Date(nextFrom.getTime() + HISTORY_WINDOW_MS)
+    }
+
+    setFromDate(value)
+    setToDate(toInputDate(normalizedTo))
+  }
+
+  const handleToDateChange = (value: string) => {
+    const nextTo = new Date(value)
+    const currentFrom = new Date(fromDate)
+    if (Number.isNaN(nextTo.getTime())) {
+      setToDate(value)
+      return
+    }
+
+    let normalizedFrom = currentFrom
+    if (currentFrom > nextTo) {
+      normalizedFrom = new Date(nextTo.getTime() - HISTORY_WINDOW_MS)
+    }
+
+    if (nextTo.getTime() - normalizedFrom.getTime() > HISTORY_WINDOW_MS) {
+      normalizedFrom = new Date(nextTo.getTime() - HISTORY_WINDOW_MS)
+    }
+
+    setFromDate(toInputDate(normalizedFrom))
+    setToDate(value)
+  }
+
   const mapCenter = useMemo<[number, number]>(() => {
     if (!points.length) return [22.9734, 78.6569]
     return [points[0].latitude, points[0].longitude]
@@ -258,8 +300,11 @@ const LocationHistory = () => {
                 type='datetime-local'
                 label='From'
                 value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+                onChange={(e) => handleFromDateChange(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  max: toDate,
+                }}
               />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -268,8 +313,12 @@ const LocationHistory = () => {
                 type='datetime-local'
                 label='To'
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                onChange={(e) => handleToDateChange(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  min: fromDate,
+                  max: toInputDate(new Date()),
+                }}
               />
             </Grid>
 
