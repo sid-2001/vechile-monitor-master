@@ -136,7 +136,27 @@ const geofenceStyle = {
   fillOpacity: 0.08
 }
 
-const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: boolean }> = ({ markers, geofences, loading }) => {
+const LIVE_CONNECTION_THRESHOLD_MS = 2 * 60 * 1000
+
+const getConnectionStatus = (lastUpdated?: string) => {
+  if (!lastUpdated) return 'disconnected'
+  const time = new Date(lastUpdated).getTime()
+  if (Number.isNaN(time)) return 'disconnected'
+  return Date.now() - time <= LIVE_CONNECTION_THRESHOLD_MS ? 'connected' : 'disconnected'
+}
+
+const MapFocusOnVehicle: React.FC<{ vehicle?: any; shouldFocus?: boolean }> = ({ vehicle, shouldFocus }) => {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!shouldFocus || !vehicle?.lat || !vehicle?.lng) return
+    map.flyTo([vehicle.lat, vehicle.lng], Math.max(map.getZoom(), 15), { duration: 1.2 })
+  }, [map, shouldFocus, vehicle])
+
+  return null
+}
+
+const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: boolean; focusedVehicle?: any; shouldFocusVehicle?: boolean }> = ({ markers, geofences, loading, focusedVehicle, shouldFocusVehicle }) => {
   const theme = useTheme()
   
   return (
@@ -185,7 +205,13 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FiberManualRecordIcon fontSize="small" sx={{ color: v.status === 'moving' ? 'success.main' : 'error.main' }} />
                     <Typography variant="body2">
-                      Status: <strong style={{ color: v.status === 'moving' ? '#2e7d32' : '#d32f2f' }}>{v.status.toUpperCase()}</strong>
+                      Ignition: <strong style={{ color: v.status === 'moving' ? '#2e7d32' : '#d32f2f' }}>{v.status.toUpperCase()}</strong>
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FiberManualRecordIcon fontSize="small" sx={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? 'success.main' : 'error.main' }} />
+                    <Typography variant="body2">
+                      Connection: <strong style={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#d32f2f' }}>{getConnectionStatus(v.lastUpdated).toUpperCase()}</strong>
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -249,6 +275,7 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
           ) : null
         )}
         <MapBounds markers={markers} />
+        <MapFocusOnVehicle vehicle={focusedVehicle} shouldFocus={shouldFocusVehicle} />
       </MapContainer>
     </Box>
   )
@@ -290,6 +317,8 @@ const TrackingScreen = () => {
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
   const [geofences, setGeofences] = useState<GeofenceArea[]>([])
   const [geofenceAlert, setGeofenceAlert] = useState('')
+  const [focusedVehicleId, setFocusedVehicleId] = useState('')
+  const [shouldFocusVehicle, setShouldFocusVehicle] = useState(false)
   const vehicleOutStateRef = useRef<Record<string, boolean>>({})
   const geofencesRef = useRef<GeofenceArea[]>([])
 
@@ -308,7 +337,7 @@ const TrackingScreen = () => {
         vehicleNumber: v.vehicleNumber,
         deviceId: v.deviceId,
         baseId: v.baseId,
-        status: loc?.ignition ? 'moving' : 'stopped',
+        status: loc?.ignition ? 'moving' : 'parked',
         speed: loc?.speed || 0,
         lat: loc?.latitude,
         lng: loc?.longitude,
@@ -392,7 +421,7 @@ const TrackingScreen = () => {
   return {
     id: String(loc.vehicleId),
     vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
-    status: loc.ignition ? 'moving' : 'stopped',
+    status: loc.ignition ? 'moving' : 'parked',
     ignition: loc.ignition,
     speed: loc.speed,
     lat: loc.latitude,
@@ -516,7 +545,8 @@ const TrackingScreen = () => {
   }
 const movingVehicles = vehicles.filter(v => v.ignition === true)
   // const movingVehicles = vehicles.filter(v => v.status === 'moving' && v.speed > 0)
-  const stoppedVehicles = vehicles.filter(v => v.ignition === false)
+  const parkedVehicles = vehicles.filter(v => v.ignition === false)
+  const focusedVehicle = vehicles.find((v) => v.id === focusedVehicleId)
 
   return (
     <Box sx={{ maxWidth: 1800, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
@@ -575,8 +605,8 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="caption" color="text.secondary">STOPPED VEHICLES</Typography>
-                  <Typography variant="h3" fontWeight="bold" color="error.main">{stoppedVehicles.length}</Typography>
+                  <Typography variant="caption" color="text.secondary">PARKED VEHICLES</Typography>
+                  <Typography variant="h3" fontWeight="bold" color="error.main">{parkedVehicles.length}</Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: theme.palette.error.main, width: 56, height: 56 }}>
                   <StopIcon sx={{ fontSize: 32 }} />
@@ -743,7 +773,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
             </Box>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ height: { xs: 400, sm: 500, md: 600 }, position: 'relative' }}>
-                  <LiveMap markers={markers} geofences={geofences} loading={loading} />
+                  <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
               </Box>
             </CardContent>
           </Card>
@@ -772,11 +802,17 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                   {vehicles.map(v => (
                     <Zoom in key={v.id} style={{ transitionDelay: '50ms' }}>
                       <ListItem
+                        onClick={() => {
+                          setFocusedVehicleId(v.id)
+                          setShouldFocusVehicle(true)
+                          requestAnimationFrame(() => setShouldFocusVehicle(false))
+                        }}
                         sx={{
                           mb: 1.5,
                           borderRadius: 2,
                           bgcolor: alpha(theme.palette.background.paper, 0.6),
                           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                          cursor: 'pointer',
                           transition: 'all 0.2s',
                           '&:hover': {
                             bgcolor: alpha(theme.palette.primary.main, 0.05),
@@ -791,13 +827,24 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                             variant="dot"
                             sx={{
                               '& .MuiBadge-badge': {
-                                bgcolor: v.status === 'moving' ? '#4caf50' : '#f44336',
+                                bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? '#4caf50' : '#9e9e9e',
                                 boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                                animation: getConnectionStatus(v.lastUpdated) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
                               }
                             }}
                           >
-                            <Avatar sx={{ bgcolor: v.status === 'moving' ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.error.main, 0.2) }}>
-                              <DirectionsCarIcon sx={{ color: v.status === 'moving' ? '#2e7d32' : '#d32f2f' }} />
+                            <Avatar sx={{
+                              bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.grey[500], 0.2),
+                              '@keyframes heartbeat-dot': {
+                                '0%': { transform: 'scale(1)' },
+                                '25%': { transform: 'scale(1.1)' },
+                                '50%': { transform: 'scale(1)' },
+                                '75%': { transform: 'scale(1.12)' },
+                                '100%': { transform: 'scale(1)' }
+                              },
+                              animation: getConnectionStatus(v.lastUpdated) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
+                            }}>
+                              <DirectionsCarIcon sx={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#9e9e9e' }} />
                             </Avatar>
                           </Badge>
                         </ListItemAvatar>
@@ -810,13 +857,24 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                           secondary={
                             <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
                               <Chip
-                                label={v.status}
+                                label={v.ignition ? 'moving' : 'parked'}
                                 size="small"
                                 sx={{
-                                  bgcolor: v.status === 'moving' ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.error.main, 0.15),
-                                  color: v.status === 'moving' ? '#2e7d32' : '#d32f2f',
+                                  bgcolor: v.ignition ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.error.main, 0.15),
+                                  color: v.ignition ? '#2e7d32' : '#d32f2f',
                                   height: 20,
                                   fontSize: '0.7rem'
+                                }}
+                              />
+                              <Chip
+                                label={getConnectionStatus(v.lastUpdated)}
+                                size="small"
+                                sx={{
+                                  bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.grey[500], 0.2),
+                                  color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#9e9e9e',
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  textTransform: 'capitalize'
                                 }}
                               />
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -944,14 +1002,14 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                   <Typography variant="body2" sx={{ color: '#4caf50' }}>Moving: {movingVehicles.length}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" sx={{ color: '#f44336' }}>Stopped: {stoppedVehicles.length}</Typography>
+                  <Typography variant="body2" sx={{ color: '#f44336' }}>Parked: {parkedVehicles.length}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="body2">Total: {vehicles.length}</Typography>
                 </Box>
               </Stack>
             </Box>
-                          <LiveMap markers={markers} geofences={geofences} loading={loading} />
+                          <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
           </Box>
         </DialogContent>
       </Dialog>
