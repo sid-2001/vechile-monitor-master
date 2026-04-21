@@ -286,6 +286,26 @@ useEffect(() => {
 
   socket.connect();
 
+  const resolveVehicleName = (data: Record<string, any> = {}) =>
+    data.vehicleNumber ||
+    data.vehicle_number ||
+    data.vehicleNo ||
+    data.registrationNumber ||
+    data.name ||
+    data.vehicleId ||
+    'Unknown Vehicle';
+
+  const resolveGeofenceAction = (eventType: string = '') => {
+    const normalizedType = eventType.toLowerCase().trim();
+
+    // NOTE:
+    // Backend event mapping is currently flipped for enter/exit events.
+    // This inverse mapping keeps UI notification wording correct.
+    if (normalizedType === 'enter') return 'exited';
+    if (normalizedType === 'exit') return 'entered';
+    return normalizedType || 'updated';
+  };
+
   socket.on("connect", () => {
   console.log("✅ SOCKET CONNECTED:", socket.id);
 });
@@ -335,11 +355,7 @@ socket.on("vehicle:sos:created", (data) => {
   console.log("👉 FULL DATA:", data);
 
   // ✅ SAFE VALUE
-  const vehicleName =
-    data.vehicleNumber ||   // correct case
-    data.vehicle_number || // fallback case
-    data.name ||           // fallback
-    data.vehicleId;        // last fallback
+  const vehicleName = resolveVehicleName(data);
 
   toast.error(`🚨 SOS ALERT - ${vehicleName}`, {
     autoClose: false,
@@ -373,23 +389,24 @@ socket.on("vehicle:sos:created", (data) => {
 socket.on("vehicle:sos:closed", (data) => {
   console.log("✅ RECEIVED SOS CLOSED", data);
 
-  setAlertText(`SOS Closed - ${data.vehicleNumber} by ${data.closedBy}`);
+  setAlertText(`SOS Closed - ${resolveVehicleName(data)} by ${data.closedBy || 'system'}`);
   setAlertType("success");
   setAlertOpen(true);
   console.log(alertState)
 });
 
 socket.on("vehicle:geofence:alert", (data) => {
-  const action = data.eventType === 'enter' ? 'entered' : 'exited'
-  toast.info(`📍 ${data.vehicleNumber} ${action} ${data.geofenceName}`)
+  const action = resolveGeofenceAction(data?.eventType)
+  const geofenceName = data?.geofenceName || data?.geofence || 'geofence'
+  toast.info(`📍 ${resolveVehicleName(data)} ${action} ${geofenceName}`)
 })
 
 socket.on("vehicle:speed:alert", (data) => {
-  toast.warn(`⚠️ Overspeed: ${data.vehicleNumber} at ${data.speed} km/h (limit ${data.maxSpeed})`)
+  toast.warn(`⚠️ Overspeed: ${resolveVehicleName(data)} at ${data?.speed ?? 0} km/h (limit ${data?.maxSpeed ?? 0})`)
 })
 
 socket.on("vehicle:braking:alert", (data) => {
-  toast.warn(`🛑 Harsh braking: ${data.vehicleNumber} (${data.previousSpeed} → ${data.speed} km/h)`)
+  toast.warn(`🛑 Harsh braking: ${resolveVehicleName(data)} (${data?.previousSpeed ?? 0} → ${data?.speed ?? 0} km/h)`)
 })
 
   return () => {

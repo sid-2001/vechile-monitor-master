@@ -68,11 +68,15 @@ const toInputDate = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+const HISTORY_WINDOW_HOURS = 24
+const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
+
 const LocationHistory = () => {
+  const now = new Date()
   const [vehicles, setVehicles] = useState<VehicleOption[]>([])
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([])
-  const [fromDate, setFromDate] = useState(toInputDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
-  const [toDate, setToDate] = useState(toInputDate(new Date()))
+  const [fromDate, setFromDate] = useState(toInputDate(new Date(now.getTime() - HISTORY_WINDOW_MS)))
+  const [toDate, setToDate] = useState(toInputDate(now))
   const [zoomLevel, setZoomLevel] = useState(7)
   const [bucket, setBucket] = useState<BucketType>('month')
   const [points, setPoints] = useState<TimelinePoint[]>([])
@@ -107,10 +111,26 @@ const LocationHistory = () => {
     try {
       setLoading(true)
       setError('')
+      const from = new Date(fromDate)
+      const to = new Date(toDate)
+
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        setError('Please select valid From/To date-time')
+        return
+      }
+      if (from > to) {
+        setError('From date must be before To date')
+        return
+      }
+      if (to.getTime() - from.getTime() > HISTORY_WINDOW_MS) {
+        setError(`History range cannot exceed ${HISTORY_WINDOW_HOURS} hours`)
+        return
+      }
+
       const data = await vehicleMonitorService.getVehicleTimeline({
         vehicleIds: selectedVehicleIds.join(','),
-        from: new Date(fromDate).toISOString(),
-        to: new Date(toDate).toISOString(),
+        from: from.toISOString(),
+        to: to.toISOString(),
         bucket: activeBucket,
         binSize: activeBinSize,
         excludeSimulation: true,
@@ -233,10 +253,24 @@ const LocationHistory = () => {
             </Grid>
 
             <Grid item xs={12} md={2}>
-              <TextField fullWidth type='datetime-local' label='From' value={fromDate} onChange={(e) => setFromDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              <TextField
+                fullWidth
+                type='datetime-local'
+                label='From'
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid item xs={12} md={2}>
-              <TextField fullWidth type='datetime-local' label='To' value={toDate} onChange={(e) => setToDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              <TextField
+                fullWidth
+                type='datetime-local'
+                label='To'
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
 
             <Grid item xs={12} md={2}>
@@ -252,6 +286,7 @@ const LocationHistory = () => {
           </Grid>
 
           <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
+            <Chip color='warning' label='Range limited to last 24 hours' />
             <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}${bucket === "second" ? ` (${binSize}s)` : ""}`} />
             <Chip label={`Zoom: ${zoomLevel}`} />
             <Chip label={`Loaded points: ${points.length.toLocaleString()}`} />
