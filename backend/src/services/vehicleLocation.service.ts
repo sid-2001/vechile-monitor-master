@@ -350,6 +350,8 @@ export class VehicleLocationService {
       {
         $addFields: {
           vehicleNumber: "$vehicleData.vehicleNumber",
+          live: "$vehicleData.live",
+          lastSeen: "$vehicleData.lastSeen",
         },
       },
     ]).allowDiskUse(true);

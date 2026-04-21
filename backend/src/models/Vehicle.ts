@@ -22,7 +22,8 @@ export interface IVehicle extends Document, AuditFields {
   baseId: Schema.Types.ObjectId;
   driverId?: Schema.Types.ObjectId;
   onSOS: boolean;
-  lastSeen: { type: Date, default: null }, live:{ type: Boolean, default: false },
+  lastSeen?: Date | null;
+  live: boolean;
 
   status: { isActive: boolean; lastSOS?: { time: Date; location: { lat: number; lng: number } } };
 }
@@ -47,6 +48,8 @@ const schema = new Schema<IVehicle>({
   baseId: { type: Schema.Types.ObjectId, ref: "Base", required: true },
   driverId: { type: Schema.Types.ObjectId, ref: "User" },
   onSOS: { type: Boolean, default: false },
+  lastSeen: { type: Date, default: null },
+  live: { type: Boolean, default: false },
   status: {
     isActive: { type: Boolean, default: true },
     lastSOS: { time: Date, location: { lat: Number, lng: Number } }

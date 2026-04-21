@@ -138,11 +138,28 @@ const geofenceStyle = {
 
 const LIVE_CONNECTION_THRESHOLD_MS = 2 * 60 * 1000
 
-const getConnectionStatus = (lastUpdated?: string) => {
-  if (!lastUpdated) return 'disconnected'
-  const time = new Date(lastUpdated).getTime()
+const getConnectionStatus = (isLive?: boolean, lastSeen?: string) => {
+  if (typeof isLive === 'boolean') return isLive ? 'connected' : 'disconnected'
+  if (!lastSeen) return 'disconnected'
+  const time = new Date(lastSeen).getTime()
   if (Number.isNaN(time)) return 'disconnected'
   return Date.now() - time <= LIVE_CONNECTION_THRESHOLD_MS ? 'connected' : 'disconnected'
+}
+
+const formatLastSeen = (lastSeen?: string) => {
+  if (!lastSeen) return 'N/A'
+  const time = new Date(lastSeen).getTime()
+  if (Number.isNaN(time)) return 'N/A'
+  return new Date(lastSeen).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour12: true,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  })
 }
 
 const MapFocusOnVehicle: React.FC<{ vehicle?: any; shouldFocus?: boolean }> = ({ vehicle, shouldFocus }) => {
@@ -209,9 +226,9 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FiberManualRecordIcon fontSize="small" sx={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? 'success.main' : 'error.main' }} />
+                    <FiberManualRecordIcon fontSize="small" sx={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? 'success.main' : 'error.main' }} />
                     <Typography variant="body2">
-                      Connection: <strong style={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#d32f2f' }}>{getConnectionStatus(v.lastUpdated).toUpperCase()}</strong>
+                      Connection: <strong style={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#d32f2f' }}>{getConnectionStatus(v.live, v.lastSeen).toUpperCase()}</strong>
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -231,21 +248,9 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
                     </Box>
 
                   
-                  {v.lastUpdated && (
-                    <Typography variant="caption" color="text.secondary">
-                      {/* Updated: {new Date(v.lastUpdated).toLocaleString("en-IN", {
-                      timeZone: "Asia/Kolkata"
-                     })} */}
-                     Updated: {new Date(v.lastUpdated).toLocaleString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    hour12: true,
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  })}
-                    </Typography>
-                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Last Seen: {formatLastSeen(v.lastSeen)}
+                  </Typography>
                   <Typography variant="body2">
   Direction: <strong>{v.angle ?? 0}°</strong>
 </Typography>
@@ -337,6 +342,8 @@ const TrackingScreen = () => {
         vehicleNumber: v.vehicleNumber,
         deviceId: v.deviceId,
         baseId: v.baseId,
+        live: v.live,
+        lastSeen: v.lastSeen,
         status: loc?.ignition ? 'moving' : 'parked',
         speed: loc?.speed || 0,
         lat: loc?.latitude,
@@ -392,7 +399,7 @@ const TrackingScreen = () => {
   useEffect(() => {
   console.log(" Listening for vehicleLocationBulkUpdate");
 
-  socket.on("vehicleLocationBulkUpdate", (data) => {
+  socket.on("vehicleLocationBulkUpdate", (data: any[]) => {
     console.log(" SOCKET RAW DATA:", data);
     const liveData = (data || []).filter((loc: any) => loc?.source !== 'simulation')
     if (!liveData.length) return
@@ -422,6 +429,8 @@ const TrackingScreen = () => {
     id: String(loc.vehicleId),
     vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
     status: loc.ignition ? 'moving' : 'parked',
+    live: loc.live,
+    lastSeen: loc.lastSeen,
     ignition: loc.ignition,
     speed: loc.speed,
     lat: loc.latitude,
@@ -827,14 +836,14 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                             variant="dot"
                             sx={{
                               '& .MuiBadge-badge': {
-                                bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? '#4caf50' : '#9e9e9e',
+                                bgcolor: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#4caf50' : '#9e9e9e',
                                 boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-                                animation: getConnectionStatus(v.lastUpdated) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
+                                animation: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
                               }
                             }}
                           >
                             <Avatar sx={{
-                              bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.grey[500], 0.2),
+                              bgcolor: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.grey[500], 0.2),
                               '@keyframes heartbeat-dot': {
                                 '0%': { transform: 'scale(1)' },
                                 '25%': { transform: 'scale(1.1)' },
@@ -842,9 +851,9 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                                 '75%': { transform: 'scale(1.12)' },
                                 '100%': { transform: 'scale(1)' }
                               },
-                              animation: getConnectionStatus(v.lastUpdated) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
+                              animation: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
                             }}>
-                              <DirectionsCarIcon sx={{ color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#9e9e9e' }} />
+                              <DirectionsCarIcon sx={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#9e9e9e' }} />
                             </Avatar>
                           </Badge>
                         </ListItemAvatar>
@@ -855,31 +864,36 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                             </Typography>
                           }
                           secondary={
-                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
-                              <Chip
-                                label={v.ignition ? 'moving' : 'parked'}
-                                size="small"
-                                sx={{
-                                  bgcolor: v.ignition ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.error.main, 0.15),
-                                  color: v.ignition ? '#2e7d32' : '#d32f2f',
-                                  height: 20,
-                                  fontSize: '0.7rem'
-                                }}
-                              />
-                              <Chip
-                                label={getConnectionStatus(v.lastUpdated)}
-                                size="small"
-                                sx={{
-                                  bgcolor: getConnectionStatus(v.lastUpdated) === 'connected' ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.grey[500], 0.2),
-                                  color: getConnectionStatus(v.lastUpdated) === 'connected' ? '#2e7d32' : '#9e9e9e',
-                                  height: 20,
-                                  fontSize: '0.7rem',
-                                  textTransform: 'capitalize'
-                                }}
-                              />
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <SpeedIcon sx={{ fontSize: 12 }} />
-                                {v.speed} km/h
+                            <Stack spacing={0.7} sx={{ mt: 0.5 }}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <Chip
+                                  label={v.ignition ? 'moving' : 'parked'}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: v.ignition ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.error.main, 0.15),
+                                    color: v.ignition ? '#2e7d32' : '#d32f2f',
+                                    height: 20,
+                                    fontSize: '0.7rem'
+                                  }}
+                                />
+                                <Chip
+                                  label={getConnectionStatus(v.live, v.lastSeen)}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.grey[500], 0.2),
+                                    color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#9e9e9e',
+                                    height: 20,
+                                    fontSize: '0.7rem',
+                                    textTransform: 'capitalize'
+                                  }}
+                                />
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <SpeedIcon sx={{ fontSize: 12 }} />
+                                  {v.speed} km/h
+                                </Typography>
+                              </Stack>
+                              <Typography variant="caption" color="text.secondary">
+                                Last Seen: {formatLastSeen(v.lastSeen)}
                               </Typography>
                             </Stack>
                           }
