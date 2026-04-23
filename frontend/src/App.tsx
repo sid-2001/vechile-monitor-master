@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 //@ts-ignore
 import './App.css'
@@ -32,6 +32,7 @@ import GeofenceManagement from './pages/GeofenceManagement'
 import LocationHistory from './pages/LocationHistory'
 import LocationSimulator from './pages/LocationSimulator'
 import AnalyticsScreen from './pages/Analytics'
+import LocationManagement from './pages/LocationManagement'
 import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
@@ -436,6 +437,7 @@ socket.on("vehicle:braking:alert", (data) => {
                <Route path="vehicles" element={<VehicleManagement />} />
                <Route path="devices" element={<DeviceManagement />} />
                <Route path="geofence" element={<GeofenceManagement />} />
+               <Route path="location" element={<LocationManagement />} />
                <Route path="location-history" element={<LocationHistory />} />
                <Route path="location-simulator" element={<LocationSimulator />} />
                <Route path="analytics" element={<AnalyticsScreen />} />
@@ -444,7 +446,10 @@ socket.on("vehicle:braking:alert", (data) => {
             
             </Route>
 
-            <Route path="login" element={<Login />} />
+            <Route
+              path="login"
+              element={local_service.get_accesstoken() ? <Navigate to="/" replace /> : <Login />}
+            />
             {/* <Route path="transaction/response" element={<GifModal />} />
             <Route path="reset-password" element={<ResetPasswordPage />} /> */}
           </Routes>

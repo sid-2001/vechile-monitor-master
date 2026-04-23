@@ -8,7 +8,7 @@ export class UserController {
     const options = buildQueryOptions(req);
     const filter: Record<string, unknown> = {};
     if (req.query.role) filter.role = req.query.role;
-    if (req.query.baseId) filter.baseId = req.query.baseId;
+    if (req.query.baseId) filter.baseIds = req.query.baseId;
     if (req.query.search) filter.username = { $regex: req.query.search, $options: "i" };
     const data = await userService.list(filter, options);
     res.json({ ...options, total: data.total, items: data.items });

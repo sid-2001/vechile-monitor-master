@@ -16,6 +16,9 @@ export const vehicleMonitorService = {
   deleteUser: (id: string) => api1.del(`/users/${id}`),
   getBases: () => api1.get('/bases'),
   createBase: (payload: Record<string, unknown>) => api1.post('/bases', payload),
+  getLocations: () => api1.get('/locations'),
+  createLocation: (payload: Record<string, unknown>) => api1.post('/locations', payload),
+
   getVehicles: () => api1.get('/vehicles'),
   createVehicle: (payload: Record<string, unknown>) => api1.post('/vehicles', payload),
   updateVehicle: (id: string, payload: Record<string, unknown>) => api1.put(`/vehicles/${id}`, payload),
