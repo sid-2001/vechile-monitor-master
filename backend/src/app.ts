@@ -15,6 +15,7 @@ import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
 import geofenceRoutes from "./routes/geofenceRoutes";
 import locationRoutes from "./routes/locationRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import swaggerRoutes from "./routes/swaggerRoutes";
 import cors from "cors";
 const app = express();
 
@@ -29,6 +30,7 @@ app.use(
 app.use(express.json());
 app.use(loggingMiddleware);
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.use("/", swaggerRoutes);
 app.use("/auth", authRoutes);
 app.use("/bases", authMiddleware, baseRoutes);
 app.use("/users", authMiddleware, userRoutes);
