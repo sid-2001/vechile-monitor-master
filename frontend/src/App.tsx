@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 //@ts-ignore
 import './App.css'
@@ -446,7 +446,10 @@ socket.on("vehicle:braking:alert", (data) => {
             
             </Route>
 
-            <Route path="login" element={<Login />} />
+            <Route
+              path="login"
+              element={local_service.get_accesstoken() ? <Navigate to="/" replace /> : <Login />}
+            />
             {/* <Route path="transaction/response" element={<GifModal />} />
             <Route path="reset-password" element={<ResetPasswordPage />} /> */}
           </Routes>

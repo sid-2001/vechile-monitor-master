@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material'
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 import { useTheme } from '@emotion/react'
+import { Country, State, City } from 'country-state-city'
 
 const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
@@ -74,6 +75,10 @@ const UserManagementApi = () => {
   }
 
   useEffect(() => { load() }, [])
+
+  const countries = useMemo(() => Country.getAllCountries(), [])
+  const createStates = useMemo(() => (form.countrycode ? State.getStatesOfCountry(form.countrycode) : []), [form.countrycode])
+  const createCities = useMemo(() => (form.countrycode && form.statecode ? City.getCitiesOfState(form.countrycode, form.statecode) : []), [form.countrycode, form.statecode])
 
   const create = async () => {
     await vehicleMonitorService.createUser({
@@ -279,16 +284,26 @@ setForm({
 
       {/* LOCATION */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Country Code' value={form.countrycode} onChange={(e) => setForm({ ...form, countrycode: e.target.value })} />
+        <TextField fullWidth select label='Country' value={form.countrycode} onChange={(e) => setForm({ ...form, countrycode: e.target.value, statecode: '', district: '' })}>
+          {countries.map((country) => <MenuItem key={country.isoCode} value={country.isoCode}>{country.name}</MenuItem>)}
+        </TextField>
       </Grid>
 
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='State Code' value={form.statecode} onChange={(e) => setForm({ ...form, statecode: e.target.value })} />
-      </Grid>
+      {form.countrycode && (
+        <Grid item xs={12} md={3}>
+          <TextField fullWidth select label='State' value={form.statecode} onChange={(e) => setForm({ ...form, statecode: e.target.value, district: '' })}>
+            {createStates.map((state) => <MenuItem key={state.isoCode} value={state.isoCode}>{state.name}</MenuItem>)}
+          </TextField>
+        </Grid>
+      )}
 
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='District' value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} />
-      </Grid>
+      {form.countrycode && form.statecode && (
+        <Grid item xs={12} md={3}>
+          <TextField fullWidth select label='City' value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
+            {createCities.map((city) => <MenuItem key={`${city.name}-${city.latitude}-${city.longitude}`} value={city.name}>{city.name}</MenuItem>)}
+          </TextField>
+        </Grid>
+      )}
 
       <Grid item xs={12} md={3}>
         <TextField fullWidth label='Zip Code' value={form.zipcode} onChange={(e) => setForm({ ...form, zipcode: e.target.value })} />

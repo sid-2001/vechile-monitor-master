@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material'
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
+import { Country, State } from 'country-state-city'
 
 const DeviceManagement = () => {
   const [rows, setRows] = useState<any[]>([])
@@ -10,6 +11,8 @@ const DeviceManagement = () => {
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
+  const countries = useMemo(() => Country.getAllCountries(), [])
+  const states = useMemo(() => (form.countrycode ? State.getStatesOfCountry(form.countrycode) : []), [form.countrycode])
 const [form, setForm] = useState({
   name: '',
   imei: '',
@@ -182,8 +185,16 @@ setEditForm({
 </Grid>
 
 <Grid item xs={12} md={3}>
-  <TextField fullWidth label='State Code' onChange={e => setForm({ ...form, statecode: e.target.value })} />
+  <TextField fullWidth select label='Country' value={form.countrycode} onChange={e => setForm({ ...form, countrycode: e.target.value, statecode: '' })}>
+    {countries.map((country) => <MenuItem key={country.isoCode} value={country.isoCode}>{country.name}</MenuItem>)}
+  </TextField>
 </Grid>
+
+{form.countrycode && <Grid item xs={12} md={3}>
+  <TextField fullWidth select label='State' value={form.statecode} onChange={e => setForm({ ...form, statecode: e.target.value })}>
+    {states.map((state) => <MenuItem key={state.isoCode} value={state.isoCode}>{state.name}</MenuItem>)}
+  </TextField>
+</Grid>}
 
 <Grid item xs={12} md={3}>
   <TextField fullWidth label='Location ID' onChange={e => setForm({ ...form, locationid: e.target.value })} />

@@ -69,10 +69,17 @@ router.get("/swagger.json", (_req, res) => {
   res.json({
     openapi: "3.0.0",
     info: { title: "Notification API", version: "1.0.0" },
+    servers: [{ url: "/" }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" }
+      }
+    },
     paths: {
       "/notifications/speed-exceeded": {
         post: {
           summary: "Speed exceeded notification",
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["vehicleId", "vehicleNumber", "speed", "maxSpeed", "latitude", "longitude"], properties: {
             vehicleId: { type: "string" }, vehicleNumber: { type: "string" }, speed: { type: "number" }, maxSpeed: { type: "number" }, latitude: { type: "number" }, longitude: { type: "number" }, time: { type: "string", format: "date-time" }, source: { type: "string", enum: ["live", "simulation"] }
           } } } } },
@@ -82,6 +89,7 @@ router.get("/swagger.json", (_req, res) => {
       "/notifications/harsh-braking": {
         post: {
           summary: "Harsh braking notification",
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["vehicleId", "vehicleNumber", "previousSpeed", "speed", "latitude", "longitude"], properties: {
             vehicleId: { type: "string" }, vehicleNumber: { type: "string" }, previousSpeed: { type: "number" }, speed: { type: "number" }, latitude: { type: "number" }, longitude: { type: "number" }, time: { type: "string", format: "date-time" }, source: { type: "string", enum: ["live", "simulation"] }
           } } } } },
@@ -91,6 +99,7 @@ router.get("/swagger.json", (_req, res) => {
       "/notifications/geofence-enter": {
         post: {
           summary: "Geofence enter notification",
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["vehicleId", "vehicleNumber", "geofenceName"], properties: {
             vehicleId: { type: "string" }, vehicleNumber: { type: "string" }, geofenceName: { type: "string" }, time: { type: "string", format: "date-time" }, source: { type: "string", enum: ["live", "simulation"] }
           } } } } },
@@ -100,6 +109,7 @@ router.get("/swagger.json", (_req, res) => {
       "/notifications/geofence-exit": {
         post: {
           summary: "Geofence exit notification",
+          security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["vehicleId", "vehicleNumber", "geofenceName"], properties: {
             vehicleId: { type: "string" }, vehicleNumber: { type: "string" }, geofenceName: { type: "string" }, time: { type: "string", format: "date-time" }, source: { type: "string", enum: ["live", "simulation"] }
           } } } } },
