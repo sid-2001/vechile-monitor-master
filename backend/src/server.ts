@@ -12,24 +12,34 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
 });
+import dns from "dns";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const start = async (): Promise<void> => {
   try {
+    try {
     await connectDb();
-    await runDefaultSeed();
+      await runDefaultSeed();
 
-    const server = http.createServer(app);
+    } catch (err) {
+    console.error("DB/Seeder failed:", err);
+  }
+
+  const server = http.createServer(app);
 
    
     initSocket(server);
 
-    server.listen(env.port, () => {
-      console.log(`🚀 Server running on port ${env.port}`);
-    });
+  
+  server.listen(env.port, () => {
+      
+    console.log(`🚀 Server running on port ${env.port}`);
+    }
+  );
   } catch (err) {
     console.error("❌ Startup failed", err);
-    process.exit(1);
-  }
+    }
 };
 
 start();

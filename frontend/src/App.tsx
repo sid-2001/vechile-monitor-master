@@ -1,7 +1,10 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+
+//@ts-ignore
 import './App.css'
 
 import { ToastContainer } from 'react-toastify'
+//@ts-ignore
 import 'react-toastify/dist/ReactToastify.css'
 import { useSetRecoilState } from "recoil";
 import { alertState, alertTextState, alertTypeState } from "./states/state";
@@ -33,6 +36,13 @@ import { socket } from "./services/socket";
 import { useEffect } from 'react'
 import { toast } from "react-toastify";
 import { API_ERROR_EVENT } from './services/apis/api-error-events';
+
+
+import SimManagement from './pages/SimManagement/SimManagement'
+import DeviceSimMapping from './pages/DeviceSimMapping/DeviceSimMapping'
+//@ts-ignore
+const { VITE_APP_BACKEND } = import.meta.env
+
 
 
 function App() {
@@ -94,7 +104,7 @@ const theme = createTheme({
         msOverflowStyle: 'none',
       },
     },
-
+//@ts-ignore
     MuiDataGrid: {
       styleOverrides: {
         root: {
@@ -310,14 +320,15 @@ useEffect(() => {
     data.vehicleId ||
     'Unknown Vehicle';
 
+    
   const resolveGeofenceAction = (eventType: string = '') => {
     const normalizedType = eventType.toLowerCase().trim();
 
     // NOTE:
-    // Backend event mapping is currently flipped for enter/exit events.
+    // Backend event mapping is currently flipped for enter/exit events.  
     // This inverse mapping keeps UI notification wording correct.
-    if (normalizedType === 'enter') return 'exited';
-    if (normalizedType === 'exit') return 'entered';
+    if (normalizedType === 'enter') return 'enter';
+    if (normalizedType === 'exit') return 'exited';
     return normalizedType || 'updated';
   };
 
@@ -325,43 +336,7 @@ useEffect(() => {
   console.log("✅ SOCKET CONNECTED:", socket.id);
 });
 
-// 👇 OUTSIDE CONNECT
-// socket.on("vehicle:sos:created", (data) => {
-//   console.log("🚨 RECEIVED SOS CREATED", data);
-  
 
-//   const token = localStorage.getItem("access_token");
-
-//   toast.error(`🚨 SOS ALERT - ${data.vehicleNumber}`, {
-//     autoClose: false, // 
-//     closeOnClick: false,
-//     draggable: false,
-
-//    onClose: async () => {
-//   try {
-//     const token = JSON.parse(localStorage.getItem("access_token") || "");
-
-//     const res = await fetch(
-//       `http://localhost:5000/api/sos/close/${data.sosId}`,
-//       {
-//         method: "PUT",
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     if (!res.ok) {
-//       throw new Error("API failed");
-//     }
-
-//     console.log("✅ SOS closed SUCCESSFULLY");
-//   } catch (err) {
-//     console.error("❌ Close API FAILED", err);
-//   }
-// },
-//   });
-// });
 socket.on("vehicle:sos:created", (data) => {
   console.log("🚨 RECEIVED SOS CREATED", data);
 
@@ -382,7 +357,7 @@ socket.on("vehicle:sos:created", (data) => {
         const token = JSON.parse(localStorage.getItem("access_token") || "");
 
         const res = await fetch(
-          `http://localhost:5000/api/sos/close/${data.sosId}`,
+          `${VITE_APP_BACKEND}/api/sos/close/${data.sosId}`,
           {
             method: "PUT",
             headers: {
@@ -454,8 +429,8 @@ socket.on("vehicle:braking:alert", (data) => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<ProtectedRoute {...defaultProtectedRouteProps} outlet={<DashboardLayout />} />}>
-              <Route index element={<TrackingScreen />}></Route>
-             <Route path="tracking" element={<TrackingScreen />} />
+               <Route index element={<TrackingScreen />}></Route>
+               <Route path="tracking" element={<TrackingScreen />} />
                <Route path="user" element={<UserManagementApi />} />
                <Route path="bases" element={<BaseManagement />} />
                <Route path="vehicles" element={<VehicleManagement />} />
@@ -464,6 +439,8 @@ socket.on("vehicle:braking:alert", (data) => {
                <Route path="location-history" element={<LocationHistory />} />
                <Route path="location-simulator" element={<LocationSimulator />} />
                <Route path="analytics" element={<AnalyticsScreen />} />
+               <Route path="sims" element={<SimManagement />} />
+               <Route path="device-sim-mapping" element={<DeviceSimMapping />} />
             
             </Route>
 

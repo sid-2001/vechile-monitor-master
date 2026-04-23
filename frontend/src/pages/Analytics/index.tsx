@@ -4,9 +4,11 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 
+
 type RangeKey = 'yearly' | 'monthly' | '15d' | '7d' | '3d' | '1d' | 'hourly'
 
-const COLORS = ['#FFDE42', '#4C5C2D', '#42A5F5', '#EF5350']
+// const COLORS = ['#FFDE42', '#4C5C2D', '#42A5F5', '#EF5350']
+const COLORS = ['#FFDE42', '#4C5C2D', '#42A5F5', '#EF5350', '#9C27B0']
 
 const rangeToMs: Record<RangeKey, number> = {
   yearly: 365 * 24 * 60 * 60 * 1000,
@@ -38,6 +40,8 @@ const AnalyticsScreen = () => {
   const [error, setError] = useState('')
   const [loadingVehicles, setLoadingVehicles] = useState(false)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -55,34 +59,84 @@ const AnalyticsScreen = () => {
   }, [])
 
   useEffect(() => {
-    if (!vehicleId) return
-    const loadAnalytics = async () => {
-      try {
-        setLoadingAnalytics(true)
-        const [analyticsData, locations] = await Promise.all([
-          vehicleMonitorService.getVehicleAnalytics(vehicleId),
-          vehicleMonitorService.getVehicleLocations({
-            vehicleId,
-            from: new Date(Date.now() - rangeToMs[rangeKey]).toISOString(),
-            to: new Date().toISOString(),
-            limit: 20000,
-            sortBy: 'time',
-            sortOrder: 'asc',
-            excludeSource: 'simulation',
-          }),
-        ])
+  const now = new Date();
+  const before = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        setAnalytics(analyticsData)
-        setRangePoints(locations.items || [])
-        setError('')
-      } catch (e: any) {
-        setError(e?.error_message || 'Failed to load analytics')
-      } finally {
-        setLoadingAnalytics(false)
-      }
+  setFromDate(before.toISOString().slice(0, 16));
+  setToDate(now.toISOString().slice(0, 16));
+}, [])
+
+  // useEffect(() => {
+  //   if (!vehicleId) return
+  //   const loadAnalytics = async () => {
+  //     try {
+  //       setLoadingAnalytics(true)
+  //       const [analyticsData, locations] = await Promise.all([
+  //         // vehicleMonitorService.getVehicleAnalytics(vehicleId),
+
+  //         vehicleMonitorService.getVehicleAnalytics(vehicleId, {
+  //         from: "2026-04-01T00:00:00Z",
+  //         to: "2026-04-21T23:59:59Z",
+  //       }),
+  //         vehicleMonitorService.getVehicleLocations({
+  //           vehicleId,
+  //           from: new Date(Date.now() - rangeToMs[rangeKey]).toISOString(),
+  //           to: new Date().toISOString(),
+  //           limit: 20000,
+  //           sortBy: 'time',
+  //           sortOrder: 'asc',
+  //           excludeSource: 'simulation',
+  //         }),
+  //       ])
+
+  //       setAnalytics(analyticsData)
+  //       setRangePoints(locations.items || [])
+  //       setError('')
+  //     } catch (e: any) {
+  //       setError(e?.error_message || 'Failed to load analytics')
+  //     } finally {
+  //       setLoadingAnalytics(false)
+  //     }
+  //   }
+  //   loadAnalytics()
+  // }, [vehicleId, rangeKey])
+  useEffect(() => {
+  if (!vehicleId || !fromDate || !toDate) return;
+
+  const loadAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true);
+
+      const [analyticsData, locations] = await Promise.all([
+        vehicleMonitorService.getVehicleAnalytics(vehicleId, {
+          from: new Date(fromDate).toISOString(),
+          to: new Date(toDate).toISOString(),
+        }),
+
+        vehicleMonitorService.getVehicleLocations({
+          vehicleId,
+          from: new Date(fromDate).toISOString(),
+          to: new Date(toDate).toISOString(),
+          limit: 20000,
+          sortBy: "time",
+          sortOrder: "asc",
+          excludeSource: "simulation",
+        }),
+      ]);
+
+      setAnalytics(analyticsData);
+      console.log(" ANALYTICS RESPONSE:", analyticsData);
+      setRangePoints(locations.items || []);
+      setError("");
+    } catch (e: any) {
+      setError(e?.error_message || "Failed to load analytics");
+    } finally {
+      setLoadingAnalytics(false);
     }
-    loadAnalytics()
-  }, [vehicleId, rangeKey])
+  };
+
+  loadAnalytics();
+}, [vehicleId, fromDate, toDate]);
 
   const geofenceCols: GridColDef[] = [
     { field: 'geofenceName', headerName: 'Geofence', flex: 1 },
@@ -126,6 +180,7 @@ const AnalyticsScreen = () => {
       { name: 'Ignition (min)', value: analytics.ignitionOnMinutes },
       { name: 'Harsh Brake', value: analytics.harshBrakingCount },
       { name: 'Overspeed', value: analytics.overSpeedCount },
+       { name: 'SOS', value: analytics.sosCount },
     ]
   }, [analytics])
 
@@ -136,6 +191,7 @@ const AnalyticsScreen = () => {
       { name: 'Geofence Exit', value: analytics.geofenceExitCount },
       { name: 'Harsh Braking', value: analytics.harshBrakingCount },
       { name: 'Overspeed', value: analytics.overSpeedCount },
+       { name: 'SOS', value: analytics.sosCount },
     ]
   }, [analytics])
 
@@ -152,18 +208,28 @@ const AnalyticsScreen = () => {
                 {vehicles.map((vehicle) => <MenuItem key={vehicle._id} value={vehicle._id}>{vehicle.vehicleNumber}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField fullWidth select label='Range' value={rangeKey} onChange={(e) => setRangeKey(e.target.value as RangeKey)}>
-                <MenuItem value='yearly'>Yearly</MenuItem>
-                <MenuItem value='monthly'>Monthly</MenuItem>
-                <MenuItem value='15d'>15 Days</MenuItem>
-                <MenuItem value='7d'>7 Days</MenuItem>
-                <MenuItem value='3d'>3 Days</MenuItem>
-                <MenuItem value='1d'>1 Day</MenuItem>
-                <MenuItem value='hourly'>Hourly</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} md={5}>
+           <Grid item xs={12} md={3}>
+  <TextField
+    fullWidth
+    label="From"
+    type="datetime-local"
+    InputLabelProps={{ shrink: true }}
+    value={fromDate}
+    onChange={(e) => setFromDate(e.target.value)}
+  />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField
+    fullWidth
+    label="To"
+    type="datetime-local"
+    InputLabelProps={{ shrink: true }}
+    value={toDate}
+    onChange={(e) => setToDate(e.target.value)}
+  />
+</Grid>
+            <Grid item xs={12} md={2}>
               <Typography variant='caption'>Zoom Level (data expansion): {zoomLevel}</Typography>
               <Slider min={5} max={18} value={zoomLevel} onChange={(_, val) => setZoomLevel(Number(val))} />
             </Grid>
@@ -178,7 +244,7 @@ const AnalyticsScreen = () => {
       {analytics && !loadingAnalytics && (
         <>
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            {[{ label: 'Average Speed', value: `${analytics.avgSpeed} km/h` }, { label: 'Geofence Enter', value: analytics.geofenceEnterCount }, { label: 'Geofence Exit', value: analytics.geofenceExitCount }, { label: 'Ignition On Time', value: `${analytics.ignitionOnMinutes} min` }, { label: 'Harsh Braking', value: analytics.harshBrakingCount }, { label: 'Overspeed', value: analytics.overSpeedCount }].map((item) => (
+            {[{ label: 'Average Speed', value: `${analytics.avgSpeed} km/h` }, { label: 'Geofence Enter', value: analytics.geofenceEnterCount }, { label: 'Geofence Exit', value: analytics.geofenceExitCount }, { label: 'Ignition On Time', value: `${analytics.ignitionOnMinutes} min` }, { label: 'Harsh Braking', value: analytics.harshBrakingCount }, { label: 'Overspeed', value: analytics.overSpeedCount },{ label: 'SOS Count', value: analytics.sosCount }].map((item) => (
               <Grid item xs={12} sm={6} md={2} key={item.label}><Card><CardContent><Typography variant='caption'>{item.label}</Typography><Typography variant='h6'>{item.value}</Typography></CardContent></Card></Grid>
             ))}
           </Grid>
@@ -190,7 +256,7 @@ const AnalyticsScreen = () => {
 
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Typography variant='h6' mb={1}>Speed Timeline ({rangeKey})</Typography>
+              <Typography variant='h6' mb={1}>Speed Timeline</Typography>
               <Typography variant='caption' color='text.secondary'>Data points auto-expand as zoom increases.</Typography>
               <Box sx={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer>
@@ -209,6 +275,34 @@ const AnalyticsScreen = () => {
           </Card>
 
           <Card><CardContent><Typography variant='h6' mb={1}>Geofence Logs</Typography><div style={{ height: 320 }}><DataGrid rows={(analytics.geofenceLogs || []).map((x: any) => ({ ...x, id: x._id }))} columns={geofenceCols} /></div></CardContent></Card>
+          <Card sx={{ mt: 2 }}>
+  <CardContent>
+    <Typography variant='h6' mb={1}>SOS Logs</Typography>
+
+    <div style={{ height: 320 }}>
+      <DataGrid
+        rows={(analytics.sosLogs || []).map((x: any) => ({
+          ...x,
+          id: x._id,
+        }))}
+        columns={[
+          {
+            field: "createdAt",
+            headerName: "Time",
+            flex: 1,
+            valueGetter: (_, row) =>
+              new Date(row.createdAt).toLocaleString(),
+          },
+          {
+            field: "status",
+            headerName: "Status",
+            flex: 1,
+          },
+        ]}
+      />
+    </div>
+  </CardContent>
+</Card>
         </>
       )}
     </Box>

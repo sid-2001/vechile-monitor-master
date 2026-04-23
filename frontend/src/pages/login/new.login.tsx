@@ -59,6 +59,7 @@ const LoginPage: React.FC = () => {
       const response = await loginservice.login({ username, password })
 
       localStorage.setItem('access_token', JSON.stringify(response.token))
+      //@ts-ignore
          localStorage.setItem('user', JSON.stringify(response.user))
 
       setSnackbar({

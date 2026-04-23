@@ -3,6 +3,7 @@ import { authService } from "../services/auth.service";
 
 export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
+    console.log("connecting")
     res.json(await authService.login(req.body.username, req.body.password));
   }
   async generatePasscode(req: Request, res: Response): Promise<void> {

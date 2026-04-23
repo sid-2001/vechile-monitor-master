@@ -28,10 +28,11 @@ export class UserService {
   }
 
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }
-
+//@ts-ignore
   async login(username: string, password: string): Promise<{ token: string ,user:any}> {
     try{
 
+      console.log("connecting")
     const user = await User.findOne({ username });
     if (!user) throw new Error("Invalid credentials");
     if (user.status === "LOCKED") throw new Error("User locked due to failed attempts");
@@ -54,9 +55,10 @@ export class UserService {
 
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, env.jwtSecret, { expiresIn: "1d" });
     return { token,user };
-  }catch(err){
+  }catch(err:any){
 
-    console.log(err)
+    console.log(err.message)
+        throw err;
   }
   }
 

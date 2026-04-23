@@ -560,7 +560,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
   return (
     <Box sx={{ maxWidth: 1800, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 48, height: 48 }}>
             <DirectionsCarFilledIcon />
@@ -593,14 +593,14 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
       )}
 
       {/* Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={4}>
           <Card sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), borderLeft: `4px solid ${theme.palette.success.main}` }}>
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="caption" color="text.secondary">MOVING VEHICLES</Typography>
-                  <Typography variant="h3" fontWeight="bold" color="success.main">{movingVehicles.length}</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="success.main">{movingVehicles.length}</Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: theme.palette.success.main, width: 56, height: 56 }}>
                   <TrendingUpIcon sx={{ fontSize: 32 }} />
@@ -615,7 +615,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="caption" color="text.secondary">PARKED VEHICLES</Typography>
-                  <Typography variant="h3" fontWeight="bold" color="error.main">{parkedVehicles.length}</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="error.main">{parkedVehicles.length}</Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: theme.palette.error.main, width: 56, height: 56 }}>
                   <StopIcon sx={{ fontSize: 32 }} />
@@ -630,7 +630,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="caption" color="text.secondary">TOTAL VEHICLES</Typography>
-                  <Typography variant="h3" fontWeight="bold" color="info.main">{vehicles.length}</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="info.main">{vehicles.length}</Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: theme.palette.info.main, width: 56, height: 56 }}>
                   <DirectionsCarIcon sx={{ fontSize: 32 }} />
@@ -781,7 +781,9 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
               </Tooltip>
             </Box>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-              <Box sx={{ height: { xs: 400, sm: 500, md: 600 }, position: 'relative' }}>
+              {/* height: 'calc(100vh - 220px)' */}
+              {/* height: { xs: 400, sm: 500, md: 600 } */}
+              <Box sx={{height: 'calc(100vh - 220px)' , position: 'relative' }}>
                   <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
               </Box>
             </CardContent>
@@ -790,7 +792,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
 
         <Grid item xs={12} md={4}>
           {/* Live Vehicles List */}
-          <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], mb: 3 }}>
+          <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], mb: 1 }}>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold">Live Vehicles</Typography>

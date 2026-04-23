@@ -3,6 +3,7 @@ import { Server as HttpServer } from "http";
 import { Types } from "mongoose";
 
 import { vehicleLocationService } from "../services/vehicleLocation.service";
+import { vehicleService, VehicleService } from "../services/vehicle.service";
 import { VehicleLocation } from "../models/VehicleLocation";
 import { Geofence } from "../models/Geofence";
 import { GeofenceLog } from "../models/GeofenceLog";
@@ -18,8 +19,8 @@ import {
 let io: Server;
 let globalVehicleBroadcastInterval: NodeJS.Timeout | null = null;
 
-const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 40;
-const HARSH_BRAKING_MAX_CURRENT_SPEED = 10;
+const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 5;
+const HARSH_BRAKING_MAX_CURRENT_SPEED = 0;
 
 /* -------------------------------------------------- */
 /* 🧠 DISTANCE CALCULATOR */
@@ -42,12 +43,85 @@ const getDistanceMeters = (p1: any, p2: any): number => {
 /* -------------------------------------------------- */
 /* 🚧 GEOFENCE + SPEED + BRAKING ENGINE */
 /* -------------------------------------------------- */
-const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
+const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:any) => {
+
   try {
+    // console.log(vehicleNumber)
+    // const [previous, geofences] = await Promise.all([
+    //   VehicleLocation.findOne({
+    //     vehicleId: saved.vehicleId,
+    //     _id: { $ne: saved._id },
+    //   }).sort({ time: -1 }),
+
+    //   Geofence.find({}, { _id: 1, name: 1, center: 1, radius: 1 }).lean(),
+    // ]);
+
+    // /* ---------------- GEOFENCE ---------------- */
+    // for (const fence of geofences) {
+    //   if (!fence.center || !fence.radius) continue;
+
+    //   const currentDistance = getDistanceMeters(saved, fence.center);
+    //   const currentlyInside = currentDistance <= fence.radius;
+
+    //   if (!previous) {
+    //     if (currentlyInside) {
+    //       await GeofenceLog.create({
+    //         vehicleId: saved.vehicleId,
+    //         geofenceId: fence._id,
+    //         geofenceName: fence.name,
+    //         eventType: "enter",
+    //         enter_time: saved.time,
+    //         latitude: saved.latitude,
+    //         longitude: saved.longitude,
+    //         speed: saved.speed,
+    //       });
+
+    //       emitGeofenceAlert({
+    //         vehicleId: String(saved.vehicleId),
+    //         vehicleNumber:String(vehicleNumber),
+    //         geofenceName: fence.name,
+    //         eventType: "enter",
+    //         time: saved.time,
+    //       });
+    //     }
+    //     continue;
+    //   }
+
+    //   const prevDistance = getDistanceMeters(previous, fence.center);
+    //   const previouslyInside = prevDistance <= fence.radius;
+
+    //   if (previouslyInside !== currentlyInside) {
+    //     const eventType = currentlyInside ? "enter" : "exit";
+
+    //     await GeofenceLog.create({
+    //       vehicleId: saved.vehicleId,
+    //       geofenceId: fence._id,
+    //       geofenceName: fence.name,
+    //       eventType,
+    //       enter_time: saved.time,
+    //       latitude: saved.latitude,
+    //       longitude: saved.longitude,
+    //       speed: saved.speed,
+    //     });
+
+    //     emitGeofenceAlert({
+    //       vehicleId: String(saved.vehicleId),
+    //       geofenceName: fence.name,
+    //       vehicleNumber:String(vehicleNumber),
+    //       eventType,
+    //       time: saved.time,
+    //     });
+    //   }
+    // }
+
+
+    console.log(vehicleNumber);
+
     const [previous, geofences] = await Promise.all([
+      // FIX 1: Fetch the location strictly BEFORE the current point in time
       VehicleLocation.findOne({
         vehicleId: saved.vehicleId,
-        _id: { $ne: saved._id },
+        time: { $lt: saved.time }, 
       }).sort({ time: -1 }),
 
       Geofence.find({}, { _id: 1, name: 1, center: 1, radius: 1 }).lean(),
@@ -58,8 +132,16 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
       if (!fence.center || !fence.radius) continue;
 
       const currentDistance = getDistanceMeters(saved, fence.center);
+      
+      // FIX 2: Prevent faulty "exits" if distance calculation fails
+      if (isNaN(currentDistance) || currentDistance === null) {
+        console.error("Distance is NaN! Check if 'saved' has valid coordinates:", saved);
+        continue; 
+      }
+
       const currentlyInside = currentDistance <= fence.radius;
 
+      // Handle first point ever tracked
       if (!previous) {
         if (currentlyInside) {
           await GeofenceLog.create({
@@ -75,6 +157,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
 
           emitGeofenceAlert({
             vehicleId: String(saved.vehicleId),
+            vehicleNumber: String(vehicleNumber),
             geofenceName: fence.name,
             eventType: "enter",
             time: saved.time,
@@ -86,6 +169,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
       const prevDistance = getDistanceMeters(previous, fence.center);
       const previouslyInside = prevDistance <= fence.radius;
 
+      // Check for state change
       if (previouslyInside !== currentlyInside) {
         const eventType = currentlyInside ? "enter" : "exit";
 
@@ -94,7 +178,8 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
           geofenceId: fence._id,
           geofenceName: fence.name,
           eventType,
-          enter_time: saved.time,
+          // Note: You might want to conditionally name this based on eventType in your schema later!
+          enter_time: saved.time, 
           latitude: saved.latitude,
           longitude: saved.longitude,
           speed: saved.speed,
@@ -103,20 +188,22 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
         emitGeofenceAlert({
           vehicleId: String(saved.vehicleId),
           geofenceName: fence.name,
+          vehicleNumber: String(vehicleNumber),
           eventType,
           time: saved.time,
         });
       }
     }
-
     /* ---------------- SPEED ---------------- */
     const maxSpeed = Number(vehicleDoc?.performance?.maxSpeed || 0);
 
     if (maxSpeed > 0 && saved.speed >= maxSpeed) {
+      console.log(saved)
       await VehicleSpeedStatus.create({
         vehicleId: saved.vehicleId,
         speed: saved.speed,
         latitude: saved.latitude,
+           vehicleNumber:String(vehicleNumber),
         longitude: saved.longitude,
         time: saved.time,
       });
@@ -125,6 +212,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
         vehicleId: String(saved.vehicleId),
         speed: saved.speed,
         maxSpeed,
+        vehicleNumber:String(vehicleNumber),
         latitude: saved.latitude,
         longitude: saved.longitude,
         time: saved.time,
@@ -137,6 +225,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
       previous.speed >= HARSH_BRAKING_MIN_PREVIOUS_SPEED &&
       saved.speed <= HARSH_BRAKING_MAX_CURRENT_SPEED
     ) {
+      console.log("Saved In Harsh braking",JSON.stringify(saved));
       await VehicleBrakingStatus.create({
         vehicleId: saved.vehicleId,
         speed: saved.speed,
@@ -149,6 +238,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any) => {
         vehicleId: String(saved.vehicleId),
         previousSpeed: previous.speed,
         speed: saved.speed,
+        vehicleNumber:vehicleNumber,
         latitude: saved.latitude,
         longitude: saved.longitude,
         time: saved.time,
@@ -202,9 +292,10 @@ export const initSocket = (server: HttpServer): Server => {
 
       // ⚡ Run event detection
       const vehicleDoc =
-        await vehicleLocationService.getVehicleById(doc.vehicleId);
-
-      await processVehicleEvents(doc, vehicleDoc);
+        await  vehicleService.byId (doc.vehicleId);
+       
+       
+      await processVehicleEvents(doc, vehicleDoc,vehicleDoc?.vehicleNumber);
     });
 
     socket.on("disconnect", async () => {

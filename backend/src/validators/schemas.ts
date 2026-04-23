@@ -43,3 +43,13 @@ export const geofenceSchema: ValidatorFn = (body: any) => {
   if (body?.radius === undefined || Number(body.radius) <= 0) errors.push("radius should be greater than 0");
   return errors;
 };
+
+export const simMasterSchema: ValidatorFn = (body: any) => {
+  const errors: string[] = [];
+
+  if (!body?.simid) errors.push("simid is required");
+  if (!body?.simnumber) errors.push("simnumber is required");
+  if (!body?.operator) errors.push("operator is required");
+
+  return errors;
+};

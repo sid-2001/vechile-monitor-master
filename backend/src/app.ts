@@ -5,9 +5,12 @@ import userRoutes from "./routes/userRoutes";
 import vehicleRoutes from "./routes/vehicleRoutes";
 import vehicleLocationRoutes from "./routes/vehicleLocationRoutes";
 import deviceRoutes from "./routes/deviceRoutes";
+import simMasterRoutes from "./routes/simMasterRoutes";
 import { authMiddleware } from "./middleware/authMiddleware";
 import { errorMiddleware } from "./middleware/errorMiddleware";
 import { loggingMiddleware } from "./middleware/loggingMiddleware";
+import deviceSimMappingRoutes from "./routes/deviceSimMappingRoutes";
+
 import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
 import geofenceRoutes from "./routes/geofenceRoutes";
 import cors from "cors";
@@ -32,11 +35,17 @@ app.use("/vehicle-locations", vehicleLocationRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
 app.use("/geofences", authMiddleware, geofenceRoutes);
 
-
+app.use("/sims",authMiddleware,simMasterRoutes)
 app.use("/api/sos", vehicleSOSRoutes);
+
+app.use("/device-sim-mapping", authMiddleware, deviceSimMappingRoutes);
+
+app.use(errorMiddleware);
+
 app.use((_req, res) => {
   res.status(404).json({ message: "Route not found", code: "NOT_FOUND" });
 });
-app.use(errorMiddleware);
+
+
 
 export default app;

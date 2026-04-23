@@ -53,6 +53,8 @@ export const emitVehicleSOSClosed = (payload: {
   io.emit("vehicle:sos:closed", payload);
 };
 
+
+
 export const emitGeofenceAlert = (payload: {
   vehicleId: string;
   vehicleNumber: string;

@@ -16,6 +16,10 @@ import {
   Drawer,
   useMediaQuery,
 } from '@mui/material'
+import MemoryIcon from "@mui/icons-material/Memory";
+import HomeIcon from "@mui/icons-material/Home";
+import { Menu, MenuItem } from "@mui/material";
+import { Grid } from "@mui/material";
 import { styled, useTheme } from '@mui/system'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useRecoilState } from 'recoil'
@@ -98,70 +102,35 @@ const MainContent = styled(Box)(({ theme }) => ({
 
 // Sidebar menu structure
 const SIDEBAR_MENUS = [
-  {
-    label: 'User',
-    name: 'User',
-    icon: <PersonIcon fontSize="small" />,
-    path: '/user',
-    section: 'user',
-  },
-  {
-    label: 'Base',
-    name: 'Base',
-    icon: <AddLocationIcon fontSize="small" />,
-    path: '/bases',
-    section: 'master',
-  },
-  {
-    label: 'Vehicle',
-    name: 'Vehicle',
-    icon: <DirectionsBusIcon ontSize="small" />,
-    path: '/vehicles',
-    section: 'master',
-  },
-  {
-    label: 'Onboard Devices',
-    name: 'Onboard Devices',
-    icon: <DeveloperBoardIcon fontSize="small" />,
-    path: '/devices',
-    section: 'master',
-  },
-  {
-    label: 'Tracking',
-    name: 'Tracking',
-    icon: <TrackChangesIcon fontSize="small" />,
-    path: '/tracking',
-    section: 'tracking',
-  },
-  {
-    label: 'Geofence',
-    name: 'Geofence',
-    icon: <PolylineIcon fontSize="small" />,
-    path: '/geofence',
-    section: 'tracking',
-  },
-  {
-    label: 'Location History',
-    name: 'Location History',
-    icon: <TimelineIcon fontSize="small" />,
-    path: '/location-history',
-    section: 'tracking',
-  },
-  // {
-  //   label: 'Location Simulator',
-  //   name: 'Location Sim',
-  //   icon: <MyLocationIcon fontSize="small" />,
-  //   path: '/location-simulator',
-  //   section: 'tracking',
-  // },
-  // {
-  //   label: 'Analytics',
-  //   name: 'Analytics',
-  //   icon: <InsightsIcon fontSize="small" />,
-  //   path: '/analytics',
-  //   section: 'tracking',
-  // },
+  { label: 'Dashboard', name: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/', },
 
+  { label: 'User', name: 'User', icon: <PersonIcon fontSize="small" />, path: '/user' },
+
+  { label: 'Location', name: 'Location', icon: <LocationSearchingIcon fontSize="small" />, path: '/location' },
+
+  { label: 'Base Unit', name: 'Base Unit', icon: <HomeIcon fontSize="small" />, path: '/bases' },
+
+  { label: 'Base Geofencing', name: 'Base Geo', icon: <PolylineIcon fontSize="small" />, path: '/geofence' },
+
+  // { label: 'Location-Base Mapping', name: 'Loc-Base Map', icon: <SyncAltRounded fontSize="small" />, path: '/location-base-mapping' },
+
+  { label: 'Vehicle', name: 'Vehicle', icon: <DirectionsBusIcon fontSize="small" />, path: '/vehicles' },
+
+  { label: 'Device', name: 'Device', icon: <MemoryIcon fontSize="small" />, path: '/devices' },
+
+  { label: 'SIM Master', name: 'SIM Master', icon: <DeveloperBoardIcon fontSize="small" />, path: '/sims' },
+
+  { label: 'Device-SIM Mapping', name: 'Dev-SIM Map', icon: <SyncAltRounded fontSize="small" />, path: '/device-sim-mapping' },
+
+  // { label: 'Vehicle-Device Mapping', name: 'Veh-Dev Map', icon: <SyncAltRounded fontSize="small" />, path: '/vehicle-device-mapping' },
+
+  // { label: 'Base-Vehicle Mapping', name: 'Base-Veh Map', icon: <SyncAltRounded fontSize="small" />, path: '/base-vehicle-mapping' },
+
+  { label: 'Live Tracking', name: 'Live Track', icon: <TrackChangesIcon fontSize="small" />, path: '/tracking' },
+
+  { label: 'Vehicle History', name: 'History', icon: <TimelineIcon fontSize="small" />, path: '/location-history' },
+
+  { label: 'Analytics', name: 'Analytics', icon: <InsightsIcon fontSize="small" />, path: '/analytics' },
 ]
 
 const DashboardLayout = () => {
@@ -176,6 +145,9 @@ const DashboardLayout = () => {
     tracking: false,
     settings: false,
   })
+  const [openMasterModal, setOpenMasterModal] = useState(false);
+  const [masterAnchor , setMasterAnchor] = useState<null | HTMLElement>(null);
+
 
   const navigate = useNavigate()
   const theme = useTheme()
@@ -192,20 +164,29 @@ const DashboardLayout = () => {
     sessionStorage.clear()
   }
 
-  const handleMenuClick = (menu: any) => {
-    setSelectedMenu(menu.label)
-    navigate(menu.path)
-    if (isMobile) {
-      setMobileDrawerOpen(false)
-    }
-  }
+ 
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
+      //@ts-ignore
       [section]: !prev[section]
     }))
   }
+
+const handleMenuClick = (menu: any) => {
+  if (menu.label === "Master") {
+    setOpenMasterModal(true);
+    return;
+  }
+
+  setSelectedMenu(menu.label);
+  navigate(menu.path);
+
+  if (isMobile) {
+    setMobileDrawerOpen(false);
+  }
+};
 
   useEffect(() => {
     const token = local_service.get_accesstoken()
@@ -273,7 +254,7 @@ const DashboardLayout = () => {
                   : theme.palette.action.selected,
               },
             }}
-            onClick={() => handleMenuClick(item)}
+            onClick={(e) => handleMenuClick(item, e)}
           >
             <ListItemIcon
               sx={{
@@ -361,6 +342,8 @@ const DashboardLayout = () => {
       </List>
     </Box>
   )
+
+  
 
   return (
     <ThemeProvider theme={theme}>
@@ -511,6 +494,7 @@ const DashboardLayout = () => {
               left: 0,
               width: 80,
               height: 'calc(100vh - 10vh)',
+              //@ts-ignore
               zIndex: theme.zIndex.drawer,
             }}
           >
@@ -544,6 +528,191 @@ const DashboardLayout = () => {
         <MainContent>
           <Outlet />
         </MainContent>
+
+    <Dialog
+  open={openMasterModal}
+  onClose={() => setOpenMasterModal(false)}
+  maxWidth="lg"
+  fullWidth
+  PaperProps={{
+    sx: {
+      borderRadius: 3,
+      padding: 2,
+      minHeight: "350px",
+    },
+  }}
+>
+  <DialogContent>
+
+    <Grid container>
+
+      {/* 🔹 COLUMN 1 */}
+      
+
+      <Grid item xs={12} md={4}>
+        <Box sx={{ borderRight: "1px solid #ddd", pr: 2 }}>
+
+          {[
+            { label: "Add SIM", path: "/sims", icon: <DeveloperBoardIcon /> },
+            { label: "Device-SIM Mapping", path: "/device-sim-mapping", icon: <SyncAltRounded /> },
+            { label: "Add Device", path: "/devices", icon: <MemoryIcon /> },
+            // { label: "Add Base", path: "/bases", icon: <HomeIcon /> },
+          ].map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                padding: 1.5,
+                borderRadius: 1,
+                cursor: "pointer",
+                transition: "0.2s",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+              onClick={() => {
+                setOpenMasterModal(false);
+                navigate(item.path);
+              }}
+            >
+              {item.icon}
+              <Typography>{item.label}</Typography>
+            </Box>
+          ))}
+
+        </Box>
+      </Grid>
+
+      <Grid item xs={12} md={4}>
+        <Box sx={{ borderRight: "1px solid #ddd", pr: 2 }}>
+
+          {[
+            { label: "Add SIM", path: "/sims", icon: <DeveloperBoardIcon /> },
+            { label: "Add Device", path: "/devices", icon: <MemoryIcon /> },
+            { label: "Add Base", path: "/bases", icon: <HomeIcon /> },
+          ].map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                padding: 1.5,
+                borderRadius: 1,
+                cursor: "pointer",
+                transition: "0.2s",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+              onClick={() => {
+                setOpenMasterModal(false);
+                navigate(item.path);
+              }}
+            >
+              {item.icon}
+              <Typography>{item.label}</Typography>
+            </Box>
+          ))}
+
+        </Box>
+      </Grid>
+
+      <Grid item xs={12} md={4}>
+        <Box sx={{ borderRight: "1px solid #ddd", pr: 2 }}>
+
+          {[
+            { label: "Add SIM", path: "/sims", icon: <DeveloperBoardIcon /> },
+            { label: "Add Device", path: "/devices", icon: <MemoryIcon /> },
+            { label: "Add Base", path: "/bases", icon: <HomeIcon /> },
+          ].map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                padding: 1.5,
+                borderRadius: 1,
+                cursor: "pointer",
+                transition: "0.2s",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+              onClick={() => {
+                setOpenMasterModal(false);
+                navigate(item.path);
+              }}
+            >
+              {item.icon}
+              <Typography>{item.label}</Typography>
+            </Box>
+          ))}
+
+        </Box>
+      </Grid>
+
+ 
+      {/* <Grid item xs={12} md={4}>
+        <Box sx={{ borderRight: "1px solid #ddd", px: 2 }}>
+
+          {[
+            "Vehicle Master",
+            "Driver Master",
+            "Tracking Config",
+          ].map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                padding: 1.5,
+                borderRadius: 1,
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+            >
+              <Typography>{item}</Typography>
+            </Box>
+          ))}
+
+        </Box>
+      </Grid>
+
+   
+      <Grid item xs={12} md={4}>
+        <Box sx={{ pl: 2 }}>
+
+          {[
+            "User Roles",
+            "Permissions",
+            "Settings",
+          ].map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                padding: 1.5,
+                borderRadius: 1,
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+            >
+              <Typography>{item}</Typography>
+            </Box>
+          ))}
+
+        </Box>
+      </Grid> */}
+
+    </Grid>
+
+  </DialogContent>
+</Dialog>
 
         {/* Logout Confirmation Modal */}
         {isModalOpen && (

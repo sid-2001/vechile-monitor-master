@@ -6,7 +6,7 @@ import { BaseError } from '../../types/error.type'
 import { logger } from '../../helpers/logger'
 import { publicIpv4 } from 'public-ip';
 import { emitApiError } from './api-error-events';
-
+//@ts-ignore
 const { VITE_APP_BACKEND } = import.meta.env
 
 interface AdaptAxiosRequestConfig extends AxiosRequestConfig {
@@ -157,6 +157,7 @@ instance.interceptors.response.use(
       logger.error('Response Interceptor Error:', err)
       emitApiError(String(backendMessage))
       return Promise.reject(err)
+      console.log("ACTUAL BACKEND ERROR:", error?.response)
     }
   },
 )
@@ -248,20 +249,7 @@ const del = async (url: string, object?: any) => {
   }
 }
 
-// const del = async (url: string, object: any) => {
-//   try {
-//  const data = await instance.delete(url, object, {
-//       headers: {
-//         'Content-Type': 'application/json',
-//       }});
 
-
-//       return data
-
-//   } catch (error) {
-//     throw error
-//   }
-// }
 
 const upload = async (url: string, formData: any, onUploadProgress: (progressEvent: AxiosProgressEvent) => void) => {
   try {

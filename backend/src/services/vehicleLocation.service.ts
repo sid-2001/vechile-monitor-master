@@ -12,7 +12,7 @@ import {
   emitVehicleLocationUpdate,
   emitVehicleSpeedAlert,
 } from "../socket/vehicle.socket";
-
+import VehicleSOS from "../models/VehicleSOS";
 const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 20;
 const HARSH_BRAKING_MAX_CURRENT_SPEED = 1;
 
@@ -105,7 +105,9 @@ export class VehicleLocationService {
     }
   }
 
-   private async getVehicleById(vehicleId: string) {
+
+
+   public async getVehicleById(vehicleId: string) {
     return Vehicle.findById(vehicleId).lean();
   }
 
@@ -211,13 +213,85 @@ export class VehicleLocationService {
     return VehicleLocation.findOne({ vehicleId }).sort({ time: -1 });
   }
 
-  async getAnalytics(vehicleId: string) {
+  async getAnalytics(vehicleId: string, from?: Date, to?: Date) {
+    // const [locations, geofenceLogs, speedLogs, brakingLogs] = await Promise.all([
+    //   VehicleLocation.find({ vehicleId }).sort({ time: 1 }).lean(),
+    //   GeofenceLog.find({ vehicleId }).sort({ enter_time: -1 }).lean(),
+    //   VehicleSpeedStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
+    //   VehicleBrakingStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
+    // ]);
+
     const [locations, geofenceLogs, speedLogs, brakingLogs] = await Promise.all([
-      VehicleLocation.find({ vehicleId }).sort({ time: 1 }).lean(),
-      GeofenceLog.find({ vehicleId }).sort({ enter_time: -1 }).lean(),
-      VehicleSpeedStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
-      VehicleBrakingStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
-    ]);
+  VehicleLocation.find({
+    vehicleId,
+    ...(from && to
+      ? {
+          time: {
+            $gte: from,
+            $lte: to,
+          },
+        }
+      : {}),
+  })
+    .sort({ time: 1 })
+    .lean(),
+
+  GeofenceLog.find({
+    vehicleId,
+    ...(from && to
+      ? {
+          enter_time: {
+            $gte: from,
+            $lte: to,
+          },
+        }
+      : {}),
+  })
+    .sort({ enter_time: -1 })
+    .lean(),
+
+  VehicleSpeedStatus.find({
+    vehicleId,
+    ...(from && to
+      ? {
+          time: {
+            $gte: from,
+            $lte: to,
+          },
+        }
+      : {}),
+  })
+    .sort({ time: -1 })
+    .lean(),
+
+  VehicleBrakingStatus.find({
+    vehicleId,
+    ...(from && to
+      ? {
+          time: {
+            $gte: from,
+            $lte: to,
+          },
+        }
+      : {}),
+  })
+    .sort({ time: -1 })
+    .lean(),
+]);
+
+const sosLogs = await VehicleSOS.find({
+  vehicleId: new Types.ObjectId(vehicleId),
+  ...(from && to
+    ? {
+        createdAt: {
+          $gte: from,
+          $lte: to,
+        },
+      }
+    : {}),
+})
+  .sort({ createdAt: -1 })
+  .lean();
 
     const totalSpeed = locations.reduce((sum, item) => sum + (item.speed || 0), 0);
     const avgSpeed = locations.length ? totalSpeed / locations.length : 0;
@@ -233,6 +307,17 @@ export class VehicleLocationService {
 
     const geofenceEnterCount = geofenceLogs.filter((item) => item.eventType === "enter").length;
     const geofenceExitCount = geofenceLogs.filter((item) => item.eventType === "exit").length;
+    const sosCount = await VehicleSOS.countDocuments({
+  vehicleId: new Types.ObjectId(vehicleId),
+  ...(from && to
+    ? {
+        createdAt: {
+          $gte: from,
+          $lte: to,
+        },
+      }
+    : {}),
+});
 
     return {
       vehicleId,
@@ -245,6 +330,8 @@ export class VehicleLocationService {
       geofenceLogs,
       speedLogs,
       brakingLogs,
+       sosCount,
+       sosLogs,
     };
   }
 

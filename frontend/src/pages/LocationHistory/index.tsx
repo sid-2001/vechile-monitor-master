@@ -25,7 +25,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from 'react-leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
-import 'leaflet/dist/leaflet.css'
+// import 'leaflet/dist/leaflet.css'
 
 type VehicleOption = { _id: string; vehicleNumber: string }
 type BucketType = 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'

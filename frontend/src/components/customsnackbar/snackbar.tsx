@@ -3,6 +3,8 @@ import Snackbar from "@mui/material/Snackbar";
 import { useRecoilState } from "recoil";
 import axios from "axios";
 import { alertState, alertTextState, alertTypeState } from "../../states/state";
+//@ts-ignore
+const { VITE_APP_BACKEND } = import.meta.env
 
 const CustomSnackbar = () => {
   const currentSOSId = localStorage.getItem("currentSOSId");
@@ -19,7 +21,7 @@ const CustomSnackbar = () => {
   try {
     if (currentSOSId) {
       await axios.put(
-        `http://localhost:5000/api/sos/close/${currentSOSId}`,
+        `${VITE_APP_BACKEND}/api/sos/close/${currentSOSId}`,
         {},
         {
           headers: {

@@ -10,9 +10,46 @@ const DeviceManagement = () => {
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
-  const [form, setForm] = useState({ name: '', imei: '', simNumber: '' })
-  const [editForm, setEditForm] = useState({ name: '', imei: '', simNumber: '', status: 'ONBOARDED' })
+const [form, setForm] = useState({
+  name: '',
+  imei: '',
+  simNumber: '',
 
+  devicemodel: '',
+  devicemodelnumber: '',
+  manufacturer: '',
+  firmwareversion: '',
+  serialnumber: '',
+
+  countrycode: 'IN',
+  statecode: '',
+  locationid: '',
+  baseunitid: '',
+
+  active: '1',
+  createdby: ''
+}) 
+const [editForm, setEditForm] = useState({
+  name: '',
+  imei: '',
+  simNumber: '',
+
+  devicemodel: '',
+  devicemodelnumber: '',
+  manufacturer: '',
+  firmwareversion: '',
+  serialnumber: '',
+
+  countrycode: '',
+  statecode: '',
+  locationid: '',
+  baseunitid: '',
+
+  active: '1',
+  createdby: '',
+
+  status: 'ONBOARDED'
+})
   const load = async () => {
     try {
       const data = await vehicleMonitorService.getDevices()
@@ -26,16 +63,72 @@ const DeviceManagement = () => {
   useEffect(() => { load() }, [])
 
   const create = async () => {
-    await vehicleMonitorService.createDevice(form)
-    setForm({ name: '', imei: '', simNumber: '' })
+   await vehicleMonitorService.createDevice({
+  name: form.name,
+  imei: form.imei,
+  simNumber: form.simNumber,
+
+  devicemodel: form.devicemodel,
+  devicemodelnumber: form.devicemodelnumber,
+  manufacturer: form.manufacturer,
+  firmwareversion: form.firmwareversion,
+  serialnumber: form.serialnumber,
+
+  countrycode: form.countrycode,
+  statecode: form.statecode,
+  locationid: form.locationid,
+  baseunitid: form.baseunitid,
+
+  active: form.active,
+  createdby: form.createdby
+})
+   setForm({
+  name: '',
+  imei: '',
+  simNumber: '',
+
+  devicemodel: '',
+  devicemodelnumber: '',
+  manufacturer: '',
+  firmwareversion: '',
+  serialnumber: '',
+
+  countrycode: 'IN',
+  statecode: '',
+  locationid: '',
+  baseunitid: '',
+
+  active: '1',
+  createdby: ''
+})
     setSnack('Device onboarded successfully')
     load()
   }
 
   const openEdit = (row: any) => {
     setEditId(row.id)
-    setEditForm({ name: row.name || '', imei: row.imei || '', simNumber: row.simNumber || '', status: row.status || 'ONBOARDED' })
-    setEditOpen(true)
+setEditForm({
+  name: row.name || '',
+  imei: row.imei || '',
+  simNumber: row.simNumber || '',
+
+  devicemodel: row.devicemodel || '',
+  devicemodelnumber: row.devicemodelnumber || '',
+  manufacturer: row.manufacturer || '',
+  firmwareversion: row.firmwareversion || '',
+  serialnumber: row.serialnumber || '',
+
+  countrycode: row.countrycode || 'IN',
+  statecode: row.statecode || '',
+  locationid: row.locationid || '',
+  baseunitid: row.baseunitid || '',
+
+  active: row.active || '1',
+  createdby: row.createdby || '',
+
+  status: row.status || 'ONBOARDED'
+})  
+  setEditOpen(true)
   }
 
   const update = async () => {
@@ -65,7 +158,48 @@ const DeviceManagement = () => {
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
       <Typography variant='h5' mb={2}>Onboard Devices</Typography>
       {error && <Alert severity='error'>{error}</Alert>}
-      <Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={3}><TextField fullWidth label='Device Name' value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='IMEI' value={form.imei} onChange={e => setForm({ ...form, imei: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='SIM Number' value={form.simNumber} onChange={e => setForm({ ...form, simNumber: e.target.value })} /></Grid><Grid item xs={12} md={3}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Onboard Device</Button></Grid></Grid></CardContent></Card>
+      <Card sx={{ mb: 2 }}><CardContent><Grid container spacing={2}><Grid item xs={12} md={3}><TextField fullWidth label='Device Name' value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='IMEI' value={form.imei} onChange={e => setForm({ ...form, imei: e.target.value })} /></Grid><Grid item xs={12} md={3}><TextField fullWidth label='SIM Number' value={form.simNumber} onChange={e => setForm({ ...form, simNumber: e.target.value })} /></Grid>
+      {/* 🔥 NEW DEVICE FIELDS */}
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Device Model' onChange={e => setForm({ ...form, devicemodel: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Model Number' onChange={e => setForm({ ...form, devicemodelnumber: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Manufacturer' onChange={e => setForm({ ...form, manufacturer: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Firmware Version' onChange={e => setForm({ ...form, firmwareversion: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Serial Number' onChange={e => setForm({ ...form, serialnumber: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='State Code' onChange={e => setForm({ ...form, statecode: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Location ID' onChange={e => setForm({ ...form, locationid: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Base Unit ID' onChange={e => setForm({ ...form, baseunitid: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Created By' onChange={e => setForm({ ...form, createdby: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField fullWidth label='Active (1/0)' onChange={e => setForm({ ...form, active: e.target.value })} />
+</Grid><Grid item xs={12} md={3}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Onboard Device</Button></Grid></Grid></CardContent></Card>
       <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
 
       <Dialog sx={{

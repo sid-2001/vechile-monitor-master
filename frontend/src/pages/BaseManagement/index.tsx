@@ -13,8 +13,21 @@ const BaseManagement = () => {
   const [geofences, setGeofences] = useState<GeofenceOption[]>([])
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    name: '', city: '', state: '', pincode: '', latitude: '', longitude: '', geofenceId: ''
-  })
+  baseunitid: '',
+  baseunitcode: '',
+  baseunitname: '',
+  baseunitnumber: '',
+
+  countrycode: 'IN',
+  statecode: '',
+  locationid: '',
+
+  latitude: '',
+  longitude: '',
+
+  active: '1',
+  createdby: '',
+})
 
   const states = useMemo(() => State.getStatesOfCountry(COUNTRY_CODE), [])
   const cities = useMemo(() => City.getCitiesOfState(COUNTRY_CODE, form.state), [form.state])
@@ -90,6 +103,37 @@ const BaseManagement = () => {
             <Grid item xs={12} md={2}>
               <TextField fullWidth label='Longitude' value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
             </Grid>
+            <Grid item xs={12} md={2}>
+  <TextField fullWidth label='Base Unit Code' onChange={e => setForm({ ...form, baseunitcode: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Base Unit Name' onChange={e => setForm({ ...form, baseunitname: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Base Unit Number' onChange={e => setForm({ ...form, baseunitnumber: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Country Code' value='IN' disabled />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='State Code' onChange={e => setForm({ ...form, statecode: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Location ID' onChange={e => setForm({ ...form, locationid: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Created By' onChange={e => setForm({ ...form, createdby: e.target.value })} />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField fullWidth label='Active (1/0)' onChange={e => setForm({ ...form, active: e.target.value })} />
+</Grid>
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth

@@ -53,3 +53,25 @@ body {
 .leaflet-popup-content * {
   color: #000000 !important;
 }
+
+
+.MuiPickersDay-root {
+  color: black !important;
+}
+
+.MuiPickersCalendarHeader-label {
+  color: black !important;
+}
+
+.MuiDayCalendar-weekDayLabel {
+  color: black !important;
+}
+
+.MuiAutocomplete-paper {
+  background-color: #fff !important;
+  color: #000 !important;
+}
+
+.MuiAutocomplete-option {
+  color: #000 !important;
+}
