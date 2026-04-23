@@ -8,6 +8,7 @@ import { useTheme } from '@emotion/react'
 const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
   const [bases, setBases] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [error, setError] = useState('')
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
@@ -34,7 +35,8 @@ const UserManagementApi = () => {
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
-  baseId: ''
+  baseId: '',
+  baseIds: [] as string[]
 })
   const [editForm, setEditForm] = useState({
   username: '',
@@ -56,13 +58,15 @@ const UserManagementApi = () => {
   baseunitid: '',
   role: 'OPERATOR',
   baseId: '',
+  baseIds: [] as string[],
   status: 'ACTIVE'
 })
   const load = async () => {
     try {
-      const [users, baseData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases()])
+      const [users, baseData, locationData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases(), vehicleMonitorService.getLocations()])
       setRows((users.items || []).map((x: any) => ({ id: x._id, ...x })))
       setBases(baseData.items || [])
+      setLocations(locationData.items || [])
       setError('')
     } catch (e: any) {
       setError(e?.error_message || 'Failed to load users')
@@ -103,7 +107,8 @@ const UserManagementApi = () => {
   baseunitid: form.baseunitid,
 
   role: form.role,
-  baseId: form.baseId
+  baseId: form.baseIds[0] || form.baseId,
+  baseIds: form.baseIds
 })
 setForm({
   username: '',
@@ -125,7 +130,8 @@ setForm({
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
-  baseId: ''
+  baseId: '',
+  baseIds: [] as string[]
 })
     setSnack('User created successfully')
     load()
@@ -149,10 +155,11 @@ setForm({
   statecode: row.statecode || '',
   district: row.district || '',
   zipcode: row.zipcode || '',
-  locationid: row.locationid || '',
+  locationid: row.locationid?._id || row.locationid || '',
   baseunitid: row.baseunitid || '',
   role: row.role || 'OPERATOR',
   baseId: row.baseId?._id || row.baseId || '',
+  baseIds: (row.baseIds || []).map((b: any) => b._id || b),
   status: row.status || 'ACTIVE'
 })
     setEditOpen(true)
@@ -189,7 +196,8 @@ setForm({
   baseunitid: editForm.baseunitid,
 
   role: editForm.role,
-  baseId: editForm.baseId,
+  baseId: editForm.baseIds[0] || editForm.baseId,
+  baseIds: editForm.baseIds,
   status: editForm.status
 })
     setEditOpen(false)
@@ -287,7 +295,9 @@ setForm({
       </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Location ID' value={form.locationid} onChange={(e) => setForm({ ...form, locationid: e.target.value })} />
+        <TextField fullWidth select label='Location' value={form.locationid} onChange={(e) => setForm({ ...form, locationid: e.target.value })}>
+          {locations.map((l: any) => <MenuItem key={l._id} value={l._id}>{l.name} ({l.city})</MenuItem>)}
+        </TextField>
       </Grid>
 
       <Grid item xs={12} md={3}>
@@ -324,9 +334,10 @@ setForm({
         <TextField
           fullWidth
           select
-          label='Base'
-          value={form.baseId}
-          onChange={(e) => setForm({ ...form, baseId: e.target.value })}
+          SelectProps={{ multiple: true }}
+          label='Bases'
+          value={form.baseIds}
+          onChange={(e) => setForm({ ...form, baseIds: e.target.value as string[], baseId: (e.target.value as string[])[0] || '' })}
         >
           {bases.map((b: any) => (
             <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
@@ -360,7 +371,8 @@ setForm({
             <Grid item xs={12} md={6}><TextField fullWidth label='Last Name' value={editForm.last} onChange={(e) => setEditForm({ ...editForm, last: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Mobile' value={editForm.mobile} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Email' value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} /></Grid>
-            <Grid item xs={12} md={6}><TextField fullWidth select label='Base' value={editForm.baseId} onChange={(e) => setEditForm({ ...editForm, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid>
+            <Grid item xs={12} md={6}><TextField fullWidth select SelectProps={{ multiple: true }} label='Bases' value={editForm.baseIds} onChange={(e) => setEditForm({ ...editForm, baseIds: e.target.value as string[], baseId: (e.target.value as string[])[0] || '' })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid>
+            <Grid item xs={12} md={6}><TextField fullWidth select label='Location' value={editForm.locationid} onChange={(e) => setEditForm({ ...editForm, locationid: e.target.value })}>{locations.map((l: any) => <MenuItem key={l._id} value={l._id}>{l.name} ({l.city})</MenuItem>)}</TextField></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Status' value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} /></Grid>
           </Grid>
         </DialogContent>

@@ -13,6 +13,8 @@ import deviceSimMappingRoutes from "./routes/deviceSimMappingRoutes";
 
 import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
 import geofenceRoutes from "./routes/geofenceRoutes";
+import locationRoutes from "./routes/locationRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
 import cors from "cors";
 const app = express();
 
@@ -34,6 +36,8 @@ app.use("/vehicles", authMiddleware, vehicleRoutes);
 app.use("/vehicle-locations", vehicleLocationRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
 app.use("/geofences", authMiddleware, geofenceRoutes);
+app.use("/locations", authMiddleware, locationRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use("/sims",authMiddleware,simMasterRoutes)
 app.use("/api/sos", vehicleSOSRoutes);
