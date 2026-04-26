@@ -23,7 +23,7 @@ import type { SelectChangeEvent } from '@mui/material/Select'
 import DownloadIcon from '@mui/icons-material/Download'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 
 type VehicleOption = { _id: string; vehicleNumber: string }
@@ -91,6 +91,101 @@ const sampleSecondsByZoom = (z: number) => {
   if (z <= 11) return 30
   if (z <= 14) return 10
   return 1
+}
+
+const CanvasHistoryLayer = ({
+  points,
+  directionVectors,
+  overspeedEvents,
+  harshBrakingEvents,
+  vehicleColorMap,
+}: {
+  points: VectorPoint[]
+  directionVectors: DirectionVector[]
+  overspeedEvents: EventPoint[]
+  harshBrakingEvents: EventPoint[]
+  vehicleColorMap: Map<string, string>
+}) => {
+  const map = useMap()
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    canvas.style.position = 'absolute'
+    canvas.style.top = '0'
+    canvas.style.left = '0'
+    canvas.style.pointerEvents = 'none'
+    canvas.style.zIndex = '450'
+
+    const pane = map.getPanes().overlayPane
+    pane.appendChild(canvas)
+    canvasRef.current = canvas
+
+    const resize = () => {
+      const size = map.getSize()
+      canvas.width = size.x
+      canvas.height = size.y
+      draw()
+    }
+
+    const draw = () => {
+      const context = canvas.getContext('2d')
+      if (!context) return
+
+      context.clearRect(0, 0, canvas.width, canvas.height)
+
+      context.globalAlpha = 0.65
+      context.lineWidth = 1.4
+      directionVectors.forEach((vector) => {
+        const from = map.latLngToContainerPoint([vector.from[0], vector.from[1]])
+        const to = map.latLngToContainerPoint([vector.to[0], vector.to[1]])
+
+        context.beginPath()
+        context.strokeStyle = vehicleColorMap.get(vector.vehicleId) || '#FFDE42'
+        context.moveTo(from.x, from.y)
+        context.lineTo(to.x, to.y)
+        context.stroke()
+      })
+
+      context.globalAlpha = 0.9
+      points.forEach((point) => {
+        const pixel = map.latLngToContainerPoint([point.latitude, point.longitude])
+        context.beginPath()
+        context.fillStyle = vehicleColorMap.get(point.vehicleId) || '#FFDE42'
+        context.arc(pixel.x, pixel.y, 2, 0, 2 * Math.PI)
+        context.fill()
+      })
+
+      context.globalAlpha = 1
+      overspeedEvents.forEach((event) => {
+        const pixel = map.latLngToContainerPoint([event.latitude, event.longitude])
+        context.beginPath()
+        context.fillStyle = '#ff1744'
+        context.arc(pixel.x, pixel.y, 4.5, 0, 2 * Math.PI)
+        context.fill()
+      })
+
+      harshBrakingEvents.forEach((event) => {
+        const pixel = map.latLngToContainerPoint([event.latitude, event.longitude])
+        context.beginPath()
+        context.fillStyle = '#ff9100'
+        context.arc(pixel.x, pixel.y, 4.5, 0, 2 * Math.PI)
+        context.fill()
+      })
+    }
+
+    resize()
+    map.on('zoom move resize', draw)
+    map.on('resize', resize)
+
+    return () => {
+      map.off('zoom move resize', draw)
+      map.off('resize', resize)
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas)
+    }
+  }, [directionVectors, harshBrakingEvents, map, overspeedEvents, points, vehicleColorMap])
+
+  return null
 }
 
 const LocationHistory = () => {
@@ -308,72 +403,20 @@ const LocationHistory = () => {
       <MapContainer center={mapCenter} zoom={zoomLevel} preferCanvas style={{ height: '100%', width: '100%' }}>
         <ZoomAndMoveTracker />
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-
-        {points.map((point, idx) => {
-          const color = vehicleColorMap.get(point.vehicleId) || '#FFDE42'
-          return (
-            <CircleMarker
-              key={`${point._id}-${idx}`}
-              center={[point.latitude, point.longitude]}
-              radius={2}
-              pathOptions={{ color, fillColor: color, fillOpacity: 0.8, weight: 1 }}
-            >
-              <Popup>
-                <Stack spacing={0.5}>
-                  <Typography variant='body2'><strong>Vehicle:</strong> {point.vehicleId}</Typography>
-                  <Typography variant='body2'><strong>Time:</strong> {new Date(point.time).toLocaleString()}</Typography>
-                  <Typography variant='body2'><strong>Speed:</strong> {point.speed} km/h</Typography>
-                  <Typography variant='body2'><strong>Direction:</strong> {point.direction} ({Math.round(point.angle || 0)}°)</Typography>
-                </Stack>
-              </Popup>
-            </CircleMarker>
-          )
-        })}
-
-        {directionVectors.map((vector) => (
-          <Polyline
-            key={`vector-${vector._id}`}
-            positions={[vector.from, vector.to]}
-            pathOptions={{ color: vehicleColorMap.get(vector.vehicleId) || '#FFDE42', weight: 1.5, opacity: 0.65 }}
-          >
-            <Popup>
-              <Typography variant='body2'>Direction {vector.direction} ({Math.round(vector.angle)}°)</Typography>
-            </Popup>
-          </Polyline>
-        ))}
-
-        {overspeedEvents.map((event, index) => (
-          <CircleMarker
-            key={`overspeed-${event._id}-${index}`}
-            center={[event.latitude, event.longitude]}
-            radius={5}
-            pathOptions={{ color: '#ff1744', fillColor: '#ff1744', fillOpacity: 0.95 }}
-          >
-            <Popup>
-              <Typography variant='body2'><strong>Overspeed:</strong> {event.speed} km/h<br />{new Date(event.time).toLocaleString()}</Typography>
-            </Popup>
-          </CircleMarker>
-        ))}
-
-        {harshBrakingEvents.map((event, index) => (
-          <CircleMarker
-            key={`harsh-${event._id}-${index}`}
-            center={[event.latitude, event.longitude]}
-            radius={5}
-            pathOptions={{ color: '#ff9100', fillColor: '#ff9100', fillOpacity: 0.95 }}
-          >
-            <Popup>
-              <Typography variant='body2'><strong>Harsh Braking:</strong> {event.speed} km/h<br />{new Date(event.time).toLocaleString()}</Typography>
-            </Popup>
-          </CircleMarker>
-        ))}
+        <CanvasHistoryLayer
+          points={points}
+          directionVectors={directionVectors}
+          overspeedEvents={overspeedEvents}
+          harshBrakingEvents={harshBrakingEvents}
+          vehicleColorMap={vehicleColorMap}
+        />
       </MapContainer>
     </Box>
   )
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography variant='h4' mb={2}>Location History (Optimized Vector Tile Mode)</Typography>
+      <Typography variant='h4' mb={2}>Location History (Canvas Optimized Vector Tile Mode)</Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 2 }}>
