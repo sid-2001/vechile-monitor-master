@@ -31,6 +31,66 @@ export class VehicleLocationController {
     res.json(data);
   }
 
+
+  async cacheLocation(req: Request, res: Response): Promise<void> {
+    const payload = req.body as {
+      vehicleId: string;
+      deviceId: string;
+      latitude: number;
+      longitude: number;
+      speed: number;
+      ignition: boolean;
+      time: string;
+      angle?: number;
+      source?: "live" | "simulation";
+      vehicleNumber?: string;
+    };
+
+    const data = await vehicleLocationService.cacheLiveLocation(payload);
+    res.status(201).json(data);
+  }
+
+  async liveFromCache(req: Request, res: Response): Promise<void> {
+    const item = await vehicleLocationService.getCachedLiveLocation(req.params.vehicleId);
+    if (!item) {
+      res.status(404).json({ message: "No cached location data" });
+      return;
+    }
+
+    res.json(item);
+  }
+
+  async vectorTileHistory(req: Request, res: Response): Promise<void> {
+    const z = Number(req.query.z || 0);
+    const x = Number(req.query.x || 0);
+    const y = Number(req.query.y || 0);
+    const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const to = req.query.to ? new Date(String(req.query.to)) : new Date();
+    const limit = Number(req.query.limit || 5000);
+
+    if ([z, x, y, limit].some((item) => Number.isNaN(item))) {
+      res.status(422).json({ message: "Invalid vector tile parameters" });
+      return;
+    }
+
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+      res.status(422).json({ message: "Invalid date range" });
+      return;
+    }
+
+    const data = await vehicleLocationService.getVectorTileHistory({
+      vehicleId: req.params.vehicleId,
+      z,
+      x,
+      y,
+      from,
+      to,
+      limit,
+    });
+
+    res.json(data);
+  }
+
   async timeline(req: Request, res: Response): Promise<void> {
     const MAX_TIMELINE_WINDOW_MS = 24 * 60 * 60 * 1000;
     const vehicleIds = String(req.query.vehicleIds || '').split(',').map((id) => id.trim()).filter(Boolean);

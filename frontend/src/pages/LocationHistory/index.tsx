@@ -23,45 +23,35 @@ import type { SelectChangeEvent } from '@mui/material/Select'
 import DownloadIcon from '@mui/icons-material/Download'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
-import { CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
-// import 'leaflet/dist/leaflet.css'
 
 type VehicleOption = { _id: string; vehicleNumber: string }
-type BucketType = 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'
 
-type TimelinePoint = {
+type VectorPoint = {
   _id: string
   vehicleId: string
-  vehicleNumber: string
+  latitude: number
+  longitude: number
+  speed: number
+  angle: number
+  direction: string
+  time: string
+}
+
+type EventPoint = {
+  _id: string
   latitude: number
   longitude: number
   speed: number
   time: string
-  bucketTime: string
+  type: 'overspeed' | 'harsh-braking'
 }
+
+type MapTileState = { z: number; x: number; y: number }
 
 const vehicleColors = ['#FFDE42', '#42A5F5', '#66BB6A', '#EF5350', '#AB47BC', '#FFA726', '#26C6DA', '#8D6E63']
-
-const bucketByZoom = (zoom: number): BucketType => {
-  if (zoom < 7) return 'month'
-  if (zoom < 9) return 'week'
-  if (zoom < 11) return 'day'
-  if (zoom < 13) return 'hour'
-  if (zoom < 16) return 'minute'
-  return 'second'
-}
-
-const bucketLabelMap: Record<BucketType, string> = {
-  month: 'Monthly',
-  week: 'Weekly',
-  day: 'Day wise',
-  hour: 'Hourly',
-  minute: 'Minute wise',
-  second: '5-second wise',
-}
-
-const getBinSizeByZoom = (zoom: number) => (zoom >= 16 ? 5 : 1)
 
 const toInputDate = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -71,6 +61,20 @@ const toInputDate = (d: Date) => {
 const HISTORY_WINDOW_HOURS = 24
 const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
 
+const lngToTileX = (lng: number, z: number) => Math.floor(((lng + 180) / 360) * 2 ** z)
+const latToTileY = (lat: number, z: number) => {
+  const latRad = (lat * Math.PI) / 180
+  return Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * 2 ** z)
+}
+
+const createDirectionIcon = (angle: number, color: string) =>
+  L.divIcon({
+    className: 'direction-arrow-icon',
+    html: `<div style="transform: rotate(${angle || 0}deg); color:${color}; font-size: 14px; font-weight:700;">▲</div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  })
+
 const LocationHistory = () => {
   const now = new Date()
   const [vehicles, setVehicles] = useState<VehicleOption[]>([])
@@ -78,14 +82,15 @@ const LocationHistory = () => {
   const [fromDate, setFromDate] = useState(toInputDate(new Date(now.getTime() - HISTORY_WINDOW_MS)))
   const [toDate, setToDate] = useState(toInputDate(now))
   const [zoomLevel, setZoomLevel] = useState(7)
-  const [bucket, setBucket] = useState<BucketType>('month')
-  const [points, setPoints] = useState<TimelinePoint[]>([])
+  const [tileState, setTileState] = useState<MapTileState>({ z: 7, x: lngToTileX(78.6569, 7), y: latToTileY(22.9734, 7) })
+  const [points, setPoints] = useState<VectorPoint[]>([])
+  const [overspeedEvents, setOverspeedEvents] = useState<EventPoint[]>([])
+  const [harshBrakingEvents, setHarshBrakingEvents] = useState<EventPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
-  const [binSize, setBinSize] = useState(1)
 
-  const zoomLoadTimer = useRef<number | null>(null)
+  const mapMoveTimer = useRef<number | null>(null)
 
   useEffect(() => {
     const loadVehicles = async () => {
@@ -99,21 +104,18 @@ const LocationHistory = () => {
     loadVehicles()
   }, [])
 
-  const loadTimeline = async (overrideBucket?: BucketType) => {
+  const loadVectorHistory = async () => {
     if (!selectedVehicleIds.length) {
       setError('Please select at least one vehicle')
       return
     }
 
-    const activeBucket = overrideBucket || bucket
-    const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
-
     try {
       setLoading(true)
       setError('')
+
       const from = new Date(fromDate)
       const to = new Date(toDate)
-
       if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
         setError('Please select valid From/To date-time')
         return
@@ -127,19 +129,28 @@ const LocationHistory = () => {
         return
       }
 
-      const data = await vehicleMonitorService.getVehicleTimeline({
-        vehicleIds: selectedVehicleIds.join(','),
-        from: from.toISOString(),
-        to: to.toISOString(),
-        bucket: activeBucket,
-        binSize: activeBinSize,
-        excludeSimulation: true,
-      })
-      setPoints(data.items || [])
-      setBucket(activeBucket)
-      setBinSize(activeBinSize)
+      const responses = await Promise.all(
+        selectedVehicleIds.map((vehicleId) =>
+          vehicleMonitorService.getVehicleVectorHistory(vehicleId, {
+            from: from.toISOString(),
+            to: to.toISOString(),
+            z: tileState.z,
+            x: tileState.x,
+            y: tileState.y,
+            limit: 5000,
+          })
+        )
+      )
+
+      const mergedPoints = responses.flatMap((item: any) => item.features || []) as VectorPoint[]
+      const mergedOverspeed = responses.flatMap((item: any) => item?.events?.overSpeed || []) as EventPoint[]
+      const mergedHarsh = responses.flatMap((item: any) => item?.events?.harshBraking || []) as EventPoint[]
+
+      setPoints(mergedPoints)
+      setOverspeedEvents(mergedOverspeed)
+      setHarshBrakingEvents(mergedHarsh)
     } catch (e: any) {
-      setError(e?.error_message || 'Failed to load timeline data')
+      setError(e?.error_message || 'Failed to load vector tile history')
     } finally {
       setLoading(false)
     }
@@ -149,48 +160,6 @@ const LocationHistory = () => {
     const value = event.target.value
     const ids = typeof value === 'string' ? value.split(',') : value
     setSelectedVehicleIds(ids)
-  }
-
-  const handleFromDateChange = (value: string) => {
-    const nextFrom = new Date(value)
-    const currentTo = new Date(toDate)
-    if (Number.isNaN(nextFrom.getTime())) {
-      setFromDate(value)
-      return
-    }
-
-    let normalizedTo = currentTo
-    if (nextFrom > currentTo) {
-      normalizedTo = new Date(nextFrom.getTime() + HISTORY_WINDOW_MS)
-    }
-
-    if (normalizedTo.getTime() - nextFrom.getTime() > HISTORY_WINDOW_MS) {
-      normalizedTo = new Date(nextFrom.getTime() + HISTORY_WINDOW_MS)
-    }
-
-    setFromDate(value)
-    setToDate(toInputDate(normalizedTo))
-  }
-
-  const handleToDateChange = (value: string) => {
-    const nextTo = new Date(value)
-    const currentFrom = new Date(fromDate)
-    if (Number.isNaN(nextTo.getTime())) {
-      setToDate(value)
-      return
-    }
-
-    let normalizedFrom = currentFrom
-    if (currentFrom > nextTo) {
-      normalizedFrom = new Date(nextTo.getTime() - HISTORY_WINDOW_MS)
-    }
-
-    if (nextTo.getTime() - normalizedFrom.getTime() > HISTORY_WINDOW_MS) {
-      normalizedFrom = new Date(nextTo.getTime() - HISTORY_WINDOW_MS)
-    }
-
-    setFromDate(toInputDate(normalizedFrom))
-    setToDate(value)
   }
 
   const mapCenter = useMemo<[number, number]>(() => {
@@ -204,19 +173,23 @@ const LocationHistory = () => {
     return map
   }, [selectedVehicleIds])
 
-  const ZoomTracker = () => {
+  const ZoomAndMoveTracker = () => {
     useMapEvents({
-      zoomend: (event) => {
-        const newZoom = event.target.getZoom()
-        setZoomLevel(newZoom)
-
-        const nextBucket = bucketByZoom(newZoom)
-        if (nextBucket !== bucket) {
-          if (zoomLoadTimer.current) window.clearTimeout(zoomLoadTimer.current)
-          zoomLoadTimer.current = window.setTimeout(() => {
-            loadTimeline(nextBucket)
-          }, 350)
+      moveend: (event) => {
+        const center = event.target.getCenter()
+        const z = event.target.getZoom()
+        const nextTile = {
+          z,
+          x: lngToTileX(center.lng, z),
+          y: latToTileY(center.lat, z),
         }
+        setZoomLevel(z)
+        setTileState(nextTile)
+
+        if (mapMoveTimer.current) window.clearTimeout(mapMoveTimer.current)
+        mapMoveTimer.current = window.setTimeout(() => {
+          loadVectorHistory()
+        }, 400)
       },
     })
     return null
@@ -225,14 +198,16 @@ const LocationHistory = () => {
   const downloadCsv = () => {
     if (!points.length) return
 
-    const header = 'vehicle,time,latitude,longitude,speed,bucketTime\n'
-    const rows = points.map((point) => `${point.vehicleNumber},${new Date(point.time).toISOString()},${point.latitude},${point.longitude},${point.speed},${new Date(point.bucketTime).toISOString()}`).join('\n')
+    const header = 'vehicleId,time,latitude,longitude,speed,angle,direction\n'
+    const rows = points
+      .map((point) => `${point.vehicleId},${new Date(point.time).toISOString()},${point.latitude},${point.longitude},${point.speed},${point.angle},${point.direction}`)
+      .join('\n')
 
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `location-history-${bucket}.csv`
+    link.download = `vector-location-history-z${zoomLevel}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -241,26 +216,47 @@ const LocationHistory = () => {
     <Box sx={{ height: 540, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
       {loading && <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }} />}
       <MapContainer center={mapCenter} zoom={zoomLevel} preferCanvas style={{ height: '100%', width: '100%' }}>
-        <ZoomTracker />
+        <ZoomAndMoveTracker />
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
 
-        {points.map((point, idx) => (
+        {points.map((point, idx) => {
+          const color = vehicleColorMap.get(point.vehicleId) || '#FFDE42'
+          return (
+            <Marker key={`${point._id}-${idx}`} position={[point.latitude, point.longitude]} icon={createDirectionIcon(point.angle, color)}>
+              <Popup>
+                <Stack spacing={0.5}>
+                  <Typography variant='body2'><strong>Vehicle:</strong> {point.vehicleId}</Typography>
+                  <Typography variant='body2'><strong>Time:</strong> {new Date(point.time).toLocaleString()}</Typography>
+                  <Typography variant='body2'><strong>Speed:</strong> {point.speed} km/h</Typography>
+                  <Typography variant='body2'><strong>Direction:</strong> {point.direction} ({Math.round(point.angle || 0)}°)</Typography>
+                </Stack>
+              </Popup>
+            </Marker>
+          )
+        })}
+
+        {overspeedEvents.map((event, index) => (
           <CircleMarker
-            key={`${point._id}-${idx}`}
-            center={[point.latitude, point.longitude]}
-            radius={3}
-            pathOptions={{
-              color: vehicleColorMap.get(point.vehicleId) || '#FFDE42',
-              fillColor: vehicleColorMap.get(point.vehicleId) || '#FFDE42',
-              fillOpacity: 0.9,
-            }}
+            key={`overspeed-${event._id}-${index}`}
+            center={[event.latitude, event.longitude]}
+            radius={5}
+            pathOptions={{ color: '#ff1744', fillColor: '#ff1744', fillOpacity: 0.95 }}
           >
             <Popup>
-              <Stack spacing={0.5}>
-                <Typography variant='body2'><strong>Vehicle:</strong> {point.vehicleNumber}</Typography>
-                <Typography variant='body2'><strong>Time:</strong> {new Date(point.time).toLocaleString()}</Typography>
-                <Typography variant='body2'><strong>Speed:</strong> {point.speed} km/h</Typography>
-              </Stack>
+              <Typography variant='body2'><strong>Overspeed:</strong> {event.speed} km/h<br />{new Date(event.time).toLocaleString()}</Typography>
+            </Popup>
+          </CircleMarker>
+        ))}
+
+        {harshBrakingEvents.map((event, index) => (
+          <CircleMarker
+            key={`harsh-${event._id}-${index}`}
+            center={[event.latitude, event.longitude]}
+            radius={5}
+            pathOptions={{ color: '#ff9100', fillColor: '#ff9100', fillOpacity: 0.95 }}
+          >
+            <Popup>
+              <Typography variant='body2'><strong>Harsh Braking:</strong> {event.speed} km/h<br />{new Date(event.time).toLocaleString()}</Typography>
             </Popup>
           </CircleMarker>
         ))}
@@ -270,7 +266,7 @@ const LocationHistory = () => {
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography variant='h4' mb={2}>Location History (Adaptive Million-Point Mode)</Typography>
+      <Typography variant='h4' mb={2}>Location History (Vector Tile + Direction & Event View)</Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 2 }}>
@@ -295,64 +291,35 @@ const LocationHistory = () => {
             </Grid>
 
             <Grid item xs={12} md={2}>
-              <TextField
-                fullWidth
-                type='datetime-local'
-                label='From'
-                value={fromDate}
-                onChange={(e) => handleFromDateChange(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{
-                  max: toDate,
-                }}
-              />
+              <TextField fullWidth type='datetime-local' label='From' value={fromDate} onChange={(e) => setFromDate(e.target.value)} InputLabelProps={{ shrink: true }} />
             </Grid>
             <Grid item xs={12} md={2}>
-              <TextField
-                fullWidth
-                type='datetime-local'
-                label='To'
-                value={toDate}
-                onChange={(e) => handleToDateChange(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{
-                  min: fromDate,
-                  max: toInputDate(new Date()),
-                }}
-              />
+              <TextField fullWidth type='datetime-local' label='To' value={toDate} onChange={(e) => setToDate(e.target.value)} InputLabelProps={{ shrink: true }} />
             </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Button fullWidth variant='contained' onClick={() => loadTimeline('month')} sx={{ height: 56 }} disabled={loading}>Load History</Button>
-            </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Stack direction='row' justifyContent='flex-end' spacing={1}>
-                <Button variant='outlined' startIcon={<DownloadIcon />} onClick={downloadCsv} disabled={!points.length}>CSV</Button>
-                <IconButton onClick={() => setFullscreenOpen(true)}><FullscreenIcon /></IconButton>
+            <Grid item xs={12} md={4}>
+              <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                <Button variant='contained' onClick={loadVectorHistory} disabled={loading}>Load History</Button>
+                <Button variant='outlined' onClick={downloadCsv} disabled={!points.length} startIcon={<DownloadIcon />}>CSV</Button>
+                <IconButton color='primary' onClick={() => setFullscreenOpen(true)}><FullscreenIcon /></IconButton>
               </Stack>
             </Grid>
           </Grid>
 
           <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
-            <Chip color='warning' label='Range limited to last 24 hours' />
-            <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}${bucket === "second" ? ` (${binSize}s)` : ""}`} />
-            <Chip label={`Zoom: ${zoomLevel}`} />
-            <Chip label={`Loaded points: ${points.length.toLocaleString()}`} />
-            <Chip label='Flow: Month → Week → Day → Hour → Minute → Second' />
+            <Chip label={`Zoom: ${zoomLevel}`} color='primary' />
+            <Chip label={`Tile: ${tileState.z}/${tileState.x}/${tileState.y}`} />
+            <Chip label={`Track points: ${points.length}`} color='success' />
+            <Chip label={`Overspeed points: ${overspeedEvents.length}`} color='error' />
+            <Chip label={`Harsh braking points: ${harshBrakingEvents.length}`} sx={{ bgcolor: '#ff9100', color: '#fff' }} />
           </Stack>
         </CardContent>
       </Card>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={12}><Card><CardContent>{mapElement}</CardContent></Card></Grid>
-     
-      </Grid>
+      {mapElement}
 
       <Dialog fullScreen open={fullscreenOpen} onClose={() => setFullscreenOpen(false)}>
         <DialogContent sx={{ p: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant='h6'>Location History Map</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <IconButton onClick={() => setFullscreenOpen(false)}><CloseIcon /></IconButton>
           </Box>
           {mapElement}

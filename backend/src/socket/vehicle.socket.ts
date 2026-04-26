@@ -9,6 +9,7 @@ export const emitVehicleLocationUpdate = (payload: {
   ignition: boolean;
   time: Date;
   source?: "live" | "simulation";
+  angle?: number;
 }): void => {
   const io = getIo();
   io.emit("vehicleLocationUpdate", payload);
@@ -23,6 +24,7 @@ export const emitAllVehicleLocationUpdate = (payload: {
   ignition: boolean;
   time: Date;
   source?: "live" | "simulation";
+  angle?: number;
 }[]): void => {
   const io = getIo();
   io.emit("vehicleLocationBulkUpdate", payload);
