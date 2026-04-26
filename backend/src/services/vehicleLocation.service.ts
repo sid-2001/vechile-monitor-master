@@ -467,6 +467,7 @@ const sosLogs = await VehicleSOS.find({
     from: Date;
     to: Date;
     limit?: number;
+    sampleSeconds?: number;
   }) {
     const west = tile2long(params.x, params.z);
     const east = tile2long(params.x + 1, params.z);
@@ -480,18 +481,47 @@ const sosLogs = await VehicleSOS.find({
       longitude: { $gte: west, $lte: east },
     };
 
+    const maxPoints = Math.max(1, params.limit || 5000);
+    const autoSampleByZoom = params.z <= 8 ? 120 : params.z <= 11 ? 30 : params.z <= 14 ? 10 : 1;
+    const sampleSeconds = Math.max(1, params.sampleSeconds || autoSampleByZoom);
+
     const [locations, overSpeedPoints, harshBrakingPoints] = await Promise.all([
-      VehicleLocation.find(match)
-        .sort({ time: 1 })
-        .limit(Math.max(1, params.limit || 5000))
-        .lean(),
+      VehicleLocation.aggregate([
+        { $match: match },
+        {
+          $project: {
+            vehicleId: 1,
+            latitude: 1,
+            longitude: 1,
+            speed: 1,
+            ignition: 1,
+            time: 1,
+            source: 1,
+            angle: 1,
+            bucketTime: {
+              $dateTrunc: { date: "$time", unit: "second", binSize: sampleSeconds },
+            },
+          },
+        },
+        { $sort: { time: -1 } },
+        {
+          $group: {
+            _id: "$bucketTime",
+            doc: { $first: "$$ROOT" },
+          },
+        },
+        { $replaceRoot: { newRoot: "$doc" } },
+        { $sort: { time: 1 } },
+        { $limit: maxPoints },
+      ]).allowDiskUse(true),
       VehicleSpeedStatus.find({
         vehicleId: params.vehicleId,
         time: { $gte: params.from, $lte: params.to },
         latitude: { $gte: south, $lte: north },
         longitude: { $gte: west, $lte: east },
       })
-        .sort({ time: 1 })
+        .sort({ time: -1 })
+        .limit(1000)
         .lean(),
       VehicleBrakingStatus.find({
         vehicleId: params.vehicleId,
@@ -499,12 +529,13 @@ const sosLogs = await VehicleSOS.find({
         latitude: { $gte: south, $lte: north },
         longitude: { $gte: west, $lte: east },
       })
-        .sort({ time: 1 })
+        .sort({ time: -1 })
+        .limit(1000)
         .lean(),
     ]);
 
-    const features = locations.map((item) => ({
-      _id: String(item._id),
+    const features = locations.map((item: any) => ({
+      _id: String(item._id || item.time),
       vehicleId: String(item.vehicleId),
       latitude: item.latitude,
       longitude: item.longitude,
@@ -517,7 +548,7 @@ const sosLogs = await VehicleSOS.find({
     }));
 
     return {
-      tile: { z: params.z, x: params.x, y: params.y, bounds: { west, east, south, north } },
+      tile: { z: params.z, x: params.x, y: params.y, bounds: { west, east, south, north }, sampleSeconds },
       features,
       events: {
         overSpeed: overSpeedPoints.map((point) => ({

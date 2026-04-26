@@ -67,8 +67,9 @@ export class VehicleLocationController {
     const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - 24 * 60 * 60 * 1000);
     const to = req.query.to ? new Date(String(req.query.to)) : new Date();
     const limit = Number(req.query.limit || 5000);
+    const sampleSeconds = Number(req.query.sampleSeconds || 0);
 
-    if ([z, x, y, limit].some((item) => Number.isNaN(item))) {
+    if ([z, x, y, limit, sampleSeconds].some((item) => Number.isNaN(item))) {
       res.status(422).json({ message: "Invalid vector tile parameters" });
       return;
     }
@@ -86,6 +87,7 @@ export class VehicleLocationController {
       from,
       to,
       limit,
+      sampleSeconds,
     });
 
     res.json(data);
