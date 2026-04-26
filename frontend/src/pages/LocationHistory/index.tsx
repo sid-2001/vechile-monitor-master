@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
-  Dialog,
-  DialogContent,
   FormControl,
   Grid,
-  IconButton,
   InputLabel,
-  LinearProgress,
   MenuItem,
   Select,
   Stack,
@@ -20,170 +15,65 @@ import {
   Typography,
 } from '@mui/material'
 import type { SelectChangeEvent } from '@mui/material/Select'
-import DownloadIcon from '@mui/icons-material/Download'
-import FullscreenIcon from '@mui/icons-material/Fullscreen'
-import CloseIcon from '@mui/icons-material/Close'
-import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import 'leaflet.vectorgrid'
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 
 type VehicleOption = { _id: string; vehicleNumber: string }
 
-type VectorPoint = {
-  _id: string
-  vehicleId: string
-  latitude: number
-  longitude: number
-  speed: number
-  angle: number
-  direction: string
-  time: string
-}
-
-type EventPoint = {
-  _id: string
-  latitude: number
-  longitude: number
-  speed: number
-  time: string
-  type: 'overspeed' | 'harsh-braking'
-}
-
-type DirectionVector = {
-  _id: string
-  from: [number, number]
-  to: [number, number]
-  vehicleId: string
-  angle: number
-  direction: string
-  speed: number
-  time: string
-}
-
-type MapTileState = { z: number; x: number; y: number }
-
-type WorkerPayload = {
-  points: VectorPoint[]
-  directionVectors: DirectionVector[]
-  overSpeed: EventPoint[]
-  harshBraking: EventPoint[]
-  rawCount: number
-  sampledCount: number
-}
-
-const vehicleColors = ['#FFDE42', '#42A5F5', '#66BB6A', '#EF5350', '#AB47BC', '#FFA726', '#26C6DA', '#8D6E63']
+const HISTORY_WINDOW_HOURS = 24
+const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
 
 const toInputDate = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const HISTORY_WINDOW_HOURS = 24
-const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
-
-const lngToTileX = (lng: number, z: number) => Math.floor(((lng + 180) / 360) * 2 ** z)
-const latToTileY = (lat: number, z: number) => {
-  const latRad = (lat * Math.PI) / 180
-  return Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * 2 ** z)
-}
-
-const sampleSecondsByZoom = (z: number) => {
-  if (z <= 8) return 120
-  if (z <= 11) return 30
-  if (z <= 14) return 10
-  return 1
-}
-
-const CanvasHistoryLayer = ({
-  points,
-  directionVectors,
-  overspeedEvents,
-  harshBrakingEvents,
-  vehicleColorMap,
-}: {
-  points: VectorPoint[]
-  directionVectors: DirectionVector[]
-  overspeedEvents: EventPoint[]
-  harshBrakingEvents: EventPoint[]
-  vehicleColorMap: Map<string, string>
-}) => {
+const VectorTileLayer = ({ tileUrl }: { tileUrl: string }) => {
   const map = useMap()
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
-    const canvas = document.createElement('canvas')
-    canvas.style.position = 'absolute'
-    canvas.style.top = '0'
-    canvas.style.left = '0'
-    canvas.style.pointerEvents = 'none'
-    canvas.style.zIndex = '450'
+    const vectorGrid = (L as any).vectorGrid.protobuf(tileUrl, {
+      rendererFactory: (L as any).canvas.tile,
+      interactive: true,
+      maxZoom: 20,
+      vectorTileLayerStyles: {
+        locations: {
+          radius: 2.5,
+          fillColor: '#FFDE42',
+          color: '#FFDE42',
+          fillOpacity: 0.85,
+          opacity: 1,
+          weight: 1,
+        },
+      },
+    })
 
-    const pane = map.getPanes().overlayPane
-    pane.appendChild(canvas)
-    canvasRef.current = canvas
+    vectorGrid.on('click', (event: any) => {
+      const props = event.layer?.properties || {}
+      const deviceId = props.device_id || 'N/A'
+      const timestamp = props.timestamp ? new Date(props.timestamp).toLocaleString() : 'N/A'
+      const speed = props.speed ?? 'N/A'
 
-    const resize = () => {
-      const size = map.getSize()
-      canvas.width = size.x
-      canvas.height = size.y
-      draw()
-    }
+      L.popup()
+        .setLatLng(event.latlng)
+        .setContent(`
+          <div style="min-width: 180px; color: black;">
+            <div><b>Device:</b> ${deviceId}</div>
+            <div><b>Timestamp:</b> ${timestamp}</div>
+            <div><b>Speed:</b> ${speed}</div>
+          </div>
+        `)
+        .openOn(map)
+    })
 
-    const draw = () => {
-      const context = canvas.getContext('2d')
-      if (!context) return
-
-      context.clearRect(0, 0, canvas.width, canvas.height)
-
-      context.globalAlpha = 0.65
-      context.lineWidth = 1.4
-      directionVectors.forEach((vector) => {
-        const from = map.latLngToContainerPoint([vector.from[0], vector.from[1]])
-        const to = map.latLngToContainerPoint([vector.to[0], vector.to[1]])
-
-        context.beginPath()
-        context.strokeStyle = vehicleColorMap.get(vector.vehicleId) || '#FFDE42'
-        context.moveTo(from.x, from.y)
-        context.lineTo(to.x, to.y)
-        context.stroke()
-      })
-
-      context.globalAlpha = 0.9
-      points.forEach((point) => {
-        const pixel = map.latLngToContainerPoint([point.latitude, point.longitude])
-        context.beginPath()
-        context.fillStyle = vehicleColorMap.get(point.vehicleId) || '#FFDE42'
-        context.arc(pixel.x, pixel.y, 2, 0, 2 * Math.PI)
-        context.fill()
-      })
-
-      context.globalAlpha = 1
-      overspeedEvents.forEach((event) => {
-        const pixel = map.latLngToContainerPoint([event.latitude, event.longitude])
-        context.beginPath()
-        context.fillStyle = '#ff1744'
-        context.arc(pixel.x, pixel.y, 4.5, 0, 2 * Math.PI)
-        context.fill()
-      })
-
-      harshBrakingEvents.forEach((event) => {
-        const pixel = map.latLngToContainerPoint([event.latitude, event.longitude])
-        context.beginPath()
-        context.fillStyle = '#ff9100'
-        context.arc(pixel.x, pixel.y, 4.5, 0, 2 * Math.PI)
-        context.fill()
-      })
-    }
-
-    resize()
-    map.on('zoom move resize', draw)
-    map.on('resize', resize)
-
+    vectorGrid.addTo(map)
     return () => {
-      map.off('zoom move resize', draw)
-      map.off('resize', resize)
-      if (canvas.parentNode) canvas.parentNode.removeChild(canvas)
+      map.removeLayer(vectorGrid)
     }
-  }, [directionVectors, harshBrakingEvents, map, overspeedEvents, points, vehicleColorMap])
+  }, [map, tileUrl])
 
   return null
 }
@@ -194,22 +84,8 @@ const LocationHistory = () => {
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([])
   const [fromDate, setFromDate] = useState(toInputDate(new Date(now.getTime() - HISTORY_WINDOW_MS)))
   const [toDate, setToDate] = useState(toInputDate(now))
-  const [zoomLevel, setZoomLevel] = useState(7)
-  const [tileState, setTileState] = useState<MapTileState>({ z: 7, x: lngToTileX(78.6569, 7), y: latToTileY(22.9734, 7) })
-  const [points, setPoints] = useState<VectorPoint[]>([])
-  const [directionVectors, setDirectionVectors] = useState<DirectionVector[]>([])
-  const [overspeedEvents, setOverspeedEvents] = useState<EventPoint[]>([])
-  const [harshBrakingEvents, setHarshBrakingEvents] = useState<EventPoint[]>([])
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [fullscreenOpen, setFullscreenOpen] = useState(false)
-  const [rawPointCount, setRawPointCount] = useState(0)
-  const [sampledPointCount, setSampledPointCount] = useState(0)
-
-  const mapMoveTimer = useRef<number | null>(null)
-  const requestSeqRef = useRef(0)
-  const workerRef = useRef<Worker | null>(null)
-  const responseCacheRef = useRef<Map<string, any>>(new Map())
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const loadVehicles = async () => {
@@ -220,203 +96,53 @@ const LocationHistory = () => {
         setError(e?.error_message || 'Unable to load vehicles')
       }
     }
+
     loadVehicles()
   }, [])
 
-  useEffect(() => {
-    workerRef.current = new Worker(new URL('./dataWorker.ts', import.meta.url), { type: 'module' })
-    workerRef.current.onmessage = (event: MessageEvent<{ type: string; data: WorkerPayload }>) => {
-      if (event.data?.type !== 'optimizedHistory') return
-      const data = event.data.data
-      setPoints(data.points || [])
-      setDirectionVectors(data.directionVectors || [])
-      setOverspeedEvents(data.overSpeed || [])
-      setHarshBrakingEvents(data.harshBraking || [])
-      setRawPointCount(data.rawCount || 0)
-      setSampledPointCount(data.sampledCount || 0)
-    }
+  const onVehicleChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value
+    setSelectedVehicleIds(typeof value === 'string' ? value.split(',') : value)
+  }
 
-    return () => {
-      workerRef.current?.terminate()
-      workerRef.current = null
-    }
-  }, [])
+  const tileUrl = useMemo(() => {
+    const query = new URLSearchParams()
+    if (selectedVehicleIds.length) query.set('vehicleIds', selectedVehicleIds.join(','))
+    if (fromDate) query.set('from', new Date(fromDate).toISOString())
+    if (toDate) query.set('to', new Date(toDate).toISOString())
+    query.set('source', 'live')
 
-  const optimizeAndSetData = useCallback((rawPoints: VectorPoint[], overSpeed: EventPoint[], harshBraking: EventPoint[], zoom: number) => {
-    if (!workerRef.current) {
-      setPoints(rawPoints)
-      setOverspeedEvents(overSpeed)
-      setHarshBrakingEvents(harshBraking)
-      setRawPointCount(rawPoints.length)
-      setSampledPointCount(rawPoints.length)
-      setDirectionVectors([])
-      return
-    }
+    return `/tiles/{z}/{x}/{y}.pbf?${query.toString()}`
+  }, [fromDate, selectedVehicleIds, toDate, reloadKey])
 
-    workerRef.current.postMessage({
-      type: 'optimizeHistory',
-      points: rawPoints,
-      overSpeed,
-      harshBraking,
-      zoom,
-    })
-  }, [])
-
-  const loadVectorHistory = useCallback(async () => {
-    if (!selectedVehicleIds.length) {
-      setError('Please select at least one vehicle')
-      return
-    }
-
+  const validateFilters = () => {
     const from = new Date(fromDate)
     const to = new Date(toDate)
+
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
       setError('Please select valid From/To date-time')
-      return
+      return false
     }
     if (from > to) {
       setError('From date must be before To date')
-      return
+      return false
     }
     if (to.getTime() - from.getTime() > HISTORY_WINDOW_MS) {
       setError(`History range cannot exceed ${HISTORY_WINDOW_HOURS} hours`)
-      return
+      return false
     }
-
-    const cacheKey = `${selectedVehicleIds.join(',')}|${from.toISOString()}|${to.toISOString()}|${tileState.z}/${tileState.x}/${tileState.y}`
-    const cached = responseCacheRef.current.get(cacheKey)
-    if (cached) {
-      optimizeAndSetData(cached.points, cached.overSpeed, cached.harshBraking, tileState.z)
-      return
-    }
-
-    requestSeqRef.current += 1
-    const currentRequestId = requestSeqRef.current
-
-    try {
-      setLoading(true)
-      setError('')
-
-      const responses = await Promise.all(
-        selectedVehicleIds.map((vehicleId) =>
-          vehicleMonitorService.getVehicleVectorHistory(vehicleId, {
-            from: from.toISOString(),
-            to: to.toISOString(),
-            z: tileState.z,
-            x: tileState.x,
-            y: tileState.y,
-            sampleSeconds: sampleSecondsByZoom(tileState.z),
-            limit: tileState.z <= 8 ? 2000 : tileState.z <= 12 ? 5000 : 8000,
-          })
-        )
-      )
-
-      if (currentRequestId !== requestSeqRef.current) return
-
-      const mergedPoints = responses.flatMap((item: any) => item.features || []) as VectorPoint[]
-      const mergedOverspeed = responses.flatMap((item: any) => item?.events?.overSpeed || []) as EventPoint[]
-      const mergedHarsh = responses.flatMap((item: any) => item?.events?.harshBraking || []) as EventPoint[]
-
-      const payload = {
-        points: mergedPoints,
-        overSpeed: mergedOverspeed,
-        harshBraking: mergedHarsh,
-      }
-
-      responseCacheRef.current.set(cacheKey, payload)
-      optimizeAndSetData(mergedPoints, mergedOverspeed, mergedHarsh, tileState.z)
-    } catch (e: any) {
-      if (currentRequestId !== requestSeqRef.current) return
-      setError(e?.error_message || 'Failed to load vector tile history')
-    } finally {
-      if (currentRequestId === requestSeqRef.current) {
-        setLoading(false)
-      }
-    }
-  }, [fromDate, optimizeAndSetData, selectedVehicleIds, tileState.x, tileState.y, tileState.z, toDate])
-
-  const onVehicleChange = (event: SelectChangeEvent<string[]>) => {
-    const value = event.target.value
-    const ids = typeof value === 'string' ? value.split(',') : value
-    setSelectedVehicleIds(ids)
-    responseCacheRef.current.clear()
+    setError('')
+    return true
   }
 
-  const mapCenter = useMemo<[number, number]>(() => {
-    if (!points.length) return [22.9734, 78.6569]
-    return [points[0].latitude, points[0].longitude]
-  }, [points])
-
-  const vehicleColorMap = useMemo(() => {
-    const map = new Map<string, string>()
-    selectedVehicleIds.forEach((id, index) => map.set(id, vehicleColors[index % vehicleColors.length]))
-    return map
-  }, [selectedVehicleIds])
-
-  const ZoomAndMoveTracker = () => {
-    useMapEvents({
-      moveend: (event) => {
-        const center = event.target.getCenter()
-        const z = event.target.getZoom()
-        const nextTile = {
-          z,
-          x: lngToTileX(center.lng, z),
-          y: latToTileY(center.lat, z),
-        }
-
-        setZoomLevel(z)
-        setTileState((prev) => {
-          if (prev.z === nextTile.z && prev.x === nextTile.x && prev.y === nextTile.y) return prev
-          return nextTile
-        })
-
-        if (!selectedVehicleIds.length) return
-        if (mapMoveTimer.current) window.clearTimeout(mapMoveTimer.current)
-        mapMoveTimer.current = window.setTimeout(() => {
-          loadVectorHistory()
-        }, 650)
-      },
-    })
-    return null
+  const onLoadHistory = () => {
+    if (!validateFilters()) return
+    setReloadKey((k) => k + 1)
   }
-
-  const downloadCsv = () => {
-    if (!points.length) return
-
-    const header = 'vehicleId,time,latitude,longitude,speed,angle,direction\n'
-    const rows = points
-      .map((point) => `${point.vehicleId},${new Date(point.time).toISOString()},${point.latitude},${point.longitude},${point.speed},${point.angle},${point.direction}`)
-      .join('\n')
-
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `vector-location-history-z${zoomLevel}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const mapElement = (
-    <Box sx={{ height: 540, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-      {loading && <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }} />}
-      <MapContainer center={mapCenter} zoom={zoomLevel} preferCanvas style={{ height: '100%', width: '100%' }}>
-        <ZoomAndMoveTracker />
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-        <CanvasHistoryLayer
-          points={points}
-          directionVectors={directionVectors}
-          overspeedEvents={overspeedEvents}
-          harshBrakingEvents={harshBrakingEvents}
-          vehicleColorMap={vehicleColorMap}
-        />
-      </MapContainer>
-    </Box>
-  )
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography variant='h4' mb={2}>Location History (Canvas Optimized Vector Tile Mode)</Typography>
+      <Typography variant='h4' mb={2}>Location History (Vector Tile PBF + Canvas)</Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 2 }}>
@@ -448,35 +174,19 @@ const LocationHistory = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <Stack direction='row' spacing={1} justifyContent='flex-end'>
-                <Button variant='contained' onClick={loadVectorHistory} disabled={loading}>Load History</Button>
-                <Button variant='outlined' onClick={downloadCsv} disabled={!points.length} startIcon={<DownloadIcon />}>CSV</Button>
-                <IconButton color='primary' onClick={() => setFullscreenOpen(true)}><FullscreenIcon /></IconButton>
+                <Button variant='contained' onClick={onLoadHistory}>Load History</Button>
               </Stack>
             </Grid>
           </Grid>
-
-          <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
-            <Chip label={`Zoom: ${zoomLevel}`} color='primary' />
-            <Chip label={`Tile: ${tileState.z}/${tileState.x}/${tileState.y}`} />
-            <Chip label={`Raw points: ${rawPointCount}`} />
-            <Chip label={`Rendered points: ${sampledPointCount}`} color='success' />
-            <Chip label={`Direction vectors: ${directionVectors.length}`} />
-            <Chip label={`Overspeed points: ${overspeedEvents.length}`} color='error' />
-            <Chip label={`Harsh braking points: ${harshBrakingEvents.length}`} sx={{ bgcolor: '#ff9100', color: '#fff' }} />
-          </Stack>
         </CardContent>
       </Card>
 
-      {mapElement}
-
-      <Dialog fullScreen open={fullscreenOpen} onClose={() => setFullscreenOpen(false)}>
-        <DialogContent sx={{ p: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <IconButton onClick={() => setFullscreenOpen(false)}><CloseIcon /></IconButton>
-          </Box>
-          {mapElement}
-        </DialogContent>
-      </Dialog>
+      <Box sx={{ height: 620, borderRadius: 2, overflow: 'hidden' }}>
+        <MapContainer center={[22.9734, 78.6569]} zoom={6} preferCanvas style={{ height: '100%', width: '100%' }}>
+          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
+          <VectorTileLayer tileUrl={tileUrl} key={tileUrl} />
+        </MapContainer>
+      </Box>
     </Box>
   )
 }

@@ -1,4 +1,7 @@
 import { Types } from "mongoose";
+import SphericalMercator from "@mapbox/sphericalmercator";
+import geojsonvt from "geojson-vt";
+import vtpbf from "vt-pbf";
 import { VehicleLocation, IVehicleLocation } from "../models/VehicleLocation";
 import { Geofence } from "../models/Geofence";
 import { GeofenceLog } from "../models/GeofenceLog";
@@ -35,6 +38,8 @@ const getDirectionByAngle = (angle?: number): string => {
   return "NW";
 };
 
+
+const mercator = new SphericalMercator({ size: 256 });
 export class VehicleLocationService {
   private getDistanceMeters(
     pointA: { latitude: number; longitude: number },
@@ -569,6 +574,90 @@ const sosLogs = await VehicleSOS.find({
         })),
       },
     };
+  }
+
+  async getVectorTilePbf(params: {
+    z: number;
+    x: number;
+    y: number;
+    from?: Date;
+    to?: Date;
+    vehicleIds?: string[];
+    source?: "live" | "simulation";
+  }): Promise<Buffer | null> {
+    const [west, south, east, north] = mercator.bbox(params.x, params.y, params.z, false, "WGS84");
+
+    const query: Record<string, unknown> = {
+      location: {
+        $geoWithin: {
+          $box: [
+            [west, south],
+            [east, north],
+          ],
+        },
+      },
+    };
+
+    if (params.vehicleIds?.length) {
+      query.vehicleId = {
+        $in: params.vehicleIds
+          .filter((id) => Types.ObjectId.isValid(id))
+          .map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    if (params.source) query.source = params.source;
+
+    if (params.from || params.to) {
+      query.time = {};
+      if (params.from) (query.time as Record<string, unknown>).$gte = params.from;
+      if (params.to) (query.time as Record<string, unknown>).$lte = params.to;
+    }
+
+    const zoomLimit = params.z <= 6 ? 500 : params.z <= 10 ? 2000 : params.z <= 13 ? 6000 : 20000;
+
+    const docs = await VehicleLocation.find(query)
+      .sort({ time: -1 })
+      .limit(zoomLimit)
+      .select({ location: 1, deviceId: 1, time: 1, speed: 1, angle: 1, vehicleId: 1, source: 1, ignition: 1 })
+      .lean();
+
+    if (!docs.length) return null;
+
+    const featureCollection = {
+      type: "FeatureCollection",
+      features: docs.map((item: any) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: item.location?.coordinates || [item.longitude, item.latitude],
+        },
+        properties: {
+          _id: String(item._id),
+          vehicle_id: String(item.vehicleId),
+          device_id: item.deviceId,
+          timestamp: item.time,
+          speed: item.speed,
+          angle: item.angle || 0,
+          ignition: item.ignition,
+          source: item.source || "live",
+        },
+      })),
+    } as const;
+
+    const tileIndex = geojsonvt(featureCollection as any, {
+      maxZoom: 20,
+      tolerance: 3,
+      extent: 4096,
+      buffer: 64,
+      indexMaxZoom: 10,
+      indexMaxPoints: 100000,
+    });
+
+    const tile = tileIndex.getTile(params.z, params.x, params.y);
+    if (!tile) return null;
+
+    return vtpbf.fromGeojsonVt({ locations: tile });
   }
 
   async getLatestLocationsOfAllVehicles() {

@@ -93,6 +93,51 @@ export class VehicleLocationController {
     res.json(data);
   }
 
+
+  async vectorTilePbf(req: Request, res: Response): Promise<void> {
+    const z = Number(req.params.z);
+    const x = Number(req.params.x);
+    const y = Number(req.params.y);
+
+    if ([z, x, y].some((item) => Number.isNaN(item))) {
+      res.status(422).json({ message: "Invalid tile coordinates" });
+      return;
+    }
+
+    const from = req.query.from ? new Date(String(req.query.from)) : undefined;
+    const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+
+    if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime()))) {
+      res.status(422).json({ message: "Invalid date range" });
+      return;
+    }
+
+    const vehicleIds = String(req.query.vehicleIds || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    const tileBuffer = await vehicleLocationService.getVectorTilePbf({
+      z,
+      x,
+      y,
+      from,
+      to,
+      vehicleIds,
+      source: req.query.source === "simulation" ? "simulation" : "live",
+    });
+
+    if (!tileBuffer) {
+      res.status(204).end();
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/x-protobuf");
+    res.setHeader("Content-Encoding", "identity");
+    res.setHeader("Cache-Control", "public, max-age=120");
+    res.status(200).send(tileBuffer);
+  }
+
   async timeline(req: Request, res: Response): Promise<void> {
     const MAX_TIMELINE_WINDOW_MS = 24 * 60 * 60 * 1000;
     const vehicleIds = String(req.query.vehicleIds || '').split(',').map((id) => id.trim()).filter(Boolean);
