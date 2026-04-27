@@ -775,7 +775,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
                   }}
-                >
+                > 
                   <FullscreenIcon />
                 </IconButton>
               </Tooltip>

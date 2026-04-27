@@ -16,6 +16,16 @@ export const vehicleMonitorService = {
   deleteUser: (id: string) => api1.del(`/users/${id}`),
   getBases: () => api1.get('/bases'),
   createBase: (payload: Record<string, unknown>) => api1.post('/bases', payload),
+  updateBase: (id: string, payload: Record<string, unknown>) =>
+  api1.put(`/bases/${id}`, payload),
+
+deleteBase: (id: string) =>
+  api1.del(`/bases/${id}`),
+  getLocations: () => api1.get('/locations'),
+createLocation: (payload: Record<string, unknown>) => api1.post('/locations', payload),
+updateLocation: (id: string, payload: Record<string, unknown>) => api1.put(`/locations/${id}`, payload),
+deleteLocation: (id: string) => api1.del(`/locations/${id}`),
+
   getVehicles: () => api1.get('/vehicles'),
   createVehicle: (payload: Record<string, unknown>) => api1.post('/vehicles', payload),
   updateVehicle: (id: string, payload: Record<string, unknown>) => api1.put(`/vehicles/${id}`, payload),
@@ -34,6 +44,8 @@ export const vehicleMonitorService = {
   getDeviceSimMappings: (): Promise<any> => api1.get('/device-sim-mapping'),
   createDeviceSimMapping: (payload: Record<string, unknown>) =>api1.post('/device-sim-mapping', payload),
   deleteDeviceSimMapping: (id: string) =>api1.del(`/device-sim-mapping/${id}`),
+  updateDeviceSimMapping: (id: string, payload: Record<string, unknown>) =>
+  api1.put(`/device-sim-mapping/${id}`, payload),
   
   createVehicleLocation: (payload: Record<string, unknown>) => api1.post('/vehicle-locations', payload),
   getVehicleLocations: (params?: Record<string, unknown>) => {

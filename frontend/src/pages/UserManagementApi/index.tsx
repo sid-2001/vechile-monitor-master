@@ -1,18 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material'
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 import { useTheme } from '@emotion/react'
+import { Country, State, City } from 'country-state-city'
 
 const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
   const [bases, setBases] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [error, setError] = useState('')
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
   const theme=useTheme();
+
+  
+const [errors, setErrors] = useState<any>({})
+const [editErrors, setEditErrors] = useState<any>({})
 
  const [form, setForm] = useState({
   username: '',
@@ -34,7 +40,8 @@ const UserManagementApi = () => {
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
-  baseId: ''
+  baseId: '',
+  baseIds: [] as string[]
 })
   const [editForm, setEditForm] = useState({
   username: '',
@@ -56,13 +63,15 @@ const UserManagementApi = () => {
   baseunitid: '',
   role: 'OPERATOR',
   baseId: '',
+  baseIds: [] as string[],
   status: 'ACTIVE'
 })
   const load = async () => {
     try {
-      const [users, baseData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases()])
+      const [users, baseData, locationData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases(), vehicleMonitorService.getLocations()])
       setRows((users.items || []).map((x: any) => ({ id: x._id, ...x })))
       setBases(baseData.items || [])
+      setLocations(locationData.items || [])
       setError('')
     } catch (e: any) {
       setError(e?.error_message || 'Failed to load users')
@@ -71,7 +80,18 @@ const UserManagementApi = () => {
 
   useEffect(() => { load() }, [])
 
+  const countries = useMemo(() => Country.getAllCountries(), [])
+  const createStates = useMemo(() => (form.countrycode ? State.getStatesOfCountry(form.countrycode) : []), [form.countrycode])
+  const createCities = useMemo(() => (form.countrycode && form.statecode ? City.getCitiesOfState(form.countrycode, form.statecode) : []), [form.countrycode, form.statecode])
+
   const create = async () => {
+    const err = validate(form)
+    setErrors(err)  
+
+  if (Object.keys(err).length > 0) {
+     setSnack(err.mobile || err.email || 'Fix errors')
+    return
+  }
     await vehicleMonitorService.createUser({
   username: form.username,
   password: form.password,
@@ -103,7 +123,8 @@ const UserManagementApi = () => {
   baseunitid: form.baseunitid,
 
   role: form.role,
-  baseId: form.baseId
+  baseId: form.baseIds[0] || form.baseId,
+  baseIds: form.baseIds
 })
 setForm({
   username: '',
@@ -125,7 +146,8 @@ setForm({
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
-  baseId: ''
+  baseId: '',
+  baseIds: [] as string[]
 })
     setSnack('User created successfully')
     load()
@@ -149,10 +171,11 @@ setForm({
   statecode: row.statecode || '',
   district: row.district || '',
   zipcode: row.zipcode || '',
-  locationid: row.locationid || '',
+  locationid: row.locationid?._id || row.locationid || '',
   baseunitid: row.baseunitid || '',
   role: row.role || 'OPERATOR',
   baseId: row.baseId?._id || row.baseId || '',
+  baseIds: (row.baseIds || []).map((b: any) => b._id || b),
   status: row.status || 'ACTIVE'
 })
     setEditOpen(true)
@@ -189,7 +212,8 @@ setForm({
   baseunitid: editForm.baseunitid,
 
   role: editForm.role,
-  baseId: editForm.baseId,
+  baseId: editForm.baseIds[0] || editForm.baseId,
+  baseIds: editForm.baseIds,
   status: editForm.status
 })
     setEditOpen(false)
@@ -203,6 +227,77 @@ setForm({
     setSnack('User deleted successfully')
     load()
   }
+
+//  const inputStyle = {
+//   '& .MuiOutlinedInput-root': {
+//     backgroundColor: 'transparent',
+
+//     '& fieldset': {
+//       borderColor: '#ffcc00',
+//     },
+//     '&:hover fieldset': {
+//       borderColor: '#ffcc00',
+//     },
+//     '&.Mui-focused fieldset': {
+//       borderColor: '#ffcc00',
+//     },
+
+//     // ✅ REMOVE BLUE BACKGROUND ON FOCUS
+//     '&.Mui-focused': {
+//       backgroundColor: 'transparent',
+//     },
+//   },
+
+//   // ✅ INPUT TEXT AREA FIX
+//   '& .MuiInputBase-input': {
+//     backgroundColor: 'transparent',
+//   },
+
+//   // ✅ CHROME AUTOFILL FIX (MAIN CULPRIT)
+//   '& input:-webkit-autofill': {
+//     WebkitBoxShadow: '0 0 0 100px transparent inset',
+//     WebkitTextFillColor: '#fff', // ya jo color chahiye
+//     transition: 'background-color 5000s ease-in-out 0s',
+//   },
+// }
+
+const inputStyle = {
+  '& .MuiOutlinedInput-root': {
+    backgroundColor: 'transparent',
+
+    // 🔹 DEFAULT (normal state)
+    '& fieldset': {
+      borderColor: '#5a4a2a', // halka brown / subtle
+    },
+
+    '&:hover fieldset': {
+      borderColor: '#a67c00',
+    },
+
+    // 🔥 FOCUS (typing start → yellow highlight)
+    '&.Mui-focused fieldset': {
+      borderColor: '#ffcc00',
+      borderWidth: '2px',
+    },
+
+    '&.Mui-focused': {
+      backgroundColor: 'transparent',
+    },
+  },
+}
+  const validate = (data: any) => {
+  const err: any = {}
+
+  if (!data.mobile) err.mobile = 'Mobile is required'
+  else if (!/^[0-9]{10}$/.test(data.mobile))
+    err.mobile = 'Mobile must be exactly 10 digits'
+
+   if (!data.email) err.email = 'Email is required'
+  else if (!/^\S+@\S+\.\S+$/.test(data.email))
+    err.email = 'Invalid email format'
+
+  return err
+}
 
   const columns: GridColDef[] = [
     { field: 'username', headerName: 'Username', flex: 1 },
@@ -222,76 +317,130 @@ setForm({
 
       {/* USERNAME */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Username' value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+        <TextField fullWidth label='Username'  value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value } )} sx={inputStyle} />
       </Grid>
 
       {/* NAME */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='First Name' value={form.first} onChange={(e) => setForm({ ...form, first: e.target.value })} />
+        <TextField fullWidth label='First Name' value={form.first} sx={inputStyle} onChange={(e) => setForm({ ...form, first: e.target.value }) } />
       </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Middle Name' value={form.middle} onChange={(e) => setForm({ ...form, middle: e.target.value })} />
+        <TextField fullWidth label='Middle Name' value={form.middle} sx={inputStyle} onChange={(e) => setForm({ ...form, middle: e.target.value })} />
       </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Last Name' value={form.last} onChange={(e) => setForm({ ...form, last: e.target.value })} />
+        <TextField fullWidth label='Last Name' value={form.last} sx={inputStyle} onChange={(e) => setForm({ ...form, last: e.target.value })} />
       </Grid>
 
       {/* PERSONAL */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Gender' value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} />
-      </Grid>
+<TextField
+  fullWidth
+  select
+  label='Gender'
+  sx={inputStyle}
+  value={form.gender}
+  onChange={(e) => setForm({ ...form, gender: e.target.value })}
+>
+  <MenuItem value='MALE'>Male</MenuItem>
+  <MenuItem value='FEMALE'>Female</MenuItem>
+</TextField>      </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth type='date' label='DOB' InputLabelProps={{ shrink: true }} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
+        <TextField fullWidth type='date' sx={inputStyle} label='DOB' InputLabelProps={{ shrink: true }} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
       </Grid>
 
       {/* CONTACT */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Phone Code' value={form.phonecode} onChange={(e) => setForm({ ...form, phonecode: e.target.value })} />
-      </Grid>
+<TextField
+  fullWidth
+  select
+  label='Phone Code'
+  sx={inputStyle}
+  value={form.phonecode}
+  onChange={(e) => setForm({ ...form, phonecode: e.target.value })}
+>
+  {countries.map((c) => (
+    <MenuItem key={c.isoCode} value={`+${c.phonecode}`}>
+      {c.name} (+{c.phonecode})
+    </MenuItem>
+  ))}
+</TextField>      </Grid>
+
+     
+<Grid item xs={12} md={3}>
+ <TextField
+  fullWidth
+  label='Mobile'
+  sx={inputStyle}
+  value={form.mobile}
+  onChange={(e) => {
+    const val = e.target.value.replace(/\D/g, '')
+    if (val.length <= 10) {
+      setForm({ ...form, mobile: val })
+    }
+  }}
+  inputProps={{ maxLength: 10 }}
+  error={!!errors.mobile}
+  helperText={errors.mobile}
+/>
+</Grid>      
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Mobile' value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
-      </Grid>
-
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Email' value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-      </Grid>
+<TextField
+  fullWidth
+  label='Email'
+  sx={inputStyle}
+  value={form.email}
+  onChange={(e) => setForm({ ...form, email: e.target.value })}
+  
+/>      </Grid>
 
       {/* DEVICE */}
-      <Grid item xs={12} md={3}>
+      {/* <Grid item xs={12} md={3}>
         <TextField fullWidth label='Device IP' value={form.deviceipaddress} onChange={(e) => setForm({ ...form, deviceipaddress: e.target.value })} />
       </Grid>
 
       <Grid item xs={12} md={3}>
         <TextField fullWidth label='Device Name' value={form.devicename} onChange={(e) => setForm({ ...form, devicename: e.target.value })} />
-      </Grid>
+      </Grid> */}
 
       {/* LOCATION */}
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Country Code' value={form.countrycode} onChange={(e) => setForm({ ...form, countrycode: e.target.value })} />
+        <TextField fullWidth select label='Country' sx={inputStyle} value={form.countrycode} onChange={(e) => setForm({ ...form, countrycode: e.target.value, statecode: '', district: '' })}>
+          {countries.map((country) => <MenuItem key={country.isoCode} value={country.isoCode}>{country.name}</MenuItem>)}
+        </TextField> 
+      </Grid>
+
+      {form.countrycode && (
+        <Grid item xs={12} md={3}>
+          <TextField fullWidth select label='State'sx={inputStyle} value={form.statecode} onChange={(e) => setForm({ ...form, statecode: e.target.value, district: '' })}>
+            {createStates.map((state) => <MenuItem key={state.isoCode} value={state.isoCode}>{state.name}</MenuItem>)}
+          </TextField>
+        </Grid>
+      )}
+
+      {form.countrycode && form.statecode && (
+        <Grid item xs={12} md={3}>
+          <TextField fullWidth select label='City' sx={inputStyle} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
+            {createCities.map((city) => <MenuItem key={`${city.name}-${city.latitude}-${city.longitude}`} value={city.name}>{city.name}</MenuItem>)}
+          </TextField>
+        </Grid>
+      )}
+
+      <Grid item xs={12} md={3}>
+        <TextField fullWidth label='Zip Code' sx={inputStyle} value={form.zipcode} onChange={(e) => setForm({ ...form, zipcode: e.target.value })} />
       </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='State Code' value={form.statecode} onChange={(e) => setForm({ ...form, statecode: e.target.value })} />
+        <TextField fullWidth select label='Location' sx={inputStyle} value={form.locationid} onChange={(e) => setForm({ ...form, locationid: e.target.value })}>
+          {locations.map((l: any) => <MenuItem key={l._id} value={l._id}>{l.name} ({l.city})</MenuItem>)}
+        </TextField>
       </Grid>
 
       <Grid item xs={12} md={3}>
-        <TextField fullWidth label='District' value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} />
-      </Grid>
-
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Zip Code' value={form.zipcode} onChange={(e) => setForm({ ...form, zipcode: e.target.value })} />
-      </Grid>
-
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Location ID' value={form.locationid} onChange={(e) => setForm({ ...form, locationid: e.target.value })} />
-      </Grid>
-
-      <Grid item xs={12} md={3}>
-        <TextField fullWidth label='Base Unit ID' value={form.baseunitid} onChange={(e) => setForm({ ...form, baseunitid: e.target.value })} />
+        <TextField fullWidth label='Base Unit ID' sx={inputStyle} value={form.baseunitid} onChange={(e) => setForm({ ...form, baseunitid: e.target.value })} />
       </Grid>
 
       {/* ROLE */}
@@ -300,6 +449,7 @@ setForm({
           fullWidth
           select
           label='Role'
+          sx={inputStyle}
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
           SelectProps={{
@@ -324,9 +474,12 @@ setForm({
         <TextField
           fullWidth
           select
-          label='Base'
-          value={form.baseId}
-          onChange={(e) => setForm({ ...form, baseId: e.target.value })}
+          sx={inputStyle}
+          SelectProps={{ multiple: true }}
+          label='Bases'
+          value={form.baseIds}
+           // @ts-ignore
+          onChange={(e) => setForm({ ...form, baseIds: e.target.value as string[], baseId: (e.target.value as string[])[0] || '' })}
         >
           {bases.map((b: any) => (
             <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
@@ -358,9 +511,34 @@ setForm({
             <Grid item xs={12} md={6}><TextField fullWidth select label='Role' value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}><MenuItem value='ADMIN'>ADMIN</MenuItem><MenuItem value='DRIVER'>DRIVER</MenuItem><MenuItem value='OPERATOR'>OPERATOR</MenuItem></TextField></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='First Name' value={editForm.first} onChange={(e) => setEditForm({ ...editForm, first: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Last Name' value={editForm.last} onChange={(e) => setEditForm({ ...editForm, last: e.target.value })} /></Grid>
-            <Grid item xs={12} md={6}><TextField fullWidth label='Mobile' value={editForm.mobile} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} /></Grid>
-            <Grid item xs={12} md={6}><TextField fullWidth label='Email' value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} /></Grid>
-            <Grid item xs={12} md={6}><TextField fullWidth select label='Base' value={editForm.baseId} onChange={(e) => setEditForm({ ...editForm, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid>
+<Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    label='Mobile'
+    value={editForm.mobile}
+    onChange={(e) => {
+      const val = e.target.value.replace(/\D/g, '')
+      if (val.length <= 10) {
+        setEditForm({ ...editForm, mobile: val })
+      }
+    }}
+    inputProps={{ maxLength: 10 }}
+  />
+</Grid>            <Grid item xs={12} md={6}>
+<TextField
+  fullWidth
+  label='Email'
+  value={editForm.email}
+  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+ error={!!editErrors.email}
+helperText={editErrors.email}
+/>    
+  </Grid>
+   // @ts-ignore
+            <Grid item xs={12} md={6}><TextField fullWidth select SelectProps={{ multiple: true }} label='Bases' value={editForm.baseIds} 
+             // @ts-ignore
+            onChange={(e) => setEditForm({ ...editForm, baseIds: e.target.value as string[], baseId: (e.target.value as string[])[0] || '' })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid>
+            <Grid item xs={12} md={6}><TextField fullWidth select label='Location' value={editForm.locationid} onChange={(e) => setEditForm({ ...editForm, locationid: e.target.value })}>{locations.map((l: any) => <MenuItem key={l._id} value={l._id}>{l.name} ({l.city})</MenuItem>)}</TextField></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Status' value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} /></Grid>
           </Grid>
         </DialogContent>

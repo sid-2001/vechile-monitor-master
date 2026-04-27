@@ -24,6 +24,7 @@ export interface IVehicle extends Document, AuditFields {
   onSOS: boolean;
   lastSeen?: Date | null;
   live: boolean;
+   
 
   status: { isActive: boolean; lastSOS?: { time: Date; location: { lat: number; lng: number } } };
 }
@@ -43,7 +44,7 @@ const schema = new Schema<IVehicle>({
     loadCapacity: Number,
     axles: Number
   },
-  performance: { transmissionType: String, fuelTankCapacity: Number, maxSpeed: Number, minSpeed: Number },
+  performance: { transmissionType: String, fuelTankCapacity: Number, maxSpeed: Number, minSpeed: Number ,harshBraking: { type: Number, default: 0 } },
   deviceId: { type: String, required: true },
   baseId: { type: Schema.Types.ObjectId, ref: "Base", required: true },
   driverId: { type: Schema.Types.ObjectId, ref: "User" },

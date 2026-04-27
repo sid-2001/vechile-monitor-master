@@ -404,45 +404,62 @@ const sosLogs = await VehicleSOS.find({
     ]).allowDiskUse(true);
   }
 
-  async getLatestLocationsOfAllVehicles() {
-    return VehicleLocation.aggregate([
-      { $sort: { vehicleId: 1, time: -1 } },
-      {
-        $group: {
-          _id: "$vehicleId",
-          vehicleId: { $first: "$vehicleId" },
-          latitude: { $first: "$latitude" },
-          longitude: { $first: "$longitude" },
-          speed: { $first: "$speed" },
-          ignition: { $first: "$ignition" },
-          time: { $first: "$time" },
-          angle: { $first: "$angle" },
-          source: { $first: "$source" },
-        },
+
+
+async getLatestLocationsOfAllVehicles() {
+  return VehicleLocation.aggregate([
+    {
+      $sort: { vehicleId: 1, time: -1 }, // latest first per vehicle
+    },
+    {
+      $group: {
+        _id: "$vehicleId",
+        vehicleId: { $first: "$vehicleId" },
+        latitude: { $first: "$latitude" },
+        longitude: { $first: "$longitude" },
+        speed: { $first: "$speed" },
+        ignition: { $first: "$ignition" },
+        time: { $first: "$time" },
+        angle: { $first: "$angle" },
+        source: { $first: "$source" },
       },
-      {
-        $lookup: {
-          from: "vehicles",
-          localField: "vehicleId",
-          foreignField: "_id",
-          as: "vehicleData",
-        },
+    },
+    {
+      $lookup: {
+        from: "vehicles",
+        localField: "vehicleId",
+        foreignField: "_id",
+        as: "vehicleData",
       },
-      {
-        $unwind: {
-          path: "$vehicleData",
-          preserveNullAndEmptyArrays: true,
-        },
+    },
+    {
+      $unwind: "$vehicleData",
+    },
+    {
+      $match: {
+        "vehicleData.status.isActive": true,
       },
-      {
-        $addFields: {
-          vehicleNumber: "$vehicleData.vehicleNumber",
-          live: "$vehicleData.live",
-          lastSeen: "$vehicleData.lastSeen",
-        },
+    },
+    {
+      $project: {
+        vehicleId: 1,
+        latitude: 1,
+        longitude: 1,
+        speed: 1,
+        ignition: 1,
+        time: 1,
+        angle: 1,
+        source: 1,
+        vehicleNumber: "$vehicleData.vehicleNumber",
+        live: "$vehicleData.live",
+        lastSeen: "$vehicleData.lastSeen",
       },
-    ]).allowDiskUse(true);
-  }
+    },
+  ]).allowDiskUse(true);
+}
+
+
+  
 
 
 //   async getTimeline(params) {

@@ -13,6 +13,9 @@ import deviceSimMappingRoutes from "./routes/deviceSimMappingRoutes";
 
 import vehicleSOSRoutes from "./routes/vehicleSOS.routes";
 import geofenceRoutes from "./routes/geofenceRoutes";
+import locationRoutes from "./routes/locationRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import swaggerRoutes from "./routes/swaggerRoutes";
 import cors from "cors";
 const app = express();
 
@@ -27,13 +30,16 @@ app.use(
 app.use(express.json());
 app.use(loggingMiddleware);
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.use("/", swaggerRoutes);
 app.use("/auth", authRoutes);
 app.use("/bases", authMiddleware, baseRoutes);
 app.use("/users", authMiddleware, userRoutes);
 app.use("/vehicles", authMiddleware, vehicleRoutes);
-app.use("/vehicle-locations", vehicleLocationRoutes);
+app.use("/vehicle-locations", authMiddleware, vehicleLocationRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
 app.use("/geofences", authMiddleware, geofenceRoutes);
+app.use("/locations", authMiddleware, locationRoutes);
+app.use("/notifications", authMiddleware, notificationRoutes);
 
 app.use("/sims",authMiddleware,simMasterRoutes)
 app.use("/api/sos", vehicleSOSRoutes);

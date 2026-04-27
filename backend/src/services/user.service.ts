@@ -6,25 +6,27 @@ import { IUser, User } from "../models/User";
 export class UserService {
   async create(payload: Partial<IUser>, actor: string): Promise<any> {
     const hashedPassword = await bcrypt.hash(payload.password || "Admin@123", 10);
-    const user = new User({ ...payload, password: hashedPassword });
+    const normalizedBaseIds = payload.baseIds && payload.baseIds.length ? payload.baseIds : payload.baseId ? [payload.baseId] : [];
+    const user = new User({ ...payload, baseIds: normalizedBaseIds, baseId: normalizedBaseIds[0], password: hashedPassword });
     user.$locals.currentUser = actor;
     return user.save();
   }
 
   async list(filter: Record<string, unknown>, options: { skip: number; limit: number; sort: Record<string, 1 | -1> }) {
     const [items, total] = await Promise.all([
-      User.find(filter).select("-password").skip(options.skip).limit(options.limit).sort(options.sort),
+      User.find(filter).select("-password").populate("baseIds", "name").populate("locationid", "name country state city").skip(options.skip).limit(options.limit).sort(options.sort),
       User.countDocuments(filter)
     ]);
     return { items, total };
   }
 
-  async byId(id: string): Promise<any> { return User.findById(id).select("-password"); }
+  async byId(id: string): Promise<any> { return User.findById(id).select("-password").populate("baseIds", "name").populate("locationid", "name country state city"); }
 
   async update(id: string, payload: Partial<IUser>, actor: string): Promise<any> {
     const next = { ...payload } as Partial<IUser>;
     if (next.password) next.password = await bcrypt.hash(next.password, 10) as never;
-    return User.findByIdAndUpdate(id, next, { new: true, runValidators: true, currentUser: actor } as never).select("-password");
+    if (next.baseIds && next.baseIds.length) next.baseId = next.baseIds[0] as never;
+    return User.findByIdAndUpdate(id, next, { new: true, runValidators: true, currentUser: actor } as never).select("-password").populate("baseIds", "name").populate("locationid", "name country state city");
   }
 
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }

@@ -37,9 +37,9 @@ export class VehicleService {
     } as never);
   }
 
-  remove(id: string) {
-    return Vehicle.findByIdAndDelete(id);
-  }
+async remove(id: string) {
+  return Vehicle.findByIdAndDelete(id);
+}
 }
 
 export const vehicleService = new VehicleService();

@@ -107,10 +107,11 @@ const SIDEBAR_MENUS = [
   { label: 'User', name: 'User', icon: <PersonIcon fontSize="small" />, path: '/user' },
 
   { label: 'Location', name: 'Location', icon: <LocationSearchingIcon fontSize="small" />, path: '/location' },
+    { label: 'Base Geofencing', name: 'Base Geo', icon: <PolylineIcon fontSize="small" />, path: '/geofence' },
+
 
   { label: 'Base Unit', name: 'Base Unit', icon: <HomeIcon fontSize="small" />, path: '/bases' },
 
-  { label: 'Base Geofencing', name: 'Base Geo', icon: <PolylineIcon fontSize="small" />, path: '/geofence' },
 
   // { label: 'Location-Base Mapping', name: 'Loc-Base Map', icon: <SyncAltRounded fontSize="small" />, path: '/location-base-mapping' },
 
@@ -254,6 +255,7 @@ const handleMenuClick = (menu: any) => {
                   : theme.palette.action.selected,
               },
             }}
+            // @ts-ignore
             onClick={(e) => handleMenuClick(item, e)}
           >
             <ListItemIcon

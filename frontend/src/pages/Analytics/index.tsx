@@ -141,7 +141,19 @@ const AnalyticsScreen = () => {
   const geofenceCols: GridColDef[] = [
     { field: 'geofenceName', headerName: 'Geofence', flex: 1 },
     { field: 'eventType', headerName: 'Event', flex: 0.7 },
-    { field: 'enter_time', headerName: 'Time', flex: 1, valueGetter: (_, row) => new Date(row.enter_time).toLocaleString() },
+    { field: 'enter_time', headerName: 'Time', flex: 1, valueGetter: (_, row) => {
+  const d = new Date(row.enter_time)
+
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  const seconds = String(d.getSeconds()).padStart(2, '0')
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
+} },
     { field: 'speed', headerName: 'Speed', flex: 0.6 },
   ]
 
@@ -254,7 +266,7 @@ const AnalyticsScreen = () => {
             <Grid item xs={12} md={4}><Card><CardContent><Typography variant='h6' mb={1}>Event Distribution</Typography><Box sx={{ width: '100%', height: 280 }}><ResponsiveContainer><PieChart><Pie data={pieData} dataKey='value' nameKey='name' outerRadius={90} label>{pieData.map((_: any, index: number) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend /><Tooltip /></PieChart></ResponsiveContainer></Box></CardContent></Card></Grid>
           </Grid>
 
-          <Card sx={{ mb: 2 }}>
+          {/* <Card sx={{ mb: 2 }}>
             <CardContent>
               <Typography variant='h6' mb={1}>Speed Timeline</Typography>
               <Typography variant='caption' color='text.secondary'>Data points auto-expand as zoom increases.</Typography>
@@ -272,7 +284,7 @@ const AnalyticsScreen = () => {
                 </ResponsiveContainer>
               </Box>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card><CardContent><Typography variant='h6' mb={1}>Geofence Logs</Typography><div style={{ height: 320 }}><DataGrid rows={(analytics.geofenceLogs || []).map((x: any) => ({ ...x, id: x._id }))} columns={geofenceCols} /></div></CardContent></Card>
           <Card sx={{ mt: 2 }}>
@@ -290,8 +302,19 @@ const AnalyticsScreen = () => {
             field: "createdAt",
             headerName: "Time",
             flex: 1,
-            valueGetter: (_, row) =>
-              new Date(row.createdAt).toLocaleString(),
+            valueGetter: (_, row) => {
+  const d = new Date(row.createdAt)
+
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  const seconds = String(d.getSeconds()).padStart(2, '0')
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`
+},
           },
           {
             field: "status",

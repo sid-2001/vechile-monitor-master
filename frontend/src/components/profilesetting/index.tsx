@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-
+//@ts-ignore
+import logo from '../../assets/images/logo.png'
 dayjs.extend(utc)
 
 // Array of random avatar background colors
@@ -275,14 +276,19 @@ const ProfileMenu = () => {
 
 
 
-        <Avatar
-  src={getAvatarUrl(
-    `${staff?.staffId}-${staff?.staffFirstName}-${staff?.staffLastName}`
-  )}
+       <Avatar
+  src={logo}
+  variant="rounded"
   sx={{
-    width: 42,
+    width: 42,          // same size maintain
     height: 42,
-    bgcolor: avatarColor,
+    bgcolor: 'transparent',
+    '& img': {
+      objectFit: 'contain',
+      width: '100%',
+      height: '100%',
+      padding: '2px'
+    }
   }}
 >
   {staff?.staffFirstName?.[0]}
@@ -317,26 +323,24 @@ const ProfileMenu = () => {
         <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 2 }}>
          <>
 
-           <Avatar
-           //@ts-ignore
-   
-  src={getAvatarUrl(
-    `${staff?.staffId}-${staff?.staffFirstName}-${staff?.staffLastName}`
-  )}
+         <Avatar
+  src={logo}
+  variant="rounded"
   sx={{
     width: 42,
     height: 42,
-    bgcolor: avatarColor,
+    bgcolor: 'transparent',
+    '& img': {
+      objectFit: 'contain',
+      width: '100%',
+      height: '100%',
+      padding: '2px'
+    }
   }}
 >
-            {/* Fallback to initials if avatar fails to load */}
-            {/* {avatarError && (
-              <>
-                {staff?.name?.[0]?.toUpperCase()}
-                {staff?.staffLastName?.[0]?.toUpperCase()}
-              </>
-            )} */}
-          </Avatar>
+  {staff?.staffFirstName?.[0]}
+  {staff?.staffLastName?.[0]}
+</Avatar>
          </>
        
           <Box>

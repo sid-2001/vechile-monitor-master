@@ -46,73 +46,6 @@ const getDistanceMeters = (p1: any, p2: any): number => {
 const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:any) => {
 
   try {
-    // console.log(vehicleNumber)
-    // const [previous, geofences] = await Promise.all([
-    //   VehicleLocation.findOne({
-    //     vehicleId: saved.vehicleId,
-    //     _id: { $ne: saved._id },
-    //   }).sort({ time: -1 }),
-
-    //   Geofence.find({}, { _id: 1, name: 1, center: 1, radius: 1 }).lean(),
-    // ]);
-
-    // /* ---------------- GEOFENCE ---------------- */
-    // for (const fence of geofences) {
-    //   if (!fence.center || !fence.radius) continue;
-
-    //   const currentDistance = getDistanceMeters(saved, fence.center);
-    //   const currentlyInside = currentDistance <= fence.radius;
-
-    //   if (!previous) {
-    //     if (currentlyInside) {
-    //       await GeofenceLog.create({
-    //         vehicleId: saved.vehicleId,
-    //         geofenceId: fence._id,
-    //         geofenceName: fence.name,
-    //         eventType: "enter",
-    //         enter_time: saved.time,
-    //         latitude: saved.latitude,
-    //         longitude: saved.longitude,
-    //         speed: saved.speed,
-    //       });
-
-    //       emitGeofenceAlert({
-    //         vehicleId: String(saved.vehicleId),
-    //         vehicleNumber:String(vehicleNumber),
-    //         geofenceName: fence.name,
-    //         eventType: "enter",
-    //         time: saved.time,
-    //       });
-    //     }
-    //     continue;
-    //   }
-
-    //   const prevDistance = getDistanceMeters(previous, fence.center);
-    //   const previouslyInside = prevDistance <= fence.radius;
-
-    //   if (previouslyInside !== currentlyInside) {
-    //     const eventType = currentlyInside ? "enter" : "exit";
-
-    //     await GeofenceLog.create({
-    //       vehicleId: saved.vehicleId,
-    //       geofenceId: fence._id,
-    //       geofenceName: fence.name,
-    //       eventType,
-    //       enter_time: saved.time,
-    //       latitude: saved.latitude,
-    //       longitude: saved.longitude,
-    //       speed: saved.speed,
-    //     });
-
-    //     emitGeofenceAlert({
-    //       vehicleId: String(saved.vehicleId),
-    //       geofenceName: fence.name,
-    //       vehicleNumber:String(vehicleNumber),
-    //       eventType,
-    //       time: saved.time,
-    //     });
-    //   }
-    // }
 
 
     console.log(vehicleNumber);
@@ -295,7 +228,7 @@ export const initSocket = (server: HttpServer): Server => {
         await  vehicleService.byId (doc.vehicleId);
        
        
-      await processVehicleEvents(doc, vehicleDoc,vehicleDoc?.vehicleNumber);
+      // await processVehicleEvents(doc, vehicleDoc,vehicleDoc?.vehicleNumber);
     });
 
     socket.on("disconnect", async () => {

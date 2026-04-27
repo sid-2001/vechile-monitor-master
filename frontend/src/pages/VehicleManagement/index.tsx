@@ -48,9 +48,10 @@ const [form, setForm] = useState({
   loadcapacity: '',
   noofaxles: '',
   transmissiontype: '',
-  fueltankcapacity: ''
+  fueltankcapacity: '',
+  harshBraking: ''
 })
-  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120' })
+  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '' })
 
   const load = async () => {
     try {
@@ -108,6 +109,7 @@ const [form, setForm] = useState({
     transmissionType: form.transmissiontype,
     fuelTankCapacity: Number(form.fueltankcapacity || 0),
     maxSpeed: Number(form.maxSpeed || 120),
+    harshBraking: Number(form.harshBraking || 0),
     minSpeed: 0
   },
 
@@ -157,7 +159,9 @@ setForm({
   loadcapacity: '',
   noofaxles: '',
   transmissiontype: '',
-  fueltankcapacity: ''
+  fueltankcapacity: '',
+  harshBraking: ''
+  
 })  
   setSnack('Vehicle created successfully with sample location history')
     load()
@@ -176,7 +180,8 @@ setForm({
       baseId: row.baseId?._id || row.baseId || '',
       driverId: row.driverId?._id || row.driverId || '',
       deviceId: row.deviceId || '',
-      maxSpeed: String(row.performance?.maxSpeed || 120)
+      maxSpeed: String(row.performance?.maxSpeed || 120),
+      harshBraking: String(row.performance?.harshBraking || 0)
     })
     setEditOpen(true)
   }
@@ -191,7 +196,7 @@ setForm({
       driverId: editForm.driverId,
       deviceId: editForm.deviceId,
       manufacturer: { name: editForm.manufacturerName, model: editForm.manufacturerModel, variant: editForm.manufacturerVariant },
-      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0 }
+      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0, harshBraking: Number(editForm.harshBraking || 0) }
     })
     setEditOpen(false)
     setSnack('Vehicle updated successfully')
@@ -209,12 +214,8 @@ setForm({
   { field: 'vehicleId', headerName: 'Vehicle ID', flex: 1 },
   { field: 'vehicleNumber', headerName: 'Vehicle Number', flex: 1 },
   { field: 'licensePlate', headerName: 'License Plate', flex: 1 },
-  { field: 'type', headerName: 'Type', flex: 1 },
-  { field: 'subType', headerName: 'Sub Type', flex: 1 },
+ 
 
-  // 🔥 MANUFACTURER
-  { field: 'make', headerName: 'Make', flex: 1, valueGetter: (_, row) => row.manufacturer?.name || '-' },
-  { field: 'model', headerName: 'Model', flex: 1, valueGetter: (_, row) => row.manufacturer?.model || '-' },
 
   // 🔥 ENGINE / FUEL
   { field: 'fueltype', headerName: 'Fuel', flex: 1, valueGetter: (_, row) => row.manufacturing?.fuelType || '-' },
@@ -222,14 +223,19 @@ setForm({
   { field: 'chassisnumber', headerName: 'Chassis No', flex: 1, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
 
   // 🔥 PHYSICAL
-  { field: 'color', headerName: 'Color', flex: 1, valueGetter: (_, row) => row.physical?.color || '-' },
+  // { field: 'color', headerName: 'Color', flex: 1, valueGetter: (_, row) => row.physical?.color || '-' },
   { field: 'loadcapacity', headerName: 'Load', flex: 1, valueGetter: (_, row) => row.physical?.loadCapacity || '-' },
-  { field: 'axles', headerName: 'Axles', flex: 1, valueGetter: (_, row) => row.physical?.axles || '-' },
 
   // 🔥 PERFORMANCE
   { field: 'transmission', headerName: 'Transmission', flex: 1, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
   { field: 'fuelTank', headerName: 'Tank', flex: 1, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
   { field: 'maxSpeed', headerName: 'Max Speed', flex: 1, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
+  {
+  field: 'harshBraking',
+  headerName: 'Harsh Braking',
+  flex: 1,
+  valueGetter: (_, row) => row.performance?.harshBraking || 0
+},
 
   // 🔥 ACTIONS
   {
@@ -256,13 +262,13 @@ setForm({
       <Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid>
       {/* 🔥 NEW FIELDS START */}
 
-<Grid item xs={12} md={2}>
+{/* <Grid item xs={12} md={2}>
   <TextField fullWidth label='Make' onChange={e => setForm({ ...form, make: e.target.value })}/>
-</Grid>
+</Grid> */}
 
-<Grid item xs={12} md={2}>
+{/* <Grid item xs={12} md={2}>
   <TextField fullWidth label='Model' onChange={e => setForm({ ...form, model: e.target.value })}/>
-</Grid>
+</Grid> */}
 
 <Grid item xs={12} md={2}>
   <TextField fullWidth label='Fuel Type' onChange={e => setForm({ ...form, fueltype: e.target.value })}/>
@@ -275,18 +281,18 @@ setForm({
 <Grid item xs={12} md={2}>
   <TextField fullWidth label='Chassis Number' onChange={e => setForm({ ...form, chassisnumber: e.target.value })}/>
 </Grid>
-
+{/* 
 <Grid item xs={12} md={2}>
   <TextField fullWidth label='Color' onChange={e => setForm({ ...form, color: e.target.value })}/>
-</Grid>
+</Grid> */}
 
 <Grid item xs={12} md={2}>
   <TextField fullWidth label='Load Capacity' onChange={e => setForm({ ...form, loadcapacity: e.target.value })}/>
 </Grid>
 
-<Grid item xs={12} md={2}>
+{/* <Grid item xs={12} md={2}>
   <TextField fullWidth label='No. of Axles' onChange={e => setForm({ ...form, noofaxles: e.target.value })}/>
-</Grid>
+</Grid> */}
 
 <Grid item xs={12} md={2}>
   <TextField fullWidth label='Transmission' onChange={e => setForm({ ...form, transmissiontype: e.target.value })}/>
@@ -302,7 +308,20 @@ setForm({
       <Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid>
   <Grid item xs={12} md={2}>
     
-    <TextField fullWidth type='number' label='Max Speed (km/h)' value={form.maxSpeed} onChange={e => setForm({ ...form, maxSpeed: e.target.value })} /></Grid><Grid item xs={12} md={2}><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid></Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
+    <TextField fullWidth type='number' label='Max Speed (km/h)' value={form.maxSpeed} onChange={e => setForm({ ...form, maxSpeed: e.target.value })} /></Grid>
+    <Grid item xs={12} md={2}>
+  <TextField
+    fullWidth
+    type="number"
+    label="Harsh Braking"
+    value={form.harshBraking}
+    onChange={e => setForm({ ...form, harshBraking: e.target.value })}
+  />
+</Grid>
+    <Grid item xs={12} md={2}>
+      <Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid>
+      
+      </Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
 
   <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md' PaperProps={{ sx: { bgcolor: 'primary.main', color: 'text.primary', border: '1px solid', borderColor: 'primary.main' } }}>
     <DialogTitle sx={{  color: 'common.white' }}>Edit Vehicle</DialogTitle>
@@ -318,6 +337,15 @@ setForm({
         <Grid item xs={12} md={4}><TextField fullWidth label='Variant' value={editForm.manufacturerVariant} onChange={e => setEditForm({ ...editForm, manufacturerVariant: e.target.value })} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth select label='Driver' value={editForm.driverId} onChange={e => setEditForm({ ...editForm, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label='Device ID' value={editForm.deviceId} onChange={e => setEditForm({ ...editForm, deviceId: e.target.value })} /></Grid><Grid item xs={12} md={6}><TextField fullWidth type='number' label='Max Speed (km/h)' value={editForm.maxSpeed} onChange={e => setEditForm({ ...editForm, maxSpeed: e.target.value })} /></Grid>
+        <Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    type="number"
+    label="Harsh Braking"
+    value={editForm.harshBraking}
+    onChange={e => setEditForm({ ...editForm, harshBraking: e.target.value })}
+  />
+</Grid>
       </Grid>
     </DialogContent>
     <DialogActions><Button onClick={() => setEditOpen(false)}>Cancel</Button><Button variant='contained' onClick={update}>Update</Button></DialogActions>

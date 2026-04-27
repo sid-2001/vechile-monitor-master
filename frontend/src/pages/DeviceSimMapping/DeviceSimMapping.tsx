@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
@@ -9,16 +9,27 @@ import {
   Snackbar,
   Stack,
   TextField,
-  Typography
+  Typography,
+  MenuItem
 } from '@mui/material'
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { Autocomplete } from '@mui/material'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
-
+import { Country, State } from 'country-state-city'
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 const DeviceSimMapping = () => {
 
-
+const [editForm, setEditForm] = useState({
+  deviceid: '',
+  simid: '',
+  countrycode: '',
+  statecode: '',
+  locationid: '',
+  baseunitid: '',
+  active: '1',
+  createdby: ''
+})
   const [devices, setDevices] = useState<any[]>([])
   const [sims, setSims] = useState<any[]>([])
   const [error, setError] = useState('')
@@ -26,7 +37,35 @@ const DeviceSimMapping = () => {
   const [rows,setRows] = useState<any[]>([])
 const [mappings, setMappings] = useState<any[]>([]);
 
-  
+const [editOpen, setEditOpen] = useState(false)
+const [editId, setEditId] = useState('')
+
+
+const openEdit = (row: any) => {
+  setEditId(row.id)
+
+  setEditForm({
+    deviceid: row.deviceid,
+    simid: row.simid,
+    countrycode: row.countrycode || '',
+    statecode: row.statecode || '',
+    locationid: row.location || '',
+    baseunitid: row.base || '',
+    active: row.active,
+    createdby: row.createdby || ''
+  })
+
+  setEditOpen(true)
+}
+
+const update = async () => {
+  await vehicleMonitorService.updateDeviceSimMapping(editId, editForm)
+
+  setEditOpen(false)
+  setSnack('Mapping updated successfully')
+  load()
+}
+
 
   const [form, setForm] = useState({
   deviceid: '',
@@ -40,6 +79,12 @@ const [mappings, setMappings] = useState<any[]>([]);
   active: '1',
   createdby: ''
 })
+
+
+  const countries = useMemo(() => Country.getAllCountries(), [])
+  const states = useMemo(() => (form.countrycode ? State.getStatesOfCountry(form.countrycode) : []), [form.countrycode])
+
+  
 
   //Load all data
   // const load = async () => {
@@ -154,7 +199,16 @@ if (!form.simid) {
 })
 
       setSnack('Mapping created successfully')
-      setForm({ deviceid: '', simid: '' })
+      setForm({
+  deviceid: '',
+  simid: '',
+  countrycode: '',
+  statecode: '',
+  locationid: '',
+  baseunitid: '',
+  active: '1',
+  createdby: ''
+})
       load()
 
     }catch (e: any) {
@@ -199,18 +253,18 @@ if (!form.simid) {
     renderCell: (params) => (params.value ? 'ACTIVE' : 'INACTIVE')
   },
 
-  { field: 'createdby', headerName: 'Created By', flex: 1 },
-
+  // { field: 'createdby', headerName: 'Created By', flex: 1 },
   {
-    field: 'actions',
-    headerName: 'Actions',
-    flex: 1,
-    renderCell: ({ row }) => (
-      <Button size="small" color="error" onClick={() => onDelete(row.id)}>
-        Delete
-      </Button>
-    )
-  }
+  field: 'actions',
+  headerName: 'Actions',
+  flex: 1,
+  renderCell: ({ row }) => (
+    <Stack direction="row" spacing={1}>
+      <Button size="small" onClick={() => openEdit(row)}>Edit</Button>
+      <Button size="small" color="error" onClick={() => onDelete(row.id)}>Delete</Button>
+    </Stack>
+  )
+}
 ]
 
   return (
@@ -295,14 +349,18 @@ if (!form.simid) {
             {/* EXTRA FIELDS */}
 
 <Grid item xs={12} md={2}>
-  <TextField fullWidth label="Country Code"
-    onChange={(e) => setForm({ ...form, countrycode: e.target.value })}/>
+  <TextField fullWidth select label="Country" value={form.countrycode}
+    onChange={(e) => setForm({ ...form, countrycode: e.target.value, statecode: '' })}>
+    {countries.map((country) => <MenuItem key={country.isoCode} value={country.isoCode}>{country.name}</MenuItem>)}
+  </TextField>
 </Grid>
 
-<Grid item xs={12} md={2}>
-  <TextField fullWidth label="State Code"
-    onChange={(e) => setForm({ ...form, statecode: e.target.value })}/>
-</Grid>
+{form.countrycode && <Grid item xs={12} md={2}>
+  <TextField fullWidth select label="State" value={form.statecode}
+    onChange={(e) => setForm({ ...form, statecode: e.target.value })}>
+    {states.map((state) => <MenuItem key={state.isoCode} value={state.isoCode}>{state.name}</MenuItem>)}
+  </TextField>
+</Grid>}
 
 <Grid item xs={12} md={2}>
   <TextField fullWidth label="Location ID"
@@ -314,10 +372,10 @@ if (!form.simid) {
     onChange={(e) => setForm({ ...form, baseunitid: e.target.value })}/>
 </Grid>
 
-<Grid item xs={12} md={2}>
+{/* <Grid item xs={12} md={2}>
   <TextField fullWidth label="Created By"
     onChange={(e) => setForm({ ...form, createdby: e.target.value })}/>
-</Grid>
+</Grid> */}
 
             {/* BUTTON */}
             <Grid item xs={12} md={4}>
@@ -344,6 +402,51 @@ if (!form.simid) {
         </CardContent>
       </Card>
 
+     
+
+<Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+  <DialogTitle>Edit Mapping</DialogTitle>
+
+  <DialogContent>
+    <Grid container spacing={2} sx={{ mt: 1 }}>
+
+      <Grid item xs={12}>
+        <TextField fullWidth label="Device ID"
+          value={editForm.deviceid}
+          onChange={(e) => setEditForm({ ...editForm, deviceid: e.target.value })}
+        />
+      </Grid>
+
+      <Grid item xs={12}>
+        <TextField fullWidth label="SIM ID"
+          value={editForm.simid}
+          onChange={(e) => setEditForm({ ...editForm, simid: e.target.value })}
+        />
+      </Grid>
+
+      <Grid item xs={12}>
+        <TextField fullWidth label="Country"
+          value={editForm.countrycode}
+          onChange={(e) => setEditForm({ ...editForm, countrycode: e.target.value })}
+        />
+      </Grid>
+
+      <Grid item xs={12}>
+        <TextField fullWidth label="State"
+          value={editForm.statecode}
+          onChange={(e) => setEditForm({ ...editForm, statecode: e.target.value })}
+        />
+      </Grid>
+
+    </Grid>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+    <Button variant="contained" onClick={update}>Update</Button>
+  </DialogActions>
+</Dialog>
+
       {/* SNACKBAR */}
       <Snackbar open={!!snack} autoHideDuration={2500} onClose={() => setSnack('')}>
         <MuiAlert severity='success' variant='filled'>
@@ -352,6 +455,7 @@ if (!form.simid) {
       </Snackbar>
 
     </Box>
+    
   )
 }
 

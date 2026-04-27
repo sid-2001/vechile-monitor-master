@@ -270,7 +270,7 @@ const LocationHistory = () => {
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography variant='h4' mb={2}>Location History (Adaptive Million-Point Mode)</Typography>
+      <Typography variant='h4' mb={2}>Location History </Typography>
       {error && <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Card sx={{ mb: 2 }}>

@@ -3,6 +3,7 @@ import Snackbar from "@mui/material/Snackbar";
 import { useRecoilState } from "recoil";
 import axios from "axios";
 import { alertState, alertTextState, alertTypeState } from "../../states/state";
+import { useEffect } from "react";
 //@ts-ignore
 const { VITE_APP_BACKEND } = import.meta.env
 
@@ -12,11 +13,32 @@ const CustomSnackbar = () => {
   const [text] = useRecoilState(alertTextState);
   const [type] = useRecoilState(alertTypeState); // "success", "error", "info", "warning"
 
+
+  useEffect(() => {
+  if (!open) return;
+
+  // only non-SOS auto hide
+  if (type !== "sos") {
+    const timer = setTimeout(() => {
+      setOpen(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }
+}, [open, text, type]);
+
  const handleClose = async (
   _event?: React.SyntheticEvent | Event,
   reason?: string
 ) => {
   if (reason === "clickaway") return;
+
+  if (type !== "sos") {
+    setOpen(false);
+    return;
+  }
+
+
 
   try {
     if (currentSOSId) {
@@ -61,8 +83,9 @@ const CustomSnackbar = () => {
 
   return (
     <Snackbar
+      key={text}
       open={open}
-      autoHideDuration={3000}
+      autoHideDuration={2000}
       onClose={handleClose}
       anchorOrigin={{ vertical: "top", horizontal: "center" }}
       message={
