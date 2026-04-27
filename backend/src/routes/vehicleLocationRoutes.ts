@@ -27,6 +27,9 @@ router.get("/stream", (req, res) => {
 router.post("/", authMiddleware, validateBody(vehicleLocationSchema), asyncHandler((req, res) => vehicleLocationController.create(req, res)));
 router.get("/", authMiddleware, asyncHandler((req, res) => vehicleLocationController.list(req, res)));
 router.get("/latest/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.latest(req, res)));
+router.post("/cache", authMiddleware, validateBody(vehicleLocationSchema), asyncHandler((req, res) => vehicleLocationController.cacheLocation(req, res)));
+router.get("/live/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.liveFromCache(req, res)));
+router.get("/vector-history/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.vectorTileHistory(req, res)));
 router.get("/analytics/:vehicleId", authMiddleware, asyncHandler((req, res) => vehicleLocationController.analytics(req, res)));
 router.get("/timeline", authMiddleware, asyncHandler((req, res) => vehicleLocationController.timeline(req, res)));
 export default router;

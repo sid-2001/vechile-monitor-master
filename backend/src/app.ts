@@ -16,6 +16,7 @@ import geofenceRoutes from "./routes/geofenceRoutes";
 import locationRoutes from "./routes/locationRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import swaggerRoutes from "./routes/swaggerRoutes";
+import vectorTileRoutes from "./routes/vectorTileRoutes";
 import cors from "cors";
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/bases", authMiddleware, baseRoutes);
 app.use("/users", authMiddleware, userRoutes);
 app.use("/vehicles", authMiddleware, vehicleRoutes);
 app.use("/vehicle-locations", authMiddleware, vehicleLocationRoutes);
+app.use("/tiles", vectorTileRoutes);
 app.use("/devices", authMiddleware, deviceRoutes);
 app.use("/geofences", authMiddleware, geofenceRoutes);
 app.use("/locations", authMiddleware, locationRoutes);

@@ -1,4 +1,7 @@
 import { Types } from "mongoose";
+import SphericalMercator from "@mapbox/sphericalmercator";
+import geojsonvt from "geojson-vt";
+import vtpbf from "vt-pbf";
 import { VehicleLocation, IVehicleLocation } from "../models/VehicleLocation";
 import { Geofence } from "../models/Geofence";
 import { GeofenceLog } from "../models/GeofenceLog";
@@ -13,9 +16,30 @@ import {
   emitVehicleSpeedAlert,
 } from "../socket/vehicle.socket";
 import VehicleSOS from "../models/VehicleSOS";
+import { redisCacheService } from "./redisCache.service";
 const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 20;
 const HARSH_BRAKING_MAX_CURRENT_SPEED = 1;
 
+const tile2long = (x: number, z: number) => (x / Math.pow(2, z)) * 360 - 180;
+const tile2lat = (y: number, z: number) => {
+  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+  return (180 / Math.PI) * Math.atan(Math.sinh(n));
+};
+
+const getDirectionByAngle = (angle?: number): string => {
+  const normalized = ((Number(angle) % 360) + 360) % 360;
+  if (normalized >= 337.5 || normalized < 22.5) return "N";
+  if (normalized < 67.5) return "NE";
+  if (normalized < 112.5) return "E";
+  if (normalized < 157.5) return "SE";
+  if (normalized < 202.5) return "S";
+  if (normalized < 247.5) return "SW";
+  if (normalized < 292.5) return "W";
+  return "NW";
+};
+
+
+const mercator = new SphericalMercator({ size: 256 });
 export class VehicleLocationService {
   private getDistanceMeters(
     pointA: { latitude: number; longitude: number },
@@ -181,6 +205,21 @@ export class VehicleLocationService {
     const latestVehicles = await this.getLatestLocationsOfAllVehicles();
     emitAllVehicleLocationUpdate(latestVehicles);
 
+    const cachePayload = {
+      vehicleId: String(saved.vehicleId),
+      deviceId: saved.deviceId,
+      latitude: saved.latitude,
+      longitude: saved.longitude,
+      speed: saved.speed,
+      ignition: saved.ignition,
+      time: saved.time.toISOString(),
+      angle: saved.angle,
+      source: saved.source || "live",
+      vehicleNumber,
+    } as const;
+
+    await redisCacheService.upsertLiveLocation(cachePayload);
+
     emitVehicleLocationUpdate({
       vehicleId: String(saved.vehicleId),
       latitude: saved.latitude,
@@ -188,6 +227,7 @@ export class VehicleLocationService {
       speed: saved.speed,
       ignition: saved.ignition,
       time: saved.time,
+      angle: saved.angle,
       source: saved.source || "live",
     });
 
@@ -404,6 +444,222 @@ const sosLogs = await VehicleSOS.find({
     ]).allowDiskUse(true);
   }
 
+  async cacheLiveLocation(payload: {
+    vehicleId: string;
+    deviceId: string;
+    latitude: number;
+    longitude: number;
+    speed: number;
+    ignition: boolean;
+    time: string;
+    angle?: number;
+    source?: "live" | "simulation";
+    vehicleNumber?: string;
+  }) {
+    await redisCacheService.upsertLiveLocation(payload);
+    return payload;
+  }
+
+  async getCachedLiveLocation(vehicleId: string) {
+    return redisCacheService.getLiveLocation(vehicleId);
+  }
+
+  async getVectorTileHistory(params: {
+    vehicleId: string;
+    z: number;
+    x: number;
+    y: number;
+    from: Date;
+    to: Date;
+    limit?: number;
+    sampleSeconds?: number;
+  }) {
+    const west = tile2long(params.x, params.z);
+    const east = tile2long(params.x + 1, params.z);
+    const north = tile2lat(params.y, params.z);
+    const south = tile2lat(params.y + 1, params.z);
+
+    const match = {
+      vehicleId: new Types.ObjectId(params.vehicleId),
+      time: { $gte: params.from, $lte: params.to },
+      latitude: { $gte: south, $lte: north },
+      longitude: { $gte: west, $lte: east },
+    };
+
+    const maxPoints = Math.max(1, params.limit || 5000);
+    const autoSampleByZoom = params.z <= 8 ? 120 : params.z <= 11 ? 30 : params.z <= 14 ? 10 : 1;
+    const sampleSeconds = Math.max(1, params.sampleSeconds || autoSampleByZoom);
+
+    const [locations, overSpeedPoints, harshBrakingPoints] = await Promise.all([
+      VehicleLocation.aggregate([
+        { $match: match },
+        {
+          $project: {
+            vehicleId: 1,
+            latitude: 1,
+            longitude: 1,
+            speed: 1,
+            ignition: 1,
+            time: 1,
+            source: 1,
+            angle: 1,
+            bucketTime: {
+              $dateTrunc: { date: "$time", unit: "second", binSize: sampleSeconds },
+            },
+          },
+        },
+        { $sort: { time: -1 } },
+        {
+          $group: {
+            _id: "$bucketTime",
+            doc: { $first: "$$ROOT" },
+          },
+        },
+        { $replaceRoot: { newRoot: "$doc" } },
+        { $sort: { time: 1 } },
+        { $limit: maxPoints },
+      ]).allowDiskUse(true),
+      VehicleSpeedStatus.find({
+        vehicleId: params.vehicleId,
+        time: { $gte: params.from, $lte: params.to },
+        latitude: { $gte: south, $lte: north },
+        longitude: { $gte: west, $lte: east },
+      })
+        .sort({ time: -1 })
+        .limit(1000)
+        .lean(),
+      VehicleBrakingStatus.find({
+        vehicleId: params.vehicleId,
+        time: { $gte: params.from, $lte: params.to },
+        latitude: { $gte: south, $lte: north },
+        longitude: { $gte: west, $lte: east },
+      })
+        .sort({ time: -1 })
+        .limit(1000)
+        .lean(),
+    ]);
+
+    const features = locations.map((item: any) => ({
+      _id: String(item._id || item.time),
+      vehicleId: String(item.vehicleId),
+      latitude: item.latitude,
+      longitude: item.longitude,
+      speed: item.speed,
+      ignition: item.ignition,
+      angle: item.angle || 0,
+      direction: getDirectionByAngle(item.angle),
+      time: item.time,
+      source: item.source || "live",
+    }));
+
+    return {
+      tile: { z: params.z, x: params.x, y: params.y, bounds: { west, east, south, north }, sampleSeconds },
+      features,
+      events: {
+        overSpeed: overSpeedPoints.map((point) => ({
+          _id: String(point._id),
+          latitude: point.latitude,
+          longitude: point.longitude,
+          speed: point.speed,
+          time: point.time,
+          type: "overspeed",
+        })),
+        harshBraking: harshBrakingPoints.map((point) => ({
+          _id: String(point._id),
+          latitude: point.latitude,
+          longitude: point.longitude,
+          speed: point.speed,
+          time: point.time,
+          type: "harsh-braking",
+        })),
+      },
+    };
+  }
+
+  async getVectorTilePbf(params: {
+    z: number;
+    x: number;
+    y: number;
+    from?: Date;
+    to?: Date;
+    vehicleIds?: string[];
+    source?: "live" | "simulation";
+  }): Promise<Buffer | null> {
+    const [west, south, east, north] = mercator.bbox(params.x, params.y, params.z, false, "WGS84");
+
+    const query: Record<string, unknown> = {
+      location: {
+        $geoWithin: {
+          $box: [
+            [west, south],
+            [east, north],
+          ],
+        },
+      },
+    };
+
+    if (params.vehicleIds?.length) {
+      query.vehicleId = {
+        $in: params.vehicleIds
+          .filter((id) => Types.ObjectId.isValid(id))
+          .map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    if (params.source) query.source = params.source;
+
+    if (params.from || params.to) {
+      query.time = {};
+      if (params.from) (query.time as Record<string, unknown>).$gte = params.from;
+      if (params.to) (query.time as Record<string, unknown>).$lte = params.to;
+    }
+
+    const zoomLimit = params.z <= 6 ? 500 : params.z <= 10 ? 2000 : params.z <= 13 ? 6000 : 20000;
+
+    const docs = await VehicleLocation.find(query)
+      .sort({ time: -1 })
+      .limit(zoomLimit)
+      .select({ location: 1, deviceId: 1, time: 1, speed: 1, angle: 1, vehicleId: 1, source: 1, ignition: 1 })
+      .lean();
+
+    if (!docs.length) return null;
+
+    const featureCollection = {
+      type: "FeatureCollection",
+      features: docs.map((item: any) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: item.location?.coordinates || [item.longitude, item.latitude],
+        },
+        properties: {
+          _id: String(item._id),
+          vehicle_id: String(item.vehicleId),
+          device_id: item.deviceId,
+          timestamp: item.time,
+          speed: item.speed,
+          angle: item.angle || 0,
+          ignition: item.ignition,
+          source: item.source || "live",
+        },
+      })),
+    } as const;
+
+    const tileIndex = geojsonvt(featureCollection as any, {
+      maxZoom: 20,
+      tolerance: 3,
+      extent: 4096,
+      buffer: 64,
+      indexMaxZoom: 10,
+      indexMaxPoints: 100000,
+    });
+
+    const tile = tileIndex.getTile(params.z, params.x, params.y);
+    if (!tile) return null;
+
+    return vtpbf.fromGeojsonVt({ locations: tile });
+  }
+
   async getLatestLocationsOfAllVehicles() {
     return VehicleLocation.aggregate([
       { $sort: { vehicleId: 1, time: -1 } },
@@ -443,131 +699,6 @@ const sosLogs = await VehicleSOS.find({
       },
     ]).allowDiskUse(true);
   }
-
-
-//   async getTimeline(params) {
-//   const matchStage = {
-//     vehicleId: { $in: params.vehicleIds.map(id => new Types.ObjectId(id)) },
-//     time: { $gte: params.from, $lte: params.to },
-//   };
-
-//   if (params.excludeSimulation !== false) {
-//     matchStage.source = { $ne: "simulation" };
-//   }
-
-//   return VehicleLocation.aggregate([
-//     { $match: matchStage },
-
-//     // ✅ Reduce data early
-//     {
-//       $project: {
-//         vehicleId: 1,
-//         latitude: 1,
-//         longitude: 1,
-//         speed: 1,
-//         ignition: 1,
-//         time: 1,
-//         source: 1,
-//         bucketTime: {
-//           $dateTrunc: {
-//             date: "$time",
-//             unit: params.bucket,
-//             binSize: params.binSize || 1,
-//           },
-//         },
-//       },
-//     },
-
-//     // ✅ Use $top instead of sort+group
-//     {
-//       $group: {
-//         _id: {
-//           vehicleId: "$vehicleId",
-//           bucketTime: "$bucketTime",
-//         },
-//         latest: {
-//           $top: {
-//             sortBy: { time: -1 },
-//             output: "$$ROOT",
-//           },
-//         },
-//       },
-//     },
-
-//     { $replaceRoot: { newRoot: "$latest" } },
-
-//     {
-//       $lookup: {
-//         from: "vehicles",
-//         localField: "vehicleId",
-//         foreignField: "_id",
-//         as: "vehicleData",
-//       },
-//     },
-//     {
-//       $unwind: {
-//         path: "$vehicleData",
-//         preserveNullAndEmptyArrays: true,
-//       },
-//     },
-
-//     {
-//       $addFields: {
-//         vehicleNumber: "$vehicleData.vehicleNumber",
-//       },
-//     },
-
-//     { $sort: { bucketTime: 1 } },
-
-//     // ⚠️ reduce this
-//     { $limit: 100000 },
-//   ]).allowDiskUse(true);
-// }
-//   async getLatestLocationsOfAllVehicles() {
-//   return VehicleLocation.aggregate([
-//     {
-//       $group: {
-//         _id: "$vehicleId",
-//         latest: {
-//           $top: {
-//             sortBy: { time: -1 },
-//             output: {
-//               vehicleId: "$vehicleId",
-//               latitude: "$latitude",
-//               longitude: "$longitude",
-//               speed: "$speed",
-//               ignition: "$ignition",
-//               time: "$time",
-//               angle: "$angle",
-//               source: "$source",
-//             },
-//           },
-//         },
-//       },
-//     },
-//     { $replaceRoot: { newRoot: "$latest" } },
-
-//     {
-//       $lookup: {
-//         from: "vehicles",
-//         localField: "vehicleId",
-//         foreignField: "_id",
-//         as: "vehicleData",
-//       },
-//     },
-//     {
-//       $unwind: {
-//         path: "$vehicleData",
-//         preserveNullAndEmptyArrays: true,
-//       },
-//     },
-//     {
-//       $addFields: {
-//         vehicleNumber: "$vehicleData.vehicleNumber",
-//       },
-//     },
-//   ]).allowDiskUse(true);
-// }
 }
 
 export const vehicleLocationService = new VehicleLocationService();

@@ -39,6 +39,12 @@ export const vehicleMonitorService = {
   deleteDeviceSimMapping: (id: string) =>api1.del(`/device-sim-mapping/${id}`),
   
   createVehicleLocation: (payload: Record<string, unknown>) => api1.post('/vehicle-locations', payload),
+  cacheVehicleLocation: (payload: Record<string, unknown>) => api1.post('/vehicle-locations/cache', payload),
+  getCachedVehicleLocation: (vehicleId: string) => api1.get(`/vehicle-locations/live/${vehicleId}`),
+  getVehicleVectorHistory: (vehicleId: string, params?: Record<string, unknown>) => {
+    const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
+    return api1.get(`/vehicle-locations/vector-history/${vehicleId}${query.toString() ? `?${query.toString()}` : ""}`)
+  },
   getVehicleLocations: (params?: Record<string, unknown>) => {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/vehicle-locations${query.toString() ? `?${query.toString()}` : ''}`)
