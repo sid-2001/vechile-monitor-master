@@ -3,6 +3,8 @@ import { GeofenceLog } from "../models/GeofenceLog";
 import { VehicleBrakingStatus } from "../models/VehicleBrakingStatus";
 import { VehicleSpeedStatus } from "../models/VehicleSpeedStatus";
 import { emitGeofenceAlert, emitVehicleHarshBrakingAlert, emitVehicleSpeedAlert } from "../socket/vehicle.socket";
+import { VehicleAccidentStatus } from "../models/vehicleAccidentStatus";
+import { emitVehicleAccidentAlert } from "../socket/vehicle.socket";
 
 const router = Router();
 
@@ -50,6 +52,35 @@ router.post("/harsh-braking", async (req, res) => {
     source: payload.source || "live",
   });
   res.status(201).json({ message: "Harsh braking notification emitted", saved });
+});
+
+router.post("/vehicle-accident", async (req, res) => {
+  const payload = req.body;
+
+  const saved = await VehicleAccidentStatus.create({
+    vehicleId: payload.vehicleId,
+    speed: Number(payload.speed),
+    latitude: Number(payload.latitude),
+    longitude: Number(payload.longitude),
+    pitch: Number(payload.pitch),
+    roll: Number(payload.roll),
+    time: payload.time ? new Date(payload.time) : new Date(),
+  });
+  console.log("sample")
+
+  emitVehicleAccidentAlert({
+    vehicleId: String(payload.vehicleId),
+    vehicleNumber: String(payload.vehicleNumber),
+    speed: Number(payload.speed),
+    pitch: Number(payload.pitch),
+    roll: Number(payload.roll),
+    latitude: Number(payload.latitude),
+    longitude: Number(payload.longitude),
+    time: payload.time ? new Date(payload.time) : new Date(),
+    source: payload.source || "live",
+  });
+
+  res.status(201).json({ message: "Vehicle accident notification emitted", saved });
 });
 
 router.post("/geofence-enter", async (req, res) => {

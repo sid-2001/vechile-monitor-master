@@ -23,7 +23,7 @@ const DeviceSimMapping = () => {
 const [editForm, setEditForm] = useState({
   deviceid: '',
   simid: '',
-  countrycode: '',
+  countrycode: 'IN',
   statecode: '',
   locationid: '',
   baseunitid: '',
@@ -71,7 +71,7 @@ const update = async () => {
   deviceid: '',
   simid: '',
 
-  countrycode: '',
+  countrycode: 'IN',
   statecode: '',
   locationid: '',
   baseunitid: '',

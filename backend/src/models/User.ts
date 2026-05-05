@@ -1,9 +1,10 @@
 import { Document, model, Schema } from "mongoose";
 import { AuditFields } from "./audit";
 import { auditPlugin } from "../plugins/auditPlugin";
-
+import mongoose from "mongoose";
+delete mongoose.models.User;
 export type UserRole = "ADMIN" | "DRIVER" | "OPERATOR";
-export type UserStatus = "ACTIVE" | "LOCKED";
+export type UserStatus = "ACTIVE" | "INACTIVE";
 
 export interface IUser extends Document, AuditFields {
   username: string;
@@ -49,7 +50,7 @@ const schema = new Schema<IUser>({
   baseId: { type: Schema.Types.ObjectId, ref: "Base", required: false },
   baseIds: [{ type: Schema.Types.ObjectId, ref: "Base", required: true }],
   failedAttempts: { type: Number, default: 0 },
-  status: { type: String, enum: ["ACTIVE", "LOCKED"], default: "ACTIVE" },
+  status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
   lastLoginTime: { type: Date },
   firstLoggedIn: { type: Boolean, default: true },
   temporaryPasscode: { type: String },
@@ -64,5 +65,9 @@ const schema = new Schema<IUser>({
 });
 
 schema.plugin(auditPlugin);
+console.log("STATUS ENUM:", schema.path('status'));
+console.log("ENUM VALUES:", schema.path('status'));
 
-export const User = model<IUser>("User", schema);
+// export const User = model<IUser>("User", schema);
+export const User =
+  mongoose.models.User || mongoose.model<IUser>("User", schema);

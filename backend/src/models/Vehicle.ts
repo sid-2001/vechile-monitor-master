@@ -17,7 +17,15 @@ export interface IVehicle extends Document, AuditFields {
     loadCapacity: number;
     axles: number;
   };
-  performance: { transmissionType: string; fuelTankCapacity: number; maxSpeed: number; minSpeed: number };
+performance: {
+  transmissionType: String,
+  fuelTankCapacity: Number,
+  maxSpeed: Number,
+  minSpeed: Number,
+  harshBraking: { type: Number, default: 0 },
+  highPitch: { type: Number, default: 45 },
+  highRoll: { type: Number, default: 45 }
+},
   deviceId: string;
   baseId: Schema.Types.ObjectId;
   driverId?: Schema.Types.ObjectId;
@@ -44,8 +52,16 @@ const schema = new Schema<IVehicle>({
     loadCapacity: Number,
     axles: Number
   },
-  performance: { transmissionType: String, fuelTankCapacity: Number, maxSpeed: Number, minSpeed: Number ,harshBraking: { type: Number, default: 0 } },
-  deviceId: { type: String, required: true },
+ performance: {
+    transmissionType: String,
+    fuelTankCapacity: Number,
+    maxSpeed: Number,
+    minSpeed: Number,
+    harshBraking: { type: Number, default: 0 },
+    highPitch: { type: Number, default: 45 },
+    highRoll: { type: Number, default: 45 }
+  },
+    deviceId: { type: String, required: true },
   baseId: { type: Schema.Types.ObjectId, ref: "Base", required: true },
   driverId: { type: Schema.Types.ObjectId, ref: "User" },
   onSOS: { type: Boolean, default: false },

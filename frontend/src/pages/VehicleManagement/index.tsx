@@ -49,9 +49,12 @@ const [form, setForm] = useState({
   noofaxles: '',
   transmissiontype: '',
   fueltankcapacity: '',
-  harshBraking: ''
+  harshBraking: '',
+   highPitch: '',
+  highRoll: ''
 })
-  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '' })
+  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '',highPitch: '',
+  highRoll: '' })
 
   const load = async () => {
     try {
@@ -109,6 +112,8 @@ const [form, setForm] = useState({
     transmissionType: form.transmissiontype,
     fuelTankCapacity: Number(form.fueltankcapacity || 0),
     maxSpeed: Number(form.maxSpeed || 120),
+     highPitch: Number(form.highPitch || 45),
+  highRoll: Number(form.highRoll || 45),
     harshBraking: Number(form.harshBraking || 0),
     minSpeed: 0
   },
@@ -160,7 +165,9 @@ setForm({
   noofaxles: '',
   transmissiontype: '',
   fueltankcapacity: '',
-  harshBraking: ''
+  harshBraking: '',
+  highPitch:'',
+  highRoll:''
   
 })  
   setSnack('Vehicle created successfully with sample location history')
@@ -181,6 +188,8 @@ setForm({
       driverId: row.driverId?._id || row.driverId || '',
       deviceId: row.deviceId || '',
       maxSpeed: String(row.performance?.maxSpeed || 120),
+      highPitch: String(row.performance?.highPitch || 45),
+highRoll: String(row.performance?.highRoll || 45),
       harshBraking: String(row.performance?.harshBraking || 0)
     })
     setEditOpen(true)
@@ -196,7 +205,8 @@ setForm({
       driverId: editForm.driverId,
       deviceId: editForm.deviceId,
       manufacturer: { name: editForm.manufacturerName, model: editForm.manufacturerModel, variant: editForm.manufacturerVariant },
-      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0, harshBraking: Number(editForm.harshBraking || 0) }
+      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0, harshBraking: Number(editForm.harshBraking || 0),highPitch: Number(editForm.highPitch || 45),
+      highRoll: Number(editForm.highRoll || 45) }
     })
     setEditOpen(false)
     setSnack('Vehicle updated successfully')
@@ -210,39 +220,81 @@ setForm({
     load()
   }
 
- const cols: GridColDef[] = [
-  { field: 'vehicleId', headerName: 'Vehicle ID', flex: 1 },
-  { field: 'vehicleNumber', headerName: 'Vehicle Number', flex: 1 },
-  { field: 'licensePlate', headerName: 'License Plate', flex: 1 },
+//  const cols: GridColDef[] = [
+//   { field: 'vehicleId', headerName: 'Vehicle ID', flex: 1 },
+//   { field: 'vehicleNumber', headerName: 'Vehicle Number', flex: 1 },
+//   { field: 'licensePlate', headerName: 'License Plate', flex: 1 },
  
 
 
-  // 🔥 ENGINE / FUEL
-  { field: 'fueltype', headerName: 'Fuel', flex: 1, valueGetter: (_, row) => row.manufacturing?.fuelType || '-' },
-  { field: 'enginenumber', headerName: 'Engine No', flex: 1, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
-  { field: 'chassisnumber', headerName: 'Chassis No', flex: 1, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
+//   // 🔥 ENGINE / FUEL
+//   // { field: 'fueltype', headerName: 'Fuel', flex: 1, valueGetter: (_, row) => row.manufacturing?.fuelType || '-' },
+//   { field: 'enginenumber', headerName: 'Engine No', flex: 1, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
+//   { field: 'chassisnumber', headerName: 'Chassis No', flex: 1, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
 
-  // 🔥 PHYSICAL
-  // { field: 'color', headerName: 'Color', flex: 1, valueGetter: (_, row) => row.physical?.color || '-' },
-  { field: 'loadcapacity', headerName: 'Load', flex: 1, valueGetter: (_, row) => row.physical?.loadCapacity || '-' },
+//   // 🔥 PHYSICAL
+//   // { field: 'color', headerName: 'Color', flex: 1, valueGetter: (_, row) => row.physical?.color || '-' },
+//   // { field: 'loadcapacity', headerName: 'Load', flex: 1, valueGetter: (_, row) => row.physical?.loadCapacity || '-' },
 
-  // 🔥 PERFORMANCE
-  { field: 'transmission', headerName: 'Transmission', flex: 1, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
-  { field: 'fuelTank', headerName: 'Tank', flex: 1, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
-  { field: 'maxSpeed', headerName: 'Max Speed', flex: 1, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
-  {
-  field: 'harshBraking',
-  headerName: 'Harsh Braking',
-  flex: 1,
-  valueGetter: (_, row) => row.performance?.harshBraking || 0
-},
+//   // 🔥 PERFORMANCE
+//   { field: 'transmission', headerName: 'Transmission', flex: 1, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
+//   { field: 'fuelTank', headerName: 'Tank', flex: 1, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
+//   { field: 'maxSpeed', headerName: 'Max Speed', flex: 1, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
+//   {
+//   field: 'harshBraking',
+//   headerName: 'Harsh Braking',
+//   flex: 1,
+//   valueGetter: (_, row) => row.performance?.harshBraking || 0
+// },
+// {
+//   field: 'highPitch',
+//   headerName: 'Pitch',
+//   flex: 1,
+//   width: 30,
+//   valueGetter: (_, row) => row.performance?.highPitch || 0
+// },
+// {
+//   field: 'highRoll',
+//   headerName: 'Roll',
+//   flex: 1,
+//   valueGetter: (_, row) => row.performance?.highRoll || 0
+// },
 
-  // 🔥 ACTIONS
+//   // 🔥 ACTIONS
+//   {
+//     field: 'actions',
+//     headerName: 'Actions',
+//     flex: 1,
+//     sortable: false,
+//     renderCell: ({ row }) => (
+//       <Stack direction='row' spacing={1}>
+//         <Button size='small' onClick={() => openEdit(row)}>Edit</Button>
+//         <Button size='small' color='error' onClick={() => onDelete(row.id)}>Delete</Button>
+//       </Stack>
+//     )
+//   }
+// ]
+
+const cols: GridColDef[] = [
+  { field: 'vehicleId', headerName: 'Vehicle ID', width: 160 },
+  { field: 'vehicleNumber', headerName: 'Vehicle Number', width: 180 },
+  { field: 'licensePlate', headerName: 'License Plate', width: 180 },
+
+  { field: 'enginenumber', headerName: 'Engine No', width: 160, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
+  { field: 'chassisnumber', headerName: 'Chassis No', width: 160, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
+
+  { field: 'transmission', headerName: 'Transmission', width: 150, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
+  { field: 'fuelTank', headerName: 'Tank', width: 120, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
+  { field: 'maxSpeed', headerName: 'Max Speed', width: 130, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
+
+  { field: 'harshBraking', headerName: 'Harsh Braking', width: 140, valueGetter: (_, row) => row.performance?.harshBraking || 0 },
+  { field: 'highPitch', headerName: 'Pitch', width: 100, valueGetter: (_, row) => row.performance?.highPitch || 0 },
+  { field: 'highRoll', headerName: 'Roll', width: 100, valueGetter: (_, row) => row.performance?.highRoll || 0 },
+
   {
     field: 'actions',
     headerName: 'Actions',
-    flex: 1,
-    sortable: false,
+    width: 150,
     renderCell: ({ row }) => (
       <Stack direction='row' spacing={1}>
         <Button size='small' onClick={() => openEdit(row)}>Edit</Button>
@@ -304,7 +356,7 @@ setForm({
 
 {/* 🔥 NEW FIELDS END */}
       <Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Type' value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>{VEHICLE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Vehicle Sub Type' value={form.subType} onChange={e => setForm({ ...form, subType: e.target.value })}>{VEHICLE_SUB_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Manufacturer' value={form.manufacturerName} onChange={e => setForm({ ...form, manufacturerName: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth label='Model' value={form.manufacturerModel} onChange={e => setForm({ ...form, manufacturerModel: e.target.value })} /></Grid>
-      <Grid item xs={12} md={2}><TextField fullWidth label='Variant' value={form.manufacturerVariant} onChange={e => setForm({ ...form, manufacturerVariant: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Driver' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid>
+      <Grid item xs={12} md={2}><TextField fullWidth label='Variant' value={form.manufacturerVariant} onChange={e => setForm({ ...form, manufacturerVariant: e.target.value })} /></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Base' value={form.baseId} onChange={e => setForm({ ...form, baseId: e.target.value })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid><Grid item xs={12} md={2}><TextField fullWidth select label='Operator' value={form.driverId} onChange={e => setForm({ ...form, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid>
       <Grid item xs={12} md={2}><TextField fullWidth select label='Onboard Device' value={form.deviceId} onChange={e => setForm({ ...form, deviceId: e.target.value })}>{devices.map((d: any) => <MenuItem key={d._id} value={d.imei}>{d.name} ({d.imei})</MenuItem>)}</TextField></Grid>
   <Grid item xs={12} md={2}>
     
@@ -316,6 +368,25 @@ setForm({
     label="Harsh Braking"
     value={form.harshBraking}
     onChange={e => setForm({ ...form, harshBraking: e.target.value })}
+  />
+</Grid>
+<Grid item xs={12} md={2}>
+  <TextField
+    fullWidth
+    type="number"
+    label="High Pitch"
+    value={form.highPitch}
+    onChange={e => setForm({ ...form, highPitch: e.target.value })}
+  />
+</Grid>
+
+<Grid item xs={12} md={2}>
+  <TextField
+    fullWidth
+    type="number"
+    label="High Roll"
+    value={form.highRoll}
+    onChange={e => setForm({ ...form, highRoll: e.target.value })}
   />
 </Grid>
     <Grid item xs={12} md={2}>
@@ -337,6 +408,25 @@ setForm({
         <Grid item xs={12} md={4}><TextField fullWidth label='Variant' value={editForm.manufacturerVariant} onChange={e => setEditForm({ ...editForm, manufacturerVariant: e.target.value })} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth select label='Driver' value={editForm.driverId} onChange={e => setEditForm({ ...editForm, driverId: e.target.value })}>{drivers.map((d: any) => <MenuItem key={d._id} value={d._id}>{d.username}</MenuItem>)}</TextField></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label='Device ID' value={editForm.deviceId} onChange={e => setEditForm({ ...editForm, deviceId: e.target.value })} /></Grid><Grid item xs={12} md={6}><TextField fullWidth type='number' label='Max Speed (km/h)' value={editForm.maxSpeed} onChange={e => setEditForm({ ...editForm, maxSpeed: e.target.value })} /></Grid>
+        <Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    type="number"
+    label="High Pitch"
+    value={editForm.highPitch}
+    onChange={e => setEditForm({ ...editForm, highPitch: e.target.value })}
+  />
+</Grid>
+
+<Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    type="number"
+    label="High Roll"
+    value={editForm.highRoll}
+    onChange={e => setEditForm({ ...editForm, highRoll: e.target.value })}
+  />
+</Grid>
         <Grid item xs={12} md={6}>
   <TextField
     fullWidth

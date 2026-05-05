@@ -32,13 +32,23 @@ export class VehicleLocationController {
   }
 
   async timeline(req: Request, res: Response): Promise<void> {
-    const MAX_TIMELINE_WINDOW_MS = 24 * 60 * 60 * 1000;
+    const MAX_TIMELINE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
     const vehicleIds = String(req.query.vehicleIds || '').split(',').map((id) => id.trim()).filter(Boolean);
     const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - MAX_TIMELINE_WINDOW_MS);
     const to = req.query.to ? new Date(String(req.query.to)) : new Date();
     const bucket = String(req.query.bucket || 'month') as "month" | "week" | "day" | "hour" | "minute" | "second";
     const binSize = Math.max(1, Number(req.query.binSize || 1));
 
+
+    console.log("TIMELINE PARAMS:", {
+    vehicleIds,
+    from,
+    to,
+    bucket,
+    binSize,
+  });
+
+  
     if (!vehicleIds.length) {
       res.json({ items: [], total: 0 });
       return;
@@ -51,10 +61,10 @@ export class VehicleLocationController {
       res.status(422).json({ message: "From date must be before To date" });
       return;
     }
-    if (to.getTime() - from.getTime() > MAX_TIMELINE_WINDOW_MS) {
-      res.status(422).json({ message: "Timeline range cannot exceed 24 hours" });
-      return;
-    }
+    // if (to.getTime() - from.getTime() > MAX_TIMELINE_WINDOW_MS) {
+    //   res.status(422).json({ message: "Timeline range cannot exceed 24 hours" });
+    //   return;
+    // }
 
     const items = await vehicleLocationService.getTimeline({
       vehicleIds,

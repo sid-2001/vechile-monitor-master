@@ -400,6 +400,13 @@ socket.on("vehicle:braking:alert", (data) => {
   toast.warn(`🛑 Harsh braking: ${resolveVehicleName(data)} (${data?.previousSpeed ?? 0} → ${data?.speed ?? 0} km/h)`)
 })
 
+socket.on("vehicle:accident:alert", (data) => {
+  console.log("🚨 ACCIDENT EVENT:", data)
+
+  toast.warn(`🛑 Vehicle Accident Alert: ${resolveVehicleName(data)} (${data?.pitch ?? 0} → ${data?.roll ?? 0})`)
+})
+
+
   return () => {
     socket.off("connect");
     socket.off("vehicle:sos:created");
@@ -407,6 +414,8 @@ socket.on("vehicle:braking:alert", (data) => {
     socket.off("vehicle:geofence:alert");
     socket.off("vehicle:speed:alert");
     socket.off("vehicle:braking:alert");
+    socket.off("vehicle:accident:alert");
+    
   };
 }, []);
   return (

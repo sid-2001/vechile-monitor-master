@@ -40,7 +40,6 @@ app.use("/devices", authMiddleware, deviceRoutes);
 app.use("/geofences", authMiddleware, geofenceRoutes);
 app.use("/locations", authMiddleware, locationRoutes);
 app.use("/notifications", authMiddleware, notificationRoutes);
-
 app.use("/sims",authMiddleware,simMasterRoutes)
 app.use("/api/sos", vehicleSOSRoutes);
 

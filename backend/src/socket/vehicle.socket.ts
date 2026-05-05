@@ -94,3 +94,18 @@ export const emitVehicleHarshBrakingAlert = (payload: {
   const io = getIo();
   io.emit("vehicle:braking:alert", payload);
 };
+
+export const emitVehicleAccidentAlert = (payload: {
+  vehicleId: string;
+  vehicleNumber: string;
+  speed: number;
+  pitch: number;
+  roll: number;
+  latitude: number;
+  longitude: number;
+  time: Date;
+  source?: "live" | "simulation";
+}): void => {
+  const io = getIo();
+  io.emit("vehicle:accident:alert", payload);
+};

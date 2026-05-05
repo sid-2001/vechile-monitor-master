@@ -14,7 +14,10 @@ export class UserController {
     res.json({ ...options, total: data.total, items: data.items });
   }
   async byId(req: Request, res: Response): Promise<void> { const item = await userService.byId(req.params.id); if (!item) return void res.status(404).json({ message: "Not found" }); res.json(item); }
-  async update(req: Request, res: Response): Promise<void> { const item = await userService.update(req.params.id, req.body, req.user?.username || "SYSTEM"); if (!item) return void res.status(404).json({ message: "Not found" }); res.json(item); }
+  async update(req: Request, res: Response): Promise<void>
+   { 
+    console.log("BODY:", req.body);
+    const item = await userService.update(req.params.id, req.body, req.user?.username || "SYSTEM"); if (!item) return void res.status(404).json({ message: "Not found" }); res.json(item); }
   async remove(req: Request, res: Response): Promise<void> { const item = await userService.remove(req.params.id); if (!item) return void res.status(404).json({ message: "Not found" }); res.json({ message: "Deleted" }); }
 }
 export const userController = new UserController();

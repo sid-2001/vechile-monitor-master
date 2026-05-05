@@ -22,7 +22,7 @@ export class VehicleService {
     return { items, total };
   }
 
-  // 🔥 ONLY CHANGE HERE
+  //  ONLY CHANGE HERE
   byId(id: string) {
     return Vehicle.findById(id)
       .populate("baseId driverId", "name username")

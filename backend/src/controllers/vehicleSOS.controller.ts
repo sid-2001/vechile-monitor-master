@@ -116,7 +116,8 @@ emitVehicleSOSClosed({
   vehicleId: sos.vehicleId.toString(),
   vehicleNumber: vehicle?.vehicleNumber || "Unknown",
   closedAt: sos.closedAt as Date,
-  closedBy: user?.username || "Unknown", // ✅ username
+  // @ts-ignore
+  closedBy: user?.username || "Unknown", // username
 });
 
     res.status(200).json(sos);

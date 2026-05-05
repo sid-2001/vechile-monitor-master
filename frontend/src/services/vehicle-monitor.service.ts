@@ -69,10 +69,27 @@ deleteLocation: (id: string) => api1.del(`/locations/${id}`),
     }`
   );
 },
-  getVehicleTimeline: (params?: Record<string, unknown>) => {
-    const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
-    return api1.get(`/vehicle-locations/timeline${query.toString() ? `?${query.toString()}` : ""}`)
-  },
+  // getVehicleTimeline: (params?: Record<string, unknown>) => {
+  //   const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
+  //   return api1.get(`/vehicle-locations/timeline${query.toString() ? `?${query.toString()}` : ""}`)
+  // },
+
+  getVehicleTimeline: (params?: Record<string, any>) => {
+  const query = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+
+    //  ONLY handle vehicleIds differently
+    if (key === 'vehicleIds' && Array.isArray(value)) {
+      query.append(key, value.join(',')) // 🔒 SAFE (same as before)
+    } else {
+      query.append(key, String(value))
+    }
+  })
+
+  return api1.get(`/vehicle-locations/timeline${query.toString() ? `?${query.toString()}` : ""}`)
+},
   getGeofences: (params?: Record<string, unknown>) => {
     const query = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]))
     return api1.get(`/geofences${query.toString() ? `?${query.toString()}` : ''}`)

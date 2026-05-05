@@ -9,11 +9,11 @@ import MuiAlert from '@mui/material/Alert'
 const LocationManagement = () => {
   const [rows, setRows] = useState<any[]>([])
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: '', countryCode: '', stateCode: '', city: '' })
+  const [form, setForm] = useState({ name: '', countryCode: 'IN', stateCode: '', city: '' })
 
   const [editOpen, setEditOpen] = useState(false)
 const [editId, setEditId] = useState('')
-const [editForm, setEditForm] = useState({ name: '', countryCode: '', stateCode: '', city: '' })
+const [editForm, setEditForm] = useState({ name: '', countryCode: 'IN', stateCode: '', city: '' })
 const [snack, setSnack] = useState('')
 
   const countries = useMemo(() => Country.getAllCountries(), [])
@@ -171,36 +171,39 @@ const cols: GridColDef[] = [
                 ))}
               </TextField>
             </Grid>
-            {form.countryCode && (
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  label='State'
-                  value={form.stateCode}
-                  onChange={(e) => setForm({ ...form, stateCode: e.target.value, city: '' })}
-                >
-                  {states.map((state) => (
-                    <MenuItem key={state.isoCode} value={state.isoCode}>{state.name}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            )}
-            {form.countryCode && form.stateCode && (
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  label='City'
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                >
-                  {cities.map((city) => (
-                    <MenuItem key={`${city.name}-${city.latitude}-${city.longitude}`} value={city.name}>{city.name}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            )}
+           <Grid item xs={12} md={3}>
+  <TextField
+    fullWidth
+    select
+    label='State'
+    value={form.stateCode}
+    onChange={(e) => setForm({ ...form, stateCode: e.target.value, city: '' })}
+    disabled={!form.countryCode}   // 👈 bas ye rakho
+  >
+    {states.map((state) => (
+      <MenuItem key={state.isoCode} value={state.isoCode}>
+        {state.name}
+      </MenuItem>
+    ))}
+  </TextField>
+</Grid>
+
+<Grid item xs={12} md={3}>
+  <TextField
+    fullWidth
+    select
+    label='City'
+    value={form.city}
+    onChange={(e) => setForm({ ...form, city: e.target.value })}
+    disabled={!form.stateCode}   // 👈 bas ye rakho
+  >
+    {cities.map((city) => (
+      <MenuItem key={city.name} value={city.name}>
+        {city.name}
+      </MenuItem>
+    ))}
+  </TextField>
+</Grid>
             <Grid item xs={12} md={3 } display="flex" alignItems="center"><Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Location</Button></Grid>
           </Grid>
         </CardContent>
@@ -246,37 +249,39 @@ const cols: GridColDef[] = [
         </TextField>
       </Grid>
 
-      {editForm.countryCode && (
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            select
-            label="State"
-            value={editForm.stateCode}
-            onChange={(e) => setEditForm({ ...editForm, stateCode: e.target.value, city: '' })}
-          >
-            {State.getStatesOfCountry(editForm.countryCode).map(s => (
-              <MenuItem key={s.isoCode} value={s.isoCode}>{s.name}</MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-      )}
+      <Grid item xs={12}>
+  <TextField
+    fullWidth
+    select
+    label="State"
+    value={editForm.stateCode}
+    onChange={(e) => setEditForm({ ...editForm, stateCode: e.target.value, city: '' })}
+    disabled={!editForm.countryCode}
+  >
+    {State.getStatesOfCountry(editForm.countryCode).map(s => (
+      <MenuItem key={s.isoCode} value={s.isoCode}>
+        {s.name}
+      </MenuItem>
+    ))}
+  </TextField>
+</Grid>
 
-      {editForm.countryCode && editForm.stateCode && (
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            select
-            label="City"
-            value={editForm.city}
-            onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-          >
-            {City.getCitiesOfState(editForm.countryCode, editForm.stateCode).map(city => (
-              <MenuItem key={city.name} value={city.name}>{city.name}</MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-      )}
+<Grid item xs={12}>
+  <TextField
+    fullWidth
+    select
+    label="City"
+    value={editForm.city}
+    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+    disabled={!editForm.stateCode}
+  >
+    {City.getCitiesOfState(editForm.countryCode, editForm.stateCode).map(city => (
+      <MenuItem key={city.name} value={city.name}>
+        {city.name}
+      </MenuItem>
+    ))}
+  </TextField>
+</Grid>
 
     </Grid>
   </DialogContent>

@@ -75,43 +75,89 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-// Custom moving vehicle icon (green)
-const movingIcon = new L.Icon({
-  // iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// Helper function to create a rotating icon based on angle
+const createRotatedIcon = (angle: number, isMoving: boolean) => {
+  // Use a car icon SVG or PNG that can be rotated
+  // For this example, we'll use a simple div-based marker with CSS rotation
+  // But since Leaflet markers use images, we need to use a canvas or custom divIcon
+  
+  // Using a custom DivIcon for better rotation support
+  return L.divIcon({
+    html: `<div style="
+      transform: rotate(${angle || 0}deg);
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    ">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
+        fill="${isMoving ? '#4caf50' : '#f44336'}" 
+        stroke="#fff" 
+        stroke-width="1.5"/>
+        <circle cx="12" cy="11.5" r="1.5" fill="${isMoving ? '#2e7d32' : '#d32f2f'}" stroke="#fff" stroke-width="0.5"/>
+      </svg>
+    </div>`,
+    className: 'rotating-marker',
+    iconSize: [35, 35],
+    iconAnchor: [17, 22], // Center bottom of the icon
+    popupAnchor: [0, -22],
+  })
+}
+
+// Alternative: For better performance and simpler implementation, use standard icons with rotation via CSS class
+// But since Leaflet doesn't support direct image rotation, we need to use DivIcon
+
+const movingIcon = L.divIcon({
+  html: `<div style="
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    transition: transform 0.3s ease;
+  ">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
+      fill="#4caf50" 
+      stroke="#fff" 
+      stroke-width="1.5"/>
+      <circle cx="12" cy="11.5" r="1.5" fill="#2e7d32" stroke="#fff" stroke-width="0.5"/>
+    </svg>
+  </div>`,
+  className: 'moving-marker',
   iconSize: [35, 35],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  iconAnchor: [17, 22],
+  popupAnchor: [0, -22],
 })
 
-// Custom stopped vehicle icon (red)
-const stoppedIcon = new L.Icon({
-  // iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  //  iconSize: [18, 18],
-  // iconAnchor: [9, 9],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+const stoppedIcon = L.divIcon({
+  html: `<div style="
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  ">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
+      fill="#f44336" 
+      stroke="#fff" 
+      stroke-width="1.5"/>
+      <circle cx="12" cy="11.5" r="1.5" fill="#d32f2f" stroke="#fff" stroke-width="0.5"/>
+    </svg>
+  </div>`,
+  className: 'stopped-marker',
+  iconSize: [35, 35],
+  iconAnchor: [17, 22],
+  popupAnchor: [0, -22],
 })
 
 // Component to auto-fit map bounds
-// const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
-//   const map = useMap()
-//   useEffect(() => {
-//     if (markers.length > 0) {
-//       const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]))
-//       map.fitBounds(bounds, { padding: [50, 50] })
-//     } else {
-//       map.setView([20.5937, 78.9629], 5)
-//     }
-//   }, [markers, map])
-//   return null
-// }
 const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
   const map = useMap()
   const hasFitted = useRef(false)
@@ -127,7 +173,6 @@ const MapBounds: React.FC<{ markers: any[] }> = ({ markers }) => {
   return null
 }
 
-// Map Component to be reused
 const geofenceStyle = {
   color: '#FFDE42',
   weight: 3,
@@ -173,6 +218,236 @@ const MapFocusOnVehicle: React.FC<{ vehicle?: any; shouldFocus?: boolean }> = ({
   return null
 }
 
+
+const getDirectionType = (angle: number) => {
+  if (angle >= 315 || angle < 45) return 'straight'
+  if (angle >= 45 && angle < 135) return 'right'
+  if (angle >= 135 && angle < 225) return 'back'
+  if (angle >= 225 && angle < 315) return 'left'
+  return 'straight'
+}
+
+// Rotating Marker Component
+const RotatingMarker: React.FC<{ vehicle: any }> = ({ vehicle }) => {
+  const markerRef = useRef<any>(null)
+  const angle = vehicle.angle || 0
+  const isMoving = vehicle.ignition === true
+  const direction = getDirectionType(angle)
+
+// const icon = L.divIcon({
+//   html: `<div style="
+//     transform: rotate(${angle}deg);
+//     width: 38px;
+//     height: 38px;
+//     display: flex;
+//     align-items: center;
+//     justify-content: center;
+//     position: relative;
+//   ">
+//     <svg width="34" height="34" viewBox="0 0 24 24">
+//       <path 
+//         d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"
+//         fill="${isMoving ? '#4caf50' : '#f44336'}"
+//         stroke="#fff"
+//         stroke-width="1.5"
+//       />
+//     </svg>
+
+//     <div style="
+//       position: absolute;
+//       top: -6px;
+//       font-size: 12px;
+//       font-weight: bold;
+//       color: white;
+//       background: rgba(0,0,0,0.6);
+//       border-radius: 4px;
+//       padding: 1px 3px;
+//     ">
+//       ${
+//         direction === 'straight' ? '↑' :
+//         direction === 'left' ? '↖' :
+//         direction === 'right' ? '↗' :
+//         '↓'
+//       }
+//     </div>
+//   </div>`,
+//   className: 'rotating-marker',
+//   iconSize: [38, 38],
+//   iconAnchor: [19, 24],
+// })
+
+//   useEffect(() => {
+//     if (markerRef.current) {
+//       // Update the marker icon when angle changes
+//       const icon = L.divIcon({
+//         html: `<div style="
+//   transform: rotate(${angle}deg);
+//   width: 38px;
+//   height: 38px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   position: relative;
+// ">
+//   <svg width="34" height="34" viewBox="0 0 24 24">
+//     <path 
+//       d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"
+//       fill="${isMoving ? '#4caf50' : '#f44336'}"
+//       stroke="#fff"
+//       stroke-width="1.5"
+//     />
+//   </svg>
+
+//   <div style="
+//     position: absolute;
+//     top: -6px;
+//     font-size: 12px;
+//     font-weight: bold;
+//     color: white;
+//     background: rgba(0,0,0,0.6);
+//     border-radius: 4px;
+//     padding: 1px 3px;
+//   ">
+//     ${
+//       direction === 'straight' ? '↑' :
+//       direction === 'left' ? '↖' :
+//       direction === 'right' ? '↗' :
+//       '↓'
+//     }
+//   </div>
+// </div>`,
+//         className: 'rotating-marker',
+//         iconSize: [38, 38],
+//         iconAnchor: [19, 24],
+//         popupAnchor: [0, -24],
+//       })
+//       if (markerRef.current?._icon) {
+//         markerRef.current._icon.style.transform = `rotate(${angle}deg)`
+//       }
+//     }
+//   }, [angle, isMoving])
+
+const icon = useMemo(() => {
+  return L.divIcon({
+    html: `<div style="
+      transform: rotate(${angle}deg);
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    ">
+      <svg width="34" height="34" viewBox="0 0 24 24">
+        <path 
+          d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"
+          fill="${isMoving ? '#4caf50' : '#f44336'}"
+          stroke="#fff"
+          stroke-width="1.5"
+        />
+      </svg>
+
+      <div style="
+        position: absolute;
+        top: -6px;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        background: rgba(0,0,0,0.6);
+        border-radius: 4px;
+        padding: 1px 3px;
+      ">
+        ${
+          direction === 'straight' ? '↑' :
+          direction === 'left' ? '↖' :
+          direction === 'right' ? '↗' :
+          '↓'
+        }
+      </div>
+    </div>`,
+    className: 'rotating-marker',
+    iconSize: [38, 38],
+    iconAnchor: [19, 24],
+  })
+}, [angle, isMoving, direction])
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[vehicle.lat, vehicle.lng]}
+      // icon={isMoving ? movingIcon : stoppedIcon}
+      icon={icon}
+    >
+      <Popup>
+        <Box sx={{ minWidth: 200, p: 0.5 , color: 'black'}}>
+          <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DirectionsCarIcon fontSize="small" color="primary" />
+            {vehicle.vehicleNumber}
+          </Typography>
+          <Divider sx={{ my: 1 }} />
+          <Stack spacing={0.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SpeedIcon fontSize="small" color={vehicle.ignition ? 'success' : 'disabled'} />
+              <Typography variant="body2">
+                Speed: <strong>{vehicle.speed} km/h</strong>
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FiberManualRecordIcon fontSize="small" sx={{ color: vehicle.ignition ? 'success.main' : 'error.main' }} />
+              <Typography variant="body2">
+                Ignition: <strong style={{ color: vehicle.ignition ? '#2e7d32' : '#d32f2f' }}>{vehicle.ignition ? 'MOVING' : 'PARKED'}</strong>
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FiberManualRecordIcon fontSize="small" sx={{ color: getConnectionStatus(vehicle.live, vehicle.lastSeen) === 'connected' ? 'success.main' : 'error.main' }} />
+              <Typography variant="body2">
+                Connection: <strong style={{ color: getConnectionStatus(vehicle.live, vehicle.lastSeen) === 'connected' ? '#2e7d32' : '#d32f2f' }}>{getConnectionStatus(vehicle.live, vehicle.lastSeen).toUpperCase()}</strong>
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationOnIcon fontSize="small" color="primary" />
+              <Typography variant="body2">
+                Lat: <strong>{vehicle.lat?.toFixed(6)}</strong>
+              </Typography>
+              <Typography variant="body2">|</Typography>
+              <Typography variant="body2">
+                Lng: <strong>{vehicle.lng?.toFixed(6)}</strong>
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Last Seen: {formatLastSeen(vehicle.lastSeen)}
+            </Typography>
+            <Typography variant="body2">
+              Direction: <strong>{vehicle.angle ?? 0}° ({direction.toUpperCase()})</strong>
+            </Typography>
+          </Stack>
+        </Box>
+      </Popup>
+      <LeafletTooltip 
+        direction="top"
+        offset={[0, -25]}
+        opacity={0.95}
+        permanent={false}
+        sticky={true}
+      >
+        <Box sx={{ 
+          bgcolor: 'rgba(0,0,0,0.85)', 
+          color: 'white', 
+          px: 1.5, 
+          py: 0.75, 
+          borderRadius: 2, 
+          fontSize: '12px',
+          fontWeight: 'bold',
+          borderLeft: `3px solid ${vehicle.ignition ? '#4caf50' : '#f44336'}`,
+          whiteSpace: 'nowrap'
+        }}>
+          🚗 {vehicle.vehicleNumber} | {vehicle.speed} km/h | {vehicle.angle || 0}°
+        </Box>
+      </LeafletTooltip>
+    </Marker>
+  )
+}
+
 const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: boolean; focusedVehicle?: any; shouldFocusVehicle?: boolean }> = ({ markers, geofences, loading, focusedVehicle, shouldFocusVehicle }) => {
   const theme = useTheme()
   
@@ -182,92 +457,24 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
         <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }} />
       )}
       <MapContainer
-  center={[22.9734, 78.6569]}
-  zoom={5}
-  // minZoom={4}
-  minZoom={5}
-  maxZoom={18}
-  maxBounds={[
-    [6, 67],
-  [38, 98]
-  ]}
-  maxBoundsViscosity={1.0}
-  style={{ height: '100%', width: '100%' }}
-  zoomControl={true}
->
+        center={[22.9734, 78.6569]}
+        zoom={5}
+        minZoom={5}
+        maxZoom={18}
+        maxBounds={[
+          [6, 67],
+          [38, 98]
+        ]}
+        maxBoundsViscosity={1.0}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={true}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {markers.map(v => (
-          <Marker
-            key={v.id}
-            position={[v.lat, v.lng]}
-            icon={v.status === 'moving' ? movingIcon : stoppedIcon}
-          >
-            <Popup>
-              <Box sx={{ minWidth: 200, p: 0.5 , color: 'black'}}>
-                <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DirectionsCarIcon fontSize="small" color="primary" />
-                  {v.vehicleNumber}
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Stack spacing={0.5}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SpeedIcon fontSize="small" color={v.status === 'moving' ? 'success' : 'disabled'} />
-                    <Typography variant="body2">
-                      Speed: <strong>{v.speed} km/h</strong>
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FiberManualRecordIcon fontSize="small" sx={{ color: v.status === 'moving' ? 'success.main' : 'error.main' }} />
-                    <Typography variant="body2">
-                      Ignition: <strong style={{ color: v.status === 'moving' ? '#2e7d32' : '#d32f2f' }}>{v.status.toUpperCase()}</strong>
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FiberManualRecordIcon fontSize="small" sx={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? 'success.main' : 'error.main' }} />
-                    <Typography variant="body2">
-                      Connection: <strong style={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#d32f2f' }}>{getConnectionStatus(v.live, v.lastSeen).toUpperCase()}</strong>
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationOnIcon fontSize="small" color="primary" />
-                      
-                      <Typography variant="body2">
-                        Lat: <strong>{v.lat?.toFixed(6)}</strong>
-                      </Typography>
-
-                      <Typography variant="body2">
-                        |
-                      </Typography>
-
-                      <Typography variant="body2">
-                        Lng: <strong>{v.lng?.toFixed(6)}</strong>
-                      </Typography>
-                    </Box>
-
-                  
-                  <Typography variant="caption" color="text.secondary">
-                    Last Seen: {formatLastSeen(v.lastSeen)}
-                  </Typography>
-                  <Typography variant="body2">
-  Direction: <strong>{v.angle ?? 0}°</strong>
-</Typography>
-                </Stack>
-              </Box>
-            </Popup>
-            <LeafletTooltip 
-              direction="top"
-              offset={[0, -20]}
-              opacity={0.9}
-              permanent={false}
-            >
-              <Box sx={{ bgcolor: 'rgba(0,0,0,0.7)', color: 'white', px: 1, py: 0.5, borderRadius: 1, fontSize: '12px' }}>
-                {v.vehicleNumber} | {v.speed} km/h
-              </Box>
-            </LeafletTooltip>
-          </Marker>
+          <RotatingMarker key={v.id} vehicle={v} />
         ))}
         {geofences.map((fence) =>
           fence.center && fence.radius ? (
@@ -285,7 +492,6 @@ const LiveMap: React.FC<{ markers: any[]; geofences: GeofenceArea[]; loading?: b
     </Box>
   )
 }
-
 
 const smoothMove = (start: any, end: any, duration = 1000, onUpdate: any) => {
   const startTime = performance.now();
@@ -307,6 +513,7 @@ const smoothMove = (start: any, end: any, duration = 1000, onUpdate: any) => {
 
   requestAnimationFrame(animate);
 };
+
 const TrackingScreen = () => {
   const vehicleMapRef = useRef(new Map());
   const theme = useTheme()
@@ -344,10 +551,11 @@ const TrackingScreen = () => {
         baseId: v.baseId,
         live: v.live,
         lastSeen: v.lastSeen,
-        status: loc?.ignition ? 'moving' : 'parked',
+        ignition: loc?.ignition || false,
         speed: loc?.speed || 0,
         lat: loc?.latitude,
         lng: loc?.longitude,
+        angle: loc?.angle || 0,
         lastUpdated: loc?.time,
         address: loc?.address || 'Location unavailable'
       }
@@ -397,139 +605,75 @@ const TrackingScreen = () => {
   }, [])
 
   useEffect(() => {
-  console.log(" Listening for vehicleLocationBulkUpdate");
+    console.log(" Listening for vehicleLocationBulkUpdate");
 
-  socket.on("vehicleLocationBulkUpdate", (data: any[]) => {
-    console.log(" SOCKET RAW DATA:", data);
-    const liveData = (data || []).filter((loc: any) => loc?.source !== 'simulation')
-    if (!liveData.length) return
+    socket.on("vehicleLocationBulkUpdate", (data: any[]) => {
+      console.log(" SOCKET RAW DATA:", data);
+      const liveData = (data || []).filter((loc: any) => loc?.source !== 'simulation')
+      if (!liveData.length) return
 
-    // const updatedVehicles = data.map((loc: any) => ({
-      
-    //   id: String(loc.vehicleId),
-    //   // vehicleNumber: String(loc.vehicleId),
-    //   // vehicleNumber: loc.vehicleNumber || String(loc.vehicleId),
-    //   vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || "Unknown",
-    //   status: loc.ignition ? 'moving' : 'stopped',
-    //   ignition: loc.ignition,
-    //   speed: loc.speed,
-    //   lat: loc.latitude,
-    //   lng: loc.longitude,
-    //   lastUpdated: loc.time
-    // }));
-
-    const updatedVehicles = liveData.map((loc: any) => {
-
-  // 🔥 STEP A: map update karo agar vehicleNumber mila
-  if (loc.vehicleNumber) {
-    vehicleMapRef.current.set(String(loc.vehicleId), loc.vehicleNumber);
-  }
-
-  return {
-    id: String(loc.vehicleId),
-    vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
-    status: loc.ignition ? 'moving' : 'parked',
-    live: loc.live,
-    lastSeen: loc.lastSeen,
-    ignition: loc.ignition,
-    speed: loc.speed,
-    lat: loc.latitude,
-    lng: loc.longitude,
-    angle: loc.angle,
-    lastUpdated: loc.time
-  };
-});
-    console.log("UPDATED VEHICLES:", updatedVehicles);
-
-    // 🔥 IMPORTANT: smooth update instead of replace
-    // setVehicles((prev) => {
-    //   const map = new Map(prev.map(v => [v.id, v]));
-
-    //   updatedVehicles.forEach((v) => {
-    //     const old = map.get(v.id);
-
-    //     if (old) {
-    //       map.set(v.id, {
-    //         ...old,
-    //         ...v,
-    //         lat: old.lat + (v.lat - old.lat) * 0.2,
-    //         lng: old.lng + (v.lng - old.lng) * 0.2
-    //       });
-    //     } else {
-    //       map.set(v.id, v);
-    //     }
-    //   });
-
-    //   return Array.from(map.values());
-    // });
-
-    setVehicles((prev) => {
-  const map = new Map(prev.map(v => [v.id, v]));
-
-  updatedVehicles.forEach((v: any) => {
-    const old = map.get(v.id);
-
-    if (old && old.lat && old.lng) {
-      const matchedGeofence = geofencesRef.current.find((fence) => getBaseId(fence.baseId) && getBaseId(fence.baseId) === old.baseId)
-      if (matchedGeofence?.center) {
-        const distance = L.latLng(v.lat, v.lng).distanceTo(L.latLng(matchedGeofence.center.latitude, matchedGeofence.center.longitude))
-        const isOut = distance > matchedGeofence.radius
-        if (isOut && !vehicleOutStateRef.current[v.id]) {
-          setGeofenceAlert(`${old.vehicleNumber || v.id} go out of base`)
+      const updatedVehicles = liveData.map((loc: any) => {
+        if (loc.vehicleNumber) {
+          vehicleMapRef.current.set(String(loc.vehicleId), loc.vehicleNumber);
         }
-        vehicleOutStateRef.current[v.id] = isOut
-      }
-      smoothMove(
-        { lat: old.lat, lng: old.lng },
-        { lat: v.lat, lng: v.lng },
-        1000,
-        (lat: number, lng: number) => {
-          setVehicles((current) =>
-            current.map((item) =>
-              item.id === v.id ? { ...item, ...v, lat, lng } : item
-            )
-          );
-        }
-      );
-    } else {
-      map.set(v.id, v);
-    }
-  });
+        return {
+          id: String(loc.vehicleId),
+          vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
+          ignition: loc.ignition || false,
+          live: loc.live,
+          lastSeen: loc.lastSeen,
+          speed: loc.speed,
+          lat: loc.latitude,
+          lng: loc.longitude,
+          angle: loc.angle || 0,
+          lastUpdated: loc.time
+        };
+      });
+      console.log("UPDATED VEHICLES:", updatedVehicles);
 
-  return Array.from(map.values());
-});
+      setVehicles((prev) => {
+        const map = new Map(prev.map(v => [v.id, v]));
 
-    setLastRefresh(new Date());
-  });
+        updatedVehicles.forEach((v: any) => {
+          const old = map.get(v.id);
 
-  return () => {
-    socket.off("vehicleLocationBulkUpdate");
-  };
-}, []);
+          if (old && old.lat && old.lng) {
+            const matchedGeofence = geofencesRef.current.find((fence) => getBaseId(fence.baseId) && getBaseId(fence.baseId) === old.baseId)
+            if (matchedGeofence?.center) {
+              const distance = L.latLng(v.lat, v.lng).distanceTo(L.latLng(matchedGeofence.center.latitude, matchedGeofence.center.longitude))
+              const isOut = distance > matchedGeofence.radius
+              if (isOut && !vehicleOutStateRef.current[v.id]) {
+                setGeofenceAlert(`${old.vehicleNumber || v.id} go out of base`)
+              }
+              vehicleOutStateRef.current[v.id] = isOut
+            }
+            smoothMove(
+              { lat: old.lat, lng: old.lng },
+              { lat: v.lat, lng: v.lng },
+              1000,
+              (lat: number, lng: number) => {
+                setVehicles((current) =>
+                  current.map((item) =>
+                    item.id === v.id ? { ...item, ...v, lat, lng } : item
+                  )
+                );
+              }
+            );
+          } else {
+            map.set(v.id, v);
+          }
+        });
 
+        return Array.from(map.values());
+      });
 
+      setLastRefresh(new Date());
+    });
 
-  // useEffect(() => {
-  //   const refreshLatestLocations = async () => {
-  //     try {
-  //       const [vehicleRes, locationRes] = await Promise.all([
-  //         vehicleMonitorService.getVehicles(),
-  //         vehicleMonitorService.getVehicleLocations({ limit: 1000, sortBy: 'time', sortOrder: 'desc', excludeSource: 'simulation' })
-  //       ])
-
-  //       setVehicles(buildVehiclesWithLatestLocations(vehicleRes.items || [], locationRes.items || []))
-  //       setLastRefresh(new Date())
-  //     } catch (e) {
-  //       console.error('Unable to refresh latest vehicle locations', e)
-  //     }
-  //   }
-
-  //   const intervalId = setInterval(() => {
-  //     refreshLatestLocations()
-  //   }, 2000)
-
-  //   return () => clearInterval(intervalId)
-  // }, [])
+    return () => {
+      socket.off("vehicleLocationBulkUpdate");
+    };
+  }, []);
 
   const markers = useMemo(() => vehicles.filter((v) => v.lat && v.lng), [vehicles])
 
@@ -552,8 +696,8 @@ const TrackingScreen = () => {
       setSearchingHistory(false)
     }
   }
-const movingVehicles = vehicles.filter(v => v.ignition === true)
-  // const movingVehicles = vehicles.filter(v => v.status === 'moving' && v.speed > 0)
+  
+  const movingVehicles = vehicles.filter(v => v.ignition === true)
   const parkedVehicles = vehicles.filter(v => v.ignition === false)
   const focusedVehicle = vehicles.find((v) => v.id === focusedVehicleId)
 
@@ -641,119 +785,6 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
         </Grid>
       </Grid>
 
-      {/* History Search Card */}
-      {/* <Card sx={{ mb: 3, borderRadius: 3, boxShadow: theme.shadows[2] }}>
-        <CardContent>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-            <HistoryIcon color="primary" />
-            <Typography variant="h6" fontWeight="medium">Vehicle History Search</Typography>
-          </Stack>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-             <Select
-  fullWidth
-  value={selectedVehicle}
-  onChange={(e) => setSelectedVehicle(e.target.value)}
-  displayEmpty
-  sx={{
-    borderRadius: 2,
-    backgroundColor: '#fff',
-    
-    // FIX TEXT COLOR
-    color: '#000',
-
-    // FIX INPUT TEXT
-    '& .MuiSelect-select': {
-      color: '#000',
-    },
-
-    // FIX BORDER
-    '.MuiOutlinedInput-notchedOutline': {
-      borderColor: '#ccc',
-    },
-
-    '&:hover .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#1976d2',
-    },
-
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#1976d2',
-    },
-
-    // FIX ICON (arrow)
-    '.MuiSvgIcon-root': {
-      color: '#000',
-    }
-  }}
->
-                <MenuItem value="">Select Vehicle</MenuItem>
-                {vehicles.map(v => (
-                  <MenuItem key={v.id} value={v.id}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <FiberManualRecordIcon sx={{ fontSize: 12, color: v.status === 'moving' ? 'success.main' : 'error.main' }} />
-                      <span>{v.vehicleNumber}</span>
-                      {v.speed > 0 && <Chip
-  label={`${v.speed} km/h`}
-  size="small"
-  variant="outlined"
-  sx={{
-    color: '#000', 
-    borderColor: '#000', 
-    '& .MuiChip-label': {
-      color: '#000',
-    }
-  }}
-/>}
-                    </Stack>
-                  </MenuItem>
-                ))}
-              </Select>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                type="datetime-local"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                placeholder="From Date"
-                sx={{ borderRadius: 2 }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                type="datetime-local"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                placeholder="To Date"
-                sx={{ borderRadius: 2 }}
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={searchHistory}
-                disabled={!selectedVehicle || !fromDate || !toDate || searchingHistory}
-                startIcon={<HistoryIcon />}
-                sx={{ borderRadius: 2, py: 1.2 }}
-              >
-                {searchingHistory ? 'Loading...' : 'Load History'}
-              </Button>
-            </Grid>
-          </Grid>
-          {history.length > 0 && (
-            <Box sx={{ mt: 2, p: 1.5, bgcolor: alpha(theme.palette.info.main, 0.1), borderRadius: 2 }}>
-              <Typography variant="body2">
-                📍 Found <strong>{history.length}</strong> history points for the selected period
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card> */}
-
       {/* Map and Vehicles Grid */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -781,10 +812,8 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
               </Tooltip>
             </Box>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-              {/* height: 'calc(100vh - 220px)' */}
-              {/* height: { xs: 400, sm: 500, md: 600 } */}
               <Box sx={{height: 'calc(100vh - 220px)' , position: 'relative' }}>
-                  <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
+                <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
               </Box>
             </CardContent>
           </Card>
@@ -900,7 +929,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                             </Stack>
                           }
                         />
-                        {v.status === 'moving' && v.speed > 0 && (
+                        {v.ignition && v.speed > 0 && (
                           <Chip
                             label={`${v.speed} km/h`}
                             size="small"
@@ -915,49 +944,6 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
               )}
             </CardContent>
           </Card>
-
-          {/* History Points Summary */}
-          {/* <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2] }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                History Points
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              {history.length > 0 ? (
-                <Fade in>
-                  <Box>
-                    <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                      <Avatar sx={{ bgcolor: alpha(theme.palette.info.main, 0.2), color: 'info.main' }}>
-                        <HistoryIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h4" fontWeight="bold">{history.length}</Typography>
-                        <Typography variant="caption" color="text.secondary">location points found</Typography>
-                      </Box>
-                    </Stack>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      onClick={() => {
-                        console.log('History points:', history)
-                      }}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      View Details
-                    </Button>
-                  </Box>
-                </Fade>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <LocationOnIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                  <Typography color="text.secondary">
-                    {selectedVehicle ? 'No history points found' : 'Select a vehicle and date range'}
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card> */}
         </Grid>
       </Grid>
 
@@ -1025,7 +1011,7 @@ const movingVehicles = vehicles.filter(v => v.ignition === true)
                 </Box>
               </Stack>
             </Box>
-                          <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
+            <LiveMap markers={markers} geofences={geofences} loading={loading} focusedVehicle={focusedVehicle} shouldFocusVehicle={shouldFocusVehicle} />
           </Box>
         </DialogContent>
       </Dialog>

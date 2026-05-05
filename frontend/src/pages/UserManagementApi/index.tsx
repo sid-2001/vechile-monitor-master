@@ -33,7 +33,7 @@ const [editErrors, setEditErrors] = useState<any>({})
   email: '',
   deviceipaddress: '',
   devicename: '',
-  countrycode: '',
+  countrycode: 'IN',
   statecode: '',
   district: '',
   zipcode: '',
@@ -55,7 +55,7 @@ const [editErrors, setEditErrors] = useState<any>({})
   email: '',
   deviceipaddress: '',
   devicename: '',
-  countrycode: '',
+  countrycode: 'IN',
   statecode: '',
   district: '',
   zipcode: '',
@@ -139,7 +139,7 @@ setForm({
   email: '',
   deviceipaddress: '',
   devicename: '',
-  countrycode: '',
+  countrycode: 'IN',
   statecode: '',
   district: '',
   zipcode: '',
@@ -167,7 +167,7 @@ setForm({
   email: row.contact?.email || '',
   deviceipaddress: row.deviceipaddress || '',
   devicename: row.devicename || '',
-  countrycode: row.countrycode || '',
+  countrycode: row.countrycode || 'IN',
   statecode: row.statecode || '',
   district: row.district || '',
   zipcode: row.zipcode || '',
@@ -214,7 +214,8 @@ setForm({
   role: editForm.role,
   baseId: editForm.baseIds[0] || editForm.baseId,
   baseIds: editForm.baseIds,
-  status: editForm.status
+  // status: editForm.status
+  status: editForm.status?.trim().toUpperCase() || "ACTIVE"
 })
     setEditOpen(false)
     setSnack('User updated successfully')
@@ -534,13 +535,25 @@ const inputStyle = {
 helperText={editErrors.email}
 />    
   </Grid>
-   // @ts-ignore
+   {/* @ts-ignore */}
             <Grid item xs={12} md={6}><TextField fullWidth select SelectProps={{ multiple: true }} label='Bases' value={editForm.baseIds} 
              // @ts-ignore
             onChange={(e) => setEditForm({ ...editForm, baseIds: e.target.value as string[], baseId: (e.target.value as string[])[0] || '' })}>{bases.map((b: any) => <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>)}</TextField></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth select label='Location' value={editForm.locationid} onChange={(e) => setEditForm({ ...editForm, locationid: e.target.value })}>{locations.map((l: any) => <MenuItem key={l._id} value={l._id}>{l.name} ({l.city})</MenuItem>)}</TextField></Grid>
-            <Grid item xs={12} md={6}><TextField fullWidth label='Status' value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} /></Grid>
-          </Grid>
+<Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    select
+    label='Status'
+    value={editForm.status}
+    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+  >
+    <MenuItem value="ACTIVE">ACTIVE</MenuItem>
+    <MenuItem value="INACTIVE">INACTIVE</MenuItem>
+  </TextField>
+  
+</Grid>  
+        </Grid>
         </DialogContent>
         <DialogActions><Button onClick={() => setEditOpen(false)}>Cancel</Button><Button variant='contained' onClick={update}>Update</Button></DialogActions>
       </Dialog>

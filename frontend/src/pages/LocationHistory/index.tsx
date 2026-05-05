@@ -61,6 +61,7 @@ const bucketLabelMap: Record<BucketType, string> = {
   second: '5-second wise',
 }
 
+
 const getBinSizeByZoom = (zoom: number) => (zoom >= 16 ? 5 : 1)
 
 const toInputDate = (d: Date) => {
@@ -68,7 +69,7 @@ const toInputDate = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const HISTORY_WINDOW_HOURS = 24
+const HISTORY_WINDOW_HOURS = 168
 const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
 
 const LocationHistory = () => {
@@ -99,51 +100,129 @@ const LocationHistory = () => {
     loadVehicles()
   }, [])
 
-  const loadTimeline = async (overrideBucket?: BucketType) => {
-    if (!selectedVehicleIds.length) {
-      setError('Please select at least one vehicle')
-      return
-    }
+//   const loadTimeline = async (overrideBucket?: BucketType) => {
+//     if (!selectedVehicleIds.length) {
+//       setError('Please select at least one vehicle')
+//       return
+//     }
 
-    const activeBucket = overrideBucket || bucket
-    const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
+//     const activeBucket = overrideBucket || bucket
+//     const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
 
-    try {
-      setLoading(true)
-      setError('')
-      const from = new Date(fromDate)
-      const to = new Date(toDate)
+//     try {
+//       setLoading(true)
+//       setError('')
+//       const from = new Date(fromDate)
+//       const to = new Date(toDate)
 
-      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-        setError('Please select valid From/To date-time')
-        return
-      }
-      if (from > to) {
-        setError('From date must be before To date')
-        return
-      }
-      if (to.getTime() - from.getTime() > HISTORY_WINDOW_MS) {
-        setError(`History range cannot exceed ${HISTORY_WINDOW_HOURS} hours`)
-        return
-      }
+//       // if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+//       //   setError('Please select valid From/To date-time')
+//       //   return
+//       // }
+//       // if (from > to) {
+//       //   setError('From date must be before To date')
+//       //   return
+//       // }
+//       // if (to.getTime() - from.getTime() > HISTORY_WINDOW_MS) {
+//       //   setError(`History range cannot exceed ${HISTORY_WINDOW_HOURS} hours`)
+//       //   return
+//       // }
+//       console.log({
+//   vehicleIds: selectedVehicleIds,
+//   from: from.toISOString(),
+//   to: to.toISOString(),
+//   bucket: activeBucket,
+//   binSize: activeBinSize,
+// })
 
-      const data = await vehicleMonitorService.getVehicleTimeline({
-        vehicleIds: selectedVehicleIds.join(','),
-        from: from.toISOString(),
-        to: to.toISOString(),
-        bucket: activeBucket,
-        binSize: activeBinSize,
-        excludeSimulation: true,
-      })
-      setPoints(data.items || [])
-      setBucket(activeBucket)
-      setBinSize(activeBinSize)
-    } catch (e: any) {
-      setError(e?.error_message || 'Failed to load timeline data')
-    } finally {
-      setLoading(false)
-    }
+
+// const toUTCISOString = (local: string) => {
+//   const date = new Date(local)
+//   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()
+// }
+
+// const data = await vehicleMonitorService.getVehicleTimeline({
+//   vehicleIds: selectedVehicleIds.join(','),
+//   from: toUTCISOString(fromDate),
+//   to: toUTCISOString(toDate),
+//   bucket: activeBucket,
+//   binSize: activeBinSize,
+//   excludeSimulation: false,
+// })
+
+//       // const data = await vehicleMonitorService.getVehicleTimeline({
+//       //   vehicleIds: selectedVehicleIds.join(','),
+//       //  from: fromDate,
+//       //  to: toDate,
+//       //   bucket: activeBucket,
+//       //   binSize: activeBinSize,
+//       //   excludeSimulation: false,
+//       // })
+
+
+//       console.log("API DATA:", data)
+
+
+//       setPoints(data.items || [])
+//       setBucket(activeBucket)
+//       setBinSize(activeBinSize)
+//     } catch (e: any) {
+//       setError(e?.error_message || 'Failed to load timeline data')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }
+
+
+const loadTimeline = async (overrideBucket?: BucketType) => {
+  if (!selectedVehicleIds.length) {
+    setError('Please select at least one vehicle')
+    return
   }
+
+  const activeBucket = overrideBucket || bucket
+  const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
+
+  try {
+    setLoading(true)
+    setError('')
+
+    //  DEFINE ONLY ONCE
+     const toUTCISOString = (local: string) => {
+      const date = new Date(local)
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()
+    }
+
+    const finalFrom = toUTCISOString(fromDate)
+    const finalTo = toUTCISOString(toDate)
+
+    console.log({
+      vehicleIds: selectedVehicleIds,
+      from: finalFrom,
+      to: finalTo,
+    })
+
+    const data = await vehicleMonitorService.getVehicleTimeline({
+      vehicleIds: selectedVehicleIds.join(','),
+      from: finalFrom,
+      to: finalTo,
+      bucket: activeBucket,
+      binSize: activeBinSize,
+      excludeSimulation: false,
+    })
+
+    console.log("API DATA:", data)
+
+    setPoints(data.items || [])
+    setBucket(activeBucket)
+    setBinSize(activeBinSize)
+
+  } catch (e: any) {
+    setError(e?.error_message || 'Failed to load timeline data')
+  } finally {
+    setLoading(false)
+  }
+}
 
   const onVehicleChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value
@@ -323,7 +402,7 @@ const LocationHistory = () => {
             </Grid>
 
             <Grid item xs={12} md={2}>
-              <Button fullWidth variant='contained' onClick={() => loadTimeline('month')} sx={{ height: 56 }} disabled={loading}>Load History</Button>
+              <Button fullWidth variant='contained' onClick={() => loadTimeline('minute')} sx={{ height: 56 }} disabled={loading}>Load History</Button>
             </Grid>
 
             <Grid item xs={12} md={2}>
@@ -352,7 +431,7 @@ const LocationHistory = () => {
       <Dialog fullScreen open={fullscreenOpen} onClose={() => setFullscreenOpen(false)}>
         <DialogContent sx={{ p: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant='h6'>Location History Map</Typography>
+            <Typography variant='h6'>Location History </Typography>
             <IconButton onClick={() => setFullscreenOpen(false)}><CloseIcon /></IconButton>
           </Box>
           {mapElement}

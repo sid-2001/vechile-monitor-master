@@ -13,6 +13,7 @@ import {
   emitVehicleSpeedAlert,
 } from "../socket/vehicle.socket";
 import VehicleSOS from "../models/VehicleSOS";
+import { VehicleLocationHistory } from "../models/VehicleLocationCoordinateHistory";
 const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 20;
 const HARSH_BRAKING_MAX_CURRENT_SPEED = 1;
 
@@ -169,7 +170,12 @@ export class VehicleLocationService {
     doc.$locals.currentUser = actor;
 
     const saved = await doc.save();
+    await VehicleLocationHistory.create({
+      ...saved.toObject(),
+      source: saved.source || "live",
+    });
 
+// await VehicleLocationHistory.create(saved.toObject());
     const vehicleDoc = await Vehicle.findById(saved.vehicleId).lean();
     const vehicleNumber = vehicleDoc?.vehicleNumber || String(saved.vehicleId);
 
@@ -348,12 +354,27 @@ const sosLogs = await VehicleSOS.find({
       vehicleId: { $in: params.vehicleIds.map((id) => new Types.ObjectId(id)) },
       time: { $gte: params.from, $lte: params.to },
     };
+    console.log("PARAMS:", {
+      vehicleIds: params.vehicleIds,
+      from: params.from,
+      to: params.to,
+    });
+
+    console.log("MATCH STAGE:", matchStage);
 
     if (params.excludeSimulation !== false) {
       matchStage.source = { $ne: "simulation" };
     }
 
-    return VehicleLocation.aggregate([
+
+    const raw = await VehicleLocationHistory.find({
+      vehicleId: { $in: params.vehicleIds.map(id => new Types.ObjectId(id)) },
+      time: { $gte: params.from, $lte: params.to },
+    });
+
+    console.log("RAW DATA COUNT:", raw.length);
+
+    return VehicleLocationHistory.aggregate([
       { $match: matchStage },
       { $sort: { vehicleId: 1, time: -1 } },
       {
@@ -402,8 +423,13 @@ const sosLogs = await VehicleSOS.find({
       { $sort: { bucketTime: 1 } },
       { $limit: 500000 },
     ]).allowDiskUse(true);
+
+    
   }
 
+  
+
+  
 
 
 async getLatestLocationsOfAllVehicles() {
