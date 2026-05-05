@@ -421,12 +421,12 @@ const sosLogs = await VehicleSOS.find({
 
     const initialBinSize = Math.max(1, params.binSize || 1);
     let activeBinSize = initialBinSize;
-    let items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any).allowDiskUse(true);
+    let items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any, { allowDiskUse: true }).allowDiskUse(true);
 
     if (params.bucket === "second") {
       while (items.length >= MAX_TIMELINE_POINTS && activeBinSize < MAX_SECOND_BIN_SIZE) {
         activeBinSize += 1;
-        items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any).allowDiskUse(true);
+        items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any, { allowDiskUse: true }).allowDiskUse(true);
       }
     }
 
