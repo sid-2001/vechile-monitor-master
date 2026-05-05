@@ -28,6 +28,9 @@ const schema = new Schema<IVehicleLocation>({
   source: { type: String, enum: ["live", "simulation"], default: "live", index: true }
 });
 
+schema.index({ vehicleId: 1, time: -1 });
+schema.index({ vehicleId: 1, source: 1, time: -1 });
+
 schema.plugin(auditPlugin);
 
 // export const VehicleLocationHistory = model<IVehicleLocation>("vehicle_coordinates_history", schema);
