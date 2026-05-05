@@ -16,6 +16,8 @@ import VehicleSOS from "../models/VehicleSOS";
 import { VehicleLocationHistory } from "../models/VehicleLocationCoordinateHistory";
 const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 20;
 const HARSH_BRAKING_MAX_CURRENT_SPEED = 1;
+const MAX_TIMELINE_POINTS = 500000;
+const MAX_SECOND_BIN_SIZE = 60;
 
 export class VehicleLocationService {
   private getDistanceMeters(
@@ -367,21 +369,14 @@ const sosLogs = await VehicleSOS.find({
     }
 
 
-    const raw = await VehicleLocationHistory.find({
-      vehicleId: { $in: params.vehicleIds.map(id => new Types.ObjectId(id)) },
-      time: { $gte: params.from, $lte: params.to },
-    });
-
-    console.log("RAW DATA COUNT:", raw.length);
-
-    return VehicleLocationHistory.aggregate([
+    const createTimelinePipeline = (binSize: number): Record<string, unknown>[] => ([
       { $match: matchStage },
       { $sort: { vehicleId: 1, time: -1 } },
       {
         $group: {
           _id: {
             vehicleId: "$vehicleId",
-            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize: params.binSize || 1 } },
+            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize } },
           },
           vehicleId: { $first: "$vehicleId" },
           latitude: { $first: "$latitude" },
@@ -421,8 +416,21 @@ const sosLogs = await VehicleSOS.find({
         },
       },
       { $sort: { bucketTime: 1 } },
-      { $limit: 500000 },
-    ]).allowDiskUse(true);
+      { $limit: MAX_TIMELINE_POINTS },
+    ]);
+
+    const initialBinSize = Math.max(1, params.binSize || 1);
+    let activeBinSize = initialBinSize;
+    let items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any).allowDiskUse(true);
+
+    if (params.bucket === "second") {
+      while (items.length >= MAX_TIMELINE_POINTS && activeBinSize < MAX_SECOND_BIN_SIZE) {
+        activeBinSize += 1;
+        items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any).allowDiskUse(true);
+      }
+    }
+
+    return items;
 
     
   }
