@@ -371,7 +371,6 @@ const sosLogs = await VehicleSOS.find({
 
     const createTimelinePipeline = (binSize: number): Record<string, unknown>[] => ([
       { $match: matchStage },
-      { $sort: { vehicleId: 1, time: -1 } },
       {
         $group: {
           _id: {
@@ -379,14 +378,31 @@ const sosLogs = await VehicleSOS.find({
             bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize } },
           },
           vehicleId: { $first: "$vehicleId" },
-          latitude: { $first: "$latitude" },
-          longitude: { $first: "$longitude" },
-          speed: { $first: "$speed" },
-          ignition: { $first: "$ignition" },
-          time: { $first: "$time" },
-          source: { $first: "$source" },
+          time: { $max: "$time" },
         },
       },
+      {
+        $lookup: {
+          from: "vehicle_coordinates_history",
+          let: { vId: "$vehicleId", latestTime: "$time" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$vehicleId", "$$vId"] },
+                    { $eq: ["$time", "$$latestTime"] },
+                  ],
+                },
+              },
+            },
+            { $project: { latitude: 1, longitude: 1, speed: 1, ignition: 1, source: 1 } },
+            { $limit: 1 },
+          ],
+          as: "historyData",
+        },
+      },
+      { $unwind: { path: "$historyData", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "vehicles",
@@ -406,12 +422,12 @@ const sosLogs = await VehicleSOS.find({
           _id: 1,
           vehicleId: 1,
           vehicleNumber: "$vehicleData.vehicleNumber",
-          latitude: 1,
-          longitude: 1,
-          speed: 1,
-          ignition: 1,
+          latitude: "$historyData.latitude",
+          longitude: "$historyData.longitude",
+          speed: "$historyData.speed",
+          ignition: "$historyData.ignition",
           time: 1,
-          source: 1,
+          source: "$historyData.source",
           bucketTime: "$_id.bucketTime",
         },
       },
