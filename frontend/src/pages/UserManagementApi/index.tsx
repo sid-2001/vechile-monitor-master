@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material'
 import MuiAlert from '@mui/material/Alert'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
@@ -12,23 +12,45 @@ const UserManagementApi = () => {
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [loadingBases, setLoadingBases] = useState(false)
   const theme=useTheme();
+  const [nameSearch, setNameSearch] = useState('')
+  const [idSearch, setIdSearch] = useState('')
 
   const [form, setForm] = useState({ username: '', password: 'User@1234', first: '', last: '', mobile: '', email: '', role: 'OPERATOR', baseId: '' })
   const [editForm, setEditForm] = useState({ username: '', first: '', last: '', mobile: '', email: '', role: 'OPERATOR', baseId: '', status: 'ACTIVE' })
 
-  const load = async () => {
+  const loadUsers = async () => {
+    setLoadingUsers(true)
     try {
-      const [users, baseData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases()])
+      const users = await vehicleMonitorService.getUsers()
       setRows((users.items || []).map((x: any) => ({ id: x._id, ...x })))
-      setBases(baseData.items || [])
       setError('')
     } catch (e: any) {
       setError(e?.error_message || 'Failed to load users')
+    } finally {
+      setLoadingUsers(false)
     }
   }
 
-  useEffect(() => { load() }, [])
+  const loadBases = async () => {
+    setLoadingBases(true)
+    try {
+      const baseData = await vehicleMonitorService.getBases()
+      setBases(baseData.items || [])
+      setError('')
+    } catch (e: any) {
+      setError(e?.error_message || 'Failed to load bases')
+    } finally {
+      setLoadingBases(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+    loadBases()
+  }, [])
 
   const create = async () => {
     await vehicleMonitorService.createUser({
@@ -41,7 +63,7 @@ const UserManagementApi = () => {
     })
     setForm({ username: '', password: 'User@1234', first: '', last: '', mobile: '', email: '', role: 'OPERATOR', baseId: '' })
     setSnack('User created successfully')
-    load()
+    await loadUsers()
   }
 
   const openEdit = (row: any) => {
@@ -70,14 +92,14 @@ const UserManagementApi = () => {
     })
     setEditOpen(false)
     setSnack('User updated successfully')
-    load()
+    await loadUsers()
   }
 
   const onDelete = async (id: string) => {
     if (!window.confirm('Delete this user?')) return
     await vehicleMonitorService.deleteUser(id)
     setSnack('User deleted successfully')
-    load()
+    await loadUsers()
   }
 
   const columns: GridColDef[] = [
@@ -87,6 +109,65 @@ const UserManagementApi = () => {
     { field: 'email', headerName: 'Email', flex: 1, valueGetter: (_, row) => row.contact?.email },
     { field: 'actions', headerName: 'Actions', flex: 1, sortable: false, renderCell: ({ row }) => <Stack direction='row' spacing={1}><Button size='small' onClick={() => openEdit(row)}>Edit</Button><Button size='small' color='error' onClick={() => onDelete(row.id)}>Delete</Button></Stack> }
   ]
+
+  const scoreMatch = (value: string, query: string) => {
+    if (!query) return 1
+    const source = (value || '').toLowerCase()
+    const target = query.toLowerCase().trim()
+    if (!source || !target) return 0
+    if (source === target) return 100
+    if (source.startsWith(target)) return 80
+    if (source.includes(target)) return 60
+    return target.split(/\s+/).reduce((score, part) => (source.includes(part) ? score + 10 : score), 0)
+  }
+
+  const filteredRows = useMemo(() => {
+    const hasNameSearch = !!nameSearch.trim()
+    const hasIdSearch = !!idSearch.trim()
+    return rows
+      .map((row) => {
+        const fullName = `${row?.name?.first || ''} ${row?.name?.last || ''}`.trim()
+        const idValue = row.username || row._id || row.id || ''
+        const nameScore = hasNameSearch ? scoreMatch(fullName, nameSearch) : 1
+        const idScore = hasIdSearch ? scoreMatch(String(idValue), idSearch) : 1
+        return { ...row, __score: nameScore + idScore }
+      })
+      .filter((row) => row.__score > 0)
+      .sort((a, b) => b.__score - a.__score)
+  }, [rows, nameSearch, idSearch])
+
+  const exportCsv = () => {
+    const csvRows = filteredRows.map((row) => ({
+      id: row.username || row._id || row.id || '',
+      firstName: row?.name?.first || '',
+      lastName: row?.name?.last || '',
+      role: row.role || '',
+      status: row.status || '',
+      email: row?.contact?.email || '',
+      mobile: row?.contact?.mobile || '',
+    }))
+    const header = ['ID Number', 'First Name', 'Last Name', 'Role', 'Status', 'Email', 'Mobile']
+    const dataLines = csvRows.map((r) => [r.id, r.firstName, r.lastName, r.role, r.status, r.email, r.mobile].map((x) => `"${String(x).replace(/"/g, '""')}"`).join(','))
+    const blob = new Blob([[header.join(','), ...dataLines].join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'users.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportXlsx = () => {
+    const rowsHtml = filteredRows.map((row) => `<tr><td>${row.username || row._id || row.id || ''}</td><td>${row?.name?.first || ''}</td><td>${row?.name?.last || ''}</td><td>${row.role || ''}</td><td>${row.status || ''}</td><td>${row?.contact?.email || ''}</td><td>${row?.contact?.mobile || ''}</td></tr>`).join('')
+    const table = `<table><tr><th>ID Number</th><th>First Name</th><th>Last Name</th><th>Role</th><th>Status</th><th>Email</th><th>Mobile</th></tr>${rowsHtml}</table>`
+    const blob = new Blob([table], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'users.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
@@ -162,7 +243,25 @@ const UserManagementApi = () => {
         
         
         </CardContent></Card>
-      <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={columns} /></div></CardContent></Card>
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems='center'>
+            <Grid item xs={12} md={4}>
+              <TextField fullWidth label='Search Name' value={nameSearch} autoComplete='off' onChange={(e) => setNameSearch(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField fullWidth label='Search ID Number' value={idSearch} autoComplete='off' onChange={(e) => setIdSearch(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Button fullWidth variant='outlined' onClick={exportCsv}>Download CSV</Button>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Button fullWidth variant='outlined' onClick={exportXlsx}>Download XLSX</Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+      <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={filteredRows} columns={columns} loading={loadingUsers || loadingBases} /></div></CardContent></Card>
 
       <Dialog 
       
