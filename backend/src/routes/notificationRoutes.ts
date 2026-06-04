@@ -5,11 +5,21 @@ import { VehicleSpeedStatus } from "../models/VehicleSpeedStatus";
 import { emitGeofenceAlert, emitVehicleHarshBrakingAlert, emitVehicleSpeedAlert } from "../socket/vehicle.socket";
 import { VehicleAccidentStatus } from "../models/vehicleAccidentStatus";
 import { emitVehicleAccidentAlert } from "../socket/vehicle.socket";
+import { Vehicle } from "../models/Vehicle";
 
 const router = Router();
 
+const resolveVehicleIdentity = async (payload: any) => {
+  const vehicle = payload.vehicleId ? await Vehicle.findById(payload.vehicleId, { vehicleNumber: 1, vehicle_tag_name: 1 }).lean() : null;
+  return {
+    vehicleNumber: String(payload.vehicleNumber || vehicle?.vehicleNumber || payload.vehicleId || "Unknown"),
+    vehicle_tag_name: payload.vehicle_tag_name ?? vehicle?.vehicle_tag_name ?? null,
+  };
+};
+
 router.post("/speed-exceeded", async (req, res) => {
   const payload = req.body;
+  const vehicleIdentity = await resolveVehicleIdentity(payload);
   const saved = await VehicleSpeedStatus.create({
     vehicleId: payload.vehicleId,
     speed: Number(payload.speed),
@@ -20,7 +30,8 @@ router.post("/speed-exceeded", async (req, res) => {
 
   emitVehicleSpeedAlert({
     vehicleId: String(payload.vehicleId),
-    vehicleNumber: String(payload.vehicleNumber),
+    vehicleNumber: vehicleIdentity.vehicleNumber,
+    vehicle_tag_name: vehicleIdentity.vehicle_tag_name,
     speed: Number(payload.speed),
     maxSpeed: Number(payload.maxSpeed),
     latitude: Number(payload.latitude),
@@ -33,6 +44,7 @@ router.post("/speed-exceeded", async (req, res) => {
 
 router.post("/harsh-braking", async (req, res) => {
   const payload = req.body;
+  const vehicleIdentity = await resolveVehicleIdentity(payload);
   const saved = await VehicleBrakingStatus.create({
     vehicleId: payload.vehicleId,
     speed: Number(payload.speed),
@@ -43,7 +55,8 @@ router.post("/harsh-braking", async (req, res) => {
 
   emitVehicleHarshBrakingAlert({
     vehicleId: String(payload.vehicleId),
-    vehicleNumber: String(payload.vehicleNumber),
+    vehicleNumber: vehicleIdentity.vehicleNumber,
+    vehicle_tag_name: vehicleIdentity.vehicle_tag_name,
     previousSpeed: Number(payload.previousSpeed),
     speed: Number(payload.speed),
     latitude: Number(payload.latitude),
@@ -56,6 +69,7 @@ router.post("/harsh-braking", async (req, res) => {
 
 router.post("/vehicle-accident", async (req, res) => {
   const payload = req.body;
+  const vehicleIdentity = await resolveVehicleIdentity(payload);
 
   const saved = await VehicleAccidentStatus.create({
     vehicleId: payload.vehicleId,
@@ -70,7 +84,8 @@ router.post("/vehicle-accident", async (req, res) => {
 
   emitVehicleAccidentAlert({
     vehicleId: String(payload.vehicleId),
-    vehicleNumber: String(payload.vehicleNumber),
+    vehicleNumber: vehicleIdentity.vehicleNumber,
+    vehicle_tag_name: vehicleIdentity.vehicle_tag_name,
     speed: Number(payload.speed),
     pitch: Number(payload.pitch),
     roll: Number(payload.roll),
@@ -85,6 +100,7 @@ router.post("/vehicle-accident", async (req, res) => {
 
 router.post("/geofence-enter", async (req, res) => {
   const payload = req.body;
+  const vehicleIdentity = await resolveVehicleIdentity(payload);
   if (!payload.geofenceId) {
     return res.status(422).json({ message: "geofenceId is required" });
   }
@@ -102,7 +118,8 @@ router.post("/geofence-enter", async (req, res) => {
 
   emitGeofenceAlert({
     vehicleId: String(payload.vehicleId),
-    vehicleNumber: String(payload.vehicleNumber),
+    vehicleNumber: vehicleIdentity.vehicleNumber,
+    vehicle_tag_name: vehicleIdentity.vehicle_tag_name,
     geofenceName: String(payload.geofenceName),
     eventType: "enter",
     time: payload.time ? new Date(payload.time) : new Date(),
@@ -113,6 +130,7 @@ router.post("/geofence-enter", async (req, res) => {
 
 router.post("/geofence-exit", async (req, res) => {
   const payload = req.body;
+  const vehicleIdentity = await resolveVehicleIdentity(payload);
   if (!payload.geofenceId) {
     return res.status(422).json({ message: "geofenceId is required" });
   }
@@ -130,7 +148,8 @@ router.post("/geofence-exit", async (req, res) => {
 
   emitGeofenceAlert({
     vehicleId: String(payload.vehicleId),
-    vehicleNumber: String(payload.vehicleNumber),
+    vehicleNumber: vehicleIdentity.vehicleNumber,
+    vehicle_tag_name: vehicleIdentity.vehicle_tag_name,
     geofenceName: String(payload.geofenceName),
     eventType: "exit",
     time: payload.time ? new Date(payload.time) : new Date(),

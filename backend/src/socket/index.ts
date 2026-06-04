@@ -44,6 +44,7 @@ const getDistanceMeters = (p1: any, p2: any): number => {
 /* 🚧 GEOFENCE + SPEED + BRAKING ENGINE */
 /* -------------------------------------------------- */
 const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:any) => {
+  const vehicleTagName = vehicleDoc?.vehicle_tag_name || null;
 
   try {
 
@@ -91,6 +92,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:an
           emitGeofenceAlert({
             vehicleId: String(saved.vehicleId),
             vehicleNumber: String(vehicleNumber),
+            vehicle_tag_name: vehicleTagName,
             geofenceName: fence.name,
             eventType: "enter",
             time: saved.time,
@@ -122,6 +124,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:an
           vehicleId: String(saved.vehicleId),
           geofenceName: fence.name,
           vehicleNumber: String(vehicleNumber),
+          vehicle_tag_name: vehicleTagName,
           eventType,
           time: saved.time,
         });
@@ -146,6 +149,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:an
         speed: saved.speed,
         maxSpeed,
         vehicleNumber:String(vehicleNumber),
+        vehicle_tag_name: vehicleTagName,
         latitude: saved.latitude,
         longitude: saved.longitude,
         time: saved.time,
@@ -172,6 +176,7 @@ const processVehicleEvents = async (saved: any, vehicleDoc: any,vehicleNumber:an
         previousSpeed: previous.speed,
         speed: saved.speed,
         vehicleNumber:vehicleNumber,
+        vehicle_tag_name: vehicleTagName,
         latitude: saved.latitude,
         longitude: saved.longitude,
         time: saved.time,

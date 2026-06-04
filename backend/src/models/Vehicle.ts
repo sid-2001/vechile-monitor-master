@@ -5,6 +5,7 @@ import { auditPlugin } from "../plugins/auditPlugin";
 export interface IVehicle extends Document, AuditFields {
   vehicleId: string;
   vehicleNumber: string;
+  vehicle_tag_name?: string | null;
   licensePlate: string;
   type: string;
   subType: string;
@@ -40,6 +41,7 @@ performance: {
 const schema = new Schema<IVehicle>({
   vehicleId: { type: String, unique: true, index: true },
   vehicleNumber: { type: String, required: true, unique: true },
+  vehicle_tag_name: { type: String, default: null, trim: true },
   licensePlate: { type: String, required: true },
   type: { type: String, required: true },
   subType: { type: String, required: true },

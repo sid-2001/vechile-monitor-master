@@ -48,6 +48,10 @@ import L from 'leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
 import DirectionsCarFilledIcon from '@mui/icons-material/DirectionsCarFilled'
+import LocalShippingIcon from '@mui/icons-material/LocalShipping'
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus'
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
+import AirportShuttleIcon from '@mui/icons-material/AirportShuttle'
 import SpeedIcon from '@mui/icons-material/Speed'
 import HistoryIcon from '@mui/icons-material/History'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -75,6 +79,27 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
+
+const getVehicleDisplayName = (vehicle: any) =>
+  vehicle?.vehicle_tag_name ? `${vehicle.vehicleNumber} (${vehicle.vehicle_tag_name})` : vehicle?.vehicleNumber
+
+const getVehicleIconGlyph = (type = '') => {
+  const normalizedType = type.toUpperCase()
+  if (normalizedType.includes('TRUCK')) return '🚚'
+  if (normalizedType.includes('BUS')) return '🚌'
+  if (normalizedType.includes('BIKE')) return '🏍️'
+  if (normalizedType.includes('VAN')) return '🚐'
+  return '🚗'
+}
+
+const getVehicleListIcon = (type = '') => {
+  const normalizedType = type.toUpperCase()
+  if (normalizedType.includes('TRUCK')) return LocalShippingIcon
+  if (normalizedType.includes('BUS')) return DirectionsBusIcon
+  if (normalizedType.includes('BIKE')) return TwoWheelerIcon
+  if (normalizedType.includes('VAN')) return AirportShuttleIcon
+  return DirectionsCarIcon
+}
 
 // Helper function to create a rotating icon based on angle
 const createRotatedIcon = (angle: number, isMoving: boolean) => {
@@ -330,34 +355,42 @@ const RotatingMarker: React.FC<{ vehicle: any }> = ({ vehicle }) => {
 //   }, [angle, isMoving])
 
 const icon = useMemo(() => {
+  const statusColor = isMoving ? '#4caf50' : '#f44336'
+  const glyph = getVehicleIconGlyph(vehicle.type)
+
   return L.divIcon({
     html: `<div style="
       transform: rotate(${angle}deg);
-      width: 38px;
-      height: 38px;
+      width: 30px;
+      height: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
     ">
-      <svg width="34" height="34" viewBox="0 0 24 24">
-        <path 
-          d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"
-          fill="${isMoving ? '#4caf50' : '#f44336'}"
-          stroke="#fff"
-          stroke-width="1.5"
-        />
-      </svg>
+      <div style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: ${statusColor};
+        border: 2px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+      ">${glyph}</div>
 
       <div style="
         position: absolute;
-        top: -6px;
-        font-size: 12px;
+        top: -7px;
+        font-size: 10px;
         font-weight: bold;
         color: white;
-        background: rgba(0,0,0,0.6);
+        background: rgba(0,0,0,0.65);
         border-radius: 4px;
-        padding: 1px 3px;
+        padding: 0 3px;
       ">
         ${
           direction === 'straight' ? '↑' :
@@ -368,10 +401,10 @@ const icon = useMemo(() => {
       </div>
     </div>`,
     className: 'rotating-marker',
-    iconSize: [38, 38],
-    iconAnchor: [19, 24],
+    iconSize: [30, 30],
+    iconAnchor: [15, 20],
   })
-}, [angle, isMoving, direction])
+}, [angle, isMoving, direction, vehicle.type])
 
   return (
     <Marker
@@ -384,7 +417,7 @@ const icon = useMemo(() => {
         <Box sx={{ minWidth: 200, p: 0.5 , color: 'black'}}>
           <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DirectionsCarIcon fontSize="small" color="primary" />
-            {vehicle.vehicleNumber}
+            {getVehicleDisplayName(vehicle)}
           </Typography>
           <Divider sx={{ my: 1 }} />
           <Stack spacing={0.5}>
@@ -443,7 +476,7 @@ const icon = useMemo(() => {
           borderLeft: `3px solid ${vehicle.ignition ? '#4caf50' : '#f44336'}`,
           whiteSpace: 'nowrap'
         }}>
-          🚗 {vehicle.vehicleNumber} | {vehicle.speed} km/h | {vehicle.angle || 0}°
+          {getVehicleIconGlyph(vehicle.type)} {getVehicleDisplayName(vehicle)} | {vehicle.speed} km/h | {vehicle.angle || 0}°
         </Box>
       </LeafletTooltip>
     </Marker>
@@ -532,6 +565,7 @@ const TrackingScreen = () => {
   const [geofences, setGeofences] = useState<GeofenceArea[]>([])
   const [geofenceAlert, setGeofenceAlert] = useState('')
   const [focusedVehicleId, setFocusedVehicleId] = useState('')
+  const [vehicleStatusFilter, setVehicleStatusFilter] = useState<'all' | 'moving' | 'parked'>('all')
   const [shouldFocusVehicle, setShouldFocusVehicle] = useState(false)
   const vehicleOutStateRef = useRef<Record<string, boolean>>({})
   const geofencesRef = useRef<GeofenceArea[]>([])
@@ -549,6 +583,8 @@ const TrackingScreen = () => {
       return {
         id: v._id,
         vehicleNumber: v.vehicleNumber,
+        vehicle_tag_name: v.vehicle_tag_name || null,
+        type: v.type,
         deviceId: v.deviceId,
         baseId: v.baseId,
         live: v.live,
@@ -621,6 +657,8 @@ const TrackingScreen = () => {
         return {
           id: String(loc.vehicleId),
           vehicleNumber: vehicleMapRef.current.get(String(loc.vehicleId)) || String(loc.vehicleId),
+          vehicle_tag_name: loc.vehicle_tag_name || undefined,
+          type: loc.type,
           ignition: loc.ignition || false,
           live: loc.live,
           lastSeen: loc.lastSeen,
@@ -645,7 +683,7 @@ const TrackingScreen = () => {
               const distance = L.latLng(v.lat, v.lng).distanceTo(L.latLng(matchedGeofence.center.latitude, matchedGeofence.center.longitude))
               const isOut = distance > matchedGeofence.radius
               if (isOut && !vehicleOutStateRef.current[v.id]) {
-                setGeofenceAlert(`${old.vehicleNumber || v.id} go out of base`)
+                setGeofenceAlert(`${getVehicleDisplayName(old) || v.id} go out of base`)
               }
               vehicleOutStateRef.current[v.id] = isOut
             }
@@ -677,7 +715,13 @@ const TrackingScreen = () => {
     };
   }, []);
 
-  const markers = useMemo(() => vehicles.filter((v) => v.lat && v.lng), [vehicles])
+  const filteredVehicles = useMemo(() => {
+    if (vehicleStatusFilter === 'moving') return vehicles.filter(v => v.ignition === true)
+    if (vehicleStatusFilter === 'parked') return vehicles.filter(v => v.ignition === false)
+    return vehicles
+  }, [vehicles, vehicleStatusFilter])
+
+  const markers = useMemo(() => filteredVehicles.filter((v) => v.lat && v.lng), [filteredVehicles])
 
   const searchHistory = async () => {
     if (!selectedVehicle || !fromDate || !toDate) return
@@ -702,6 +746,8 @@ const TrackingScreen = () => {
   const movingVehicles = vehicles.filter(v => v.ignition === true)
   const parkedVehicles = vehicles.filter(v => v.ignition === false)
   const focusedVehicle = vehicles.find((v) => v.id === focusedVehicleId)
+  const filteredMovingCount = filteredVehicles.filter(v => v.ignition === true).length
+  const filteredParkedCount = filteredVehicles.filter(v => v.ignition === false).length
 
   return (
     <Box sx={{ maxWidth: 1800, mx: 'auto', width: '100%', p: { xs: 1, sm: 2, md: 3 } }}>
@@ -787,6 +833,36 @@ const TrackingScreen = () => {
         </Grid>
       </Grid>
 
+
+
+      <Card sx={{ mb: 2, borderRadius: 2 }}>
+        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between">
+            <Box>
+              <Typography variant="subtitle2" fontWeight="bold">Dashboard Vehicle Filter</Typography>
+              <Typography variant="caption" color="text.secondary">View all, only moving, or only parked vehicles on the map and list.</Typography>
+            </Box>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {[
+                { value: 'all', label: 'View All Vehicles', count: vehicles.length },
+                { value: 'moving', label: 'Moving', count: movingVehicles.length },
+                { value: 'parked', label: 'Parked', count: parkedVehicles.length }
+              ].map((option) => (
+                <Button
+                  key={option.value}
+                  size="small"
+                  variant={vehicleStatusFilter === option.value ? 'contained' : 'outlined'}
+                  color={option.value === 'moving' ? 'success' : option.value === 'parked' ? 'error' : 'primary'}
+                  onClick={() => setVehicleStatusFilter(option.value as 'all' | 'moving' | 'parked')}
+                >
+                  {option.label} ({option.count})
+                </Button>
+              ))}
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
       {/* Map and Vehicles Grid */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -828,20 +904,20 @@ const TrackingScreen = () => {
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold">Live Vehicles</Typography>
                 <Chip
-                  label={`${vehicles.length} total`}
+                  label={`${filteredVehicles.length} shown`}
                   size="small"
                   color="primary"
                   variant="outlined"
                 />
               </Stack>
               <Divider sx={{ mb: 2 }} />
-              {vehicles.length === 0 ? (
+              {filteredVehicles.length === 0 ? (
                 <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
-                  No vehicles available
+                  No vehicles available for selected filter
                 </Typography>
               ) : (
                 <List sx={{ p: 0, maxHeight: 400, overflow: 'auto' }}>
-                  {vehicles.map(v => (
+                  {filteredVehicles.map(v => (
                     <Zoom in key={v.id} style={{ transitionDelay: '50ms' }}>
                       <ListItem
                         onClick={() => {
@@ -876,6 +952,8 @@ const TrackingScreen = () => {
                             }}
                           >
                             <Avatar sx={{
+                              width: 34,
+                              height: 34,
                               bgcolor: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.grey[500], 0.2),
                               '@keyframes heartbeat-dot': {
                                 '0%': { transform: 'scale(1)' },
@@ -886,14 +964,14 @@ const TrackingScreen = () => {
                               },
                               animation: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? 'heartbeat-dot 1.2s infinite ease-in-out' : 'none',
                             }}>
-                              <DirectionsCarIcon sx={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#9e9e9e' }} />
+                              {(() => { const VehicleIcon = getVehicleListIcon(v.type); return <VehicleIcon sx={{ color: getConnectionStatus(v.live, v.lastSeen) === 'connected' ? '#2e7d32' : '#9e9e9e', fontSize: 20 }} /> })()}
                             </Avatar>
                           </Badge>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Typography variant="subtitle2" fontWeight="bold">
-                              {v.vehicleNumber}
+                              {getVehicleDisplayName(v)}
                             </Typography>
                           }
                           secondary={
@@ -1003,13 +1081,13 @@ const TrackingScreen = () => {
               <Typography variant="caption" sx={{ opacity: 0.7 }}>LIVE STATS</Typography>
               <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
                 <Box>
-                  <Typography variant="body2" sx={{ color: '#4caf50' }}>Moving: {movingVehicles.length}</Typography>
+                  <Typography variant="body2" sx={{ color: '#4caf50' }}>Moving: {filteredMovingCount}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" sx={{ color: '#f44336' }}>Parked: {parkedVehicles.length}</Typography>
+                  <Typography variant="body2" sx={{ color: '#f44336' }}>Parked: {filteredParkedCount}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2">Total: {vehicles.length}</Typography>
+                  <Typography variant="body2">Shown: {filteredVehicles.length}</Typography>
                 </Box>
               </Stack>
             </Box>

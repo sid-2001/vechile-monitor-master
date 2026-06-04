@@ -26,6 +26,7 @@ const VehicleManagement = () => {
 
 const [form, setForm] = useState({
   vehicleNumber: '',
+  vehicle_tag_name: '',
   licensePlate: '',
   type: 'TRUCK',
   subType: 'HEAVY',
@@ -53,7 +54,7 @@ const [form, setForm] = useState({
    highPitch: '',
   highRoll: ''
 })
-  const [editForm, setEditForm] = useState({ vehicleNumber: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '',highPitch: '',
+  const [editForm, setEditForm] = useState({ vehicleNumber: '', vehicle_tag_name: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '',highPitch: '',
   highRoll: '' })
 
   const load = async () => {
@@ -75,6 +76,7 @@ const [form, setForm] = useState({
     const selectedDevice = devices.find((d: any) => d.imei === form.deviceId || d._id === form.deviceId)
    const vehicle = await vehicleMonitorService.createVehicle({
   vehicleNumber: form.vehicleNumber,
+  vehicle_tag_name: form.vehicle_tag_name?.trim() || null,
   licensePlate: form.licensePlate,
   type: form.type,
   subType: form.subType,
@@ -144,6 +146,7 @@ const [form, setForm] = useState({
 
 setForm({
   vehicleNumber: '',
+  vehicle_tag_name: '',
   licensePlate: '',
   type: 'TRUCK',
   subType: 'HEAVY',
@@ -178,6 +181,7 @@ setForm({
     setEditId(row.id)
     setEditForm({
       vehicleNumber: row.vehicleNumber || '',
+      vehicle_tag_name: row.vehicle_tag_name || '',
       licensePlate: row.licensePlate || '',
       type: row.type || 'TRUCK',
       subType: row.subType || 'HEAVY',
@@ -198,6 +202,7 @@ highRoll: String(row.performance?.highRoll || 45),
   const update = async () => {
     await vehicleMonitorService.updateVehicle(editId, {
       vehicleNumber: editForm.vehicleNumber,
+      vehicle_tag_name: editForm.vehicle_tag_name?.trim() || null,
       licensePlate: editForm.licensePlate,
       type: editForm.type,
       subType: editForm.subType,
@@ -278,6 +283,7 @@ highRoll: String(row.performance?.highRoll || 45),
 const cols: GridColDef[] = [
   { field: 'vehicleId', headerName: 'Vehicle ID', width: 160 },
   { field: 'vehicleNumber', headerName: 'Vehicle Number', width: 180 },
+  { field: 'vehicle_tag_name', headerName: 'Vehicle Tag Name', width: 180, valueGetter: (_, row) => row.vehicle_tag_name || '-' },
   { field: 'licensePlate', headerName: 'License Plate', width: 180 },
 
   { field: 'enginenumber', headerName: 'Engine No', width: 160, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
@@ -311,6 +317,7 @@ const cols: GridColDef[] = [
     <CardContent>
     <Grid container spacing={2}><Grid item xs={12} md={2}>
       <TextField fullWidth label='Vehicle Number' value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} /></Grid>
+      <Grid item xs={12} md={2}><TextField fullWidth label='Vehicle Tag Name (optional)' value={form.vehicle_tag_name} onChange={e => setForm({ ...form, vehicle_tag_name: e.target.value })} /></Grid>
       <Grid item xs={12} md={2}><TextField fullWidth label='License Plate' value={form.licensePlate} onChange={e => setForm({ ...form, licensePlate: e.target.value })} /></Grid>
       {/* 🔥 NEW FIELDS START */}
 
@@ -399,6 +406,7 @@ const cols: GridColDef[] = [
     <DialogContent sx={{ pt: 2 }}>
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
         <Grid item xs={12} md={6}><TextField fullWidth label='Vehicle Number' value={editForm.vehicleNumber} onChange={e => setEditForm({ ...editForm, vehicleNumber: e.target.value })} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label='Vehicle Tag Name (optional)' value={editForm.vehicle_tag_name} onChange={e => setEditForm({ ...editForm, vehicle_tag_name: e.target.value })} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label='License Plate' value={editForm.licensePlate} onChange={e => setEditForm({ ...editForm, licensePlate: e.target.value })} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth select label='Vehicle Type' value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })}>{VEHICLE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth select label='Vehicle Sub Type' value={editForm.subType} onChange={e => setEditForm({ ...editForm, subType: e.target.value })}>{VEHICLE_SUB_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}</TextField></Grid>
