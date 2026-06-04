@@ -28,8 +28,24 @@ const schema = new Schema<IVehicleLocation>({
   source: { type: String, enum: ["live", "simulation"], default: "live", index: true }
 });
 
-schema.index({ vehicleId: 1, time: -1 });
-schema.index({ vehicleId: 1, source: 1, time: -1 });
+schema.index({
+  vehicleId: 1,
+  time: 1,
+});
+
+schema.index({
+  latitude: 1,
+  longitude: 1,
+});
+
+schema.index({
+  vehicleId: 1,
+  time: 1,
+  latitude: 1,
+  longitude: 1,
+  source: 1,
+});
+
 
 schema.plugin(auditPlugin);
 

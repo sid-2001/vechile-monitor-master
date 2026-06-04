@@ -42,6 +42,7 @@ import {
   Tooltip as LeafletTooltip,
   useMap
 } from 'react-leaflet'
+//@ts-ignore
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
@@ -77,7 +78,8 @@ L.Icon.Default.mergeOptions({
 
 // Helper function to create a rotating icon based on angle
 const createRotatedIcon = (angle: number, isMoving: boolean) => {
-  // Use a car icon SVG or PNG that can be rotated
+  // Use a car icon SVG or PNG that can be rotated 
+
   // For this example, we'll use a simple div-based marker with CSS rotation
   // But since Leaflet markers use images, we need to use a canvas or custom divIcon
   

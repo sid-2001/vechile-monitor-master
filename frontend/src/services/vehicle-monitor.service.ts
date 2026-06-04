@@ -53,6 +53,7 @@ deleteLocation: (id: string) => api1.del(`/locations/${id}`),
     return api1.get(`/vehicle-locations${query.toString() ? `?${query.toString()}` : ''}`)
   },
   // getVehicleAnalytics: (vehicleId: string) => api1.get(`/vehicle-locations/analytics/${vehicleId}`),
+  
   getVehicleAnalytics: (
   vehicleId: string,
   params?: { from?: string; to?: string }

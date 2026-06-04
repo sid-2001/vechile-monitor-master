@@ -62,14 +62,21 @@ const bucketLabelMap: Record<BucketType, string> = {
 }
 
 
-const getBinSizeByZoom = (zoom: number) => (zoom >= 16 ? 5 : 1)
+// const getBinSizeByZoom = (zoom: number) => (zoom >= 16 ? 5 : 1)
+
+const getBinSizeByZoom = (zoom: number) => {
+  if (zoom >= 18) return 1
+  if (zoom >= 16) return 5
+  if (zoom >= 14) return 15
+  return 30
+}
 
 const toInputDate = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const HISTORY_WINDOW_HOURS = 168
+const HISTORY_WINDOW_HOURS = 6
 const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
 
 const LocationHistory = () => {
@@ -79,7 +86,7 @@ const LocationHistory = () => {
   const [fromDate, setFromDate] = useState(toInputDate(new Date(now.getTime() - HISTORY_WINDOW_MS)))
   const [toDate, setToDate] = useState(toInputDate(now))
   const [zoomLevel, setZoomLevel] = useState(7)
-  const [bucket, setBucket] = useState<BucketType>('month')
+  const [bucket, setBucket] = useState<BucketType>('second')
   const [points, setPoints] = useState<TimelinePoint[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -100,81 +107,15 @@ const LocationHistory = () => {
     loadVehicles()
   }, [])
 
-//   const loadTimeline = async (overrideBucket?: BucketType) => {
-//     if (!selectedVehicleIds.length) {
-//       setError('Please select at least one vehicle')
-//       return
-//     }
-
-//     const activeBucket = overrideBucket || bucket
-//     const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
-
-//     try {
-//       setLoading(true)
-//       setError('')
-//       const from = new Date(fromDate)
-//       const to = new Date(toDate)
-
-//       // if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-//       //   setError('Please select valid From/To date-time')
-//       //   return
-//       // }
-//       // if (from > to) {
-//       //   setError('From date must be before To date')
-//       //   return
-//       // }
-//       // if (to.getTime() - from.getTime() > HISTORY_WINDOW_MS) {
-//       //   setError(`History range cannot exceed ${HISTORY_WINDOW_HOURS} hours`)
-//       //   return
-//       // }
-//       console.log({
-//   vehicleIds: selectedVehicleIds,
-//   from: from.toISOString(),
-//   to: to.toISOString(),
-//   bucket: activeBucket,
-//   binSize: activeBinSize,
-// })
 
 
-// const toUTCISOString = (local: string) => {
-//   const date = new Date(local)
-//   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()
-// }
-
-// const data = await vehicleMonitorService.getVehicleTimeline({
-//   vehicleIds: selectedVehicleIds.join(','),
-//   from: toUTCISOString(fromDate),
-//   to: toUTCISOString(toDate),
-//   bucket: activeBucket,
-//   binSize: activeBinSize,
-//   excludeSimulation: false,
-// })
-
-//       // const data = await vehicleMonitorService.getVehicleTimeline({
-//       //   vehicleIds: selectedVehicleIds.join(','),
-//       //  from: fromDate,
-//       //  to: toDate,
-//       //   bucket: activeBucket,
-//       //   binSize: activeBinSize,
-//       //   excludeSimulation: false,
-//       // })
-
-
-//       console.log("API DATA:", data)
-
-
-//       setPoints(data.items || [])
-//       setBucket(activeBucket)
-//       setBinSize(activeBinSize)
-//     } catch (e: any) {
-//       setError(e?.error_message || 'Failed to load timeline data')
-//     } finally {
-//       setLoading(false)
-//     }
-//   }
-
-
-const loadTimeline = async (overrideBucket?: BucketType) => {
+const loadTimeline = async (overrideBucket?: BucketType ,
+    bounds?: {
+    north: number
+    south: number
+    east: number
+    west: number
+  }) => {
   if (!selectedVehicleIds.length) {
     setError('Please select at least one vehicle')
     return
@@ -182,16 +123,16 @@ const loadTimeline = async (overrideBucket?: BucketType) => {
 
   const activeBucket = overrideBucket || bucket
   const activeBinSize = activeBucket === 'second' ? getBinSizeByZoom(zoomLevel) : 1
+  // const activeBinSize = 1   // force every second
 
   try {
     setLoading(true)
     setError('')
 
     //  DEFINE ONLY ONCE
-     const toUTCISOString = (local: string) => {
-      const date = new Date(local)
-      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()
-    }
+    const toUTCISOString = (local: string) => {
+  return new Date(local).toISOString()
+}
 
     const finalFrom = toUTCISOString(fromDate)
     const finalTo = toUTCISOString(toDate)
@@ -208,12 +149,17 @@ const loadTimeline = async (overrideBucket?: BucketType) => {
       to: finalTo,
       bucket: activeBucket,
       binSize: activeBinSize,
+      north: bounds?.north,
+south: bounds?.south,
+east: bounds?.east,
+west: bounds?.west,
       excludeSimulation: false,
     })
 
     console.log("API DATA:", data)
 
-    setPoints(data.items || [])
+    // setPoints(data.items || [])
+    setPoints(Array.isArray(data) ? data : data.items || [])
     setBucket(activeBucket)
     setBinSize(activeBinSize)
 
@@ -283,24 +229,40 @@ const loadTimeline = async (overrideBucket?: BucketType) => {
     return map
   }, [selectedVehicleIds])
 
-  const ZoomTracker = () => {
-    useMapEvents({
-      zoomend: (event) => {
-        const newZoom = event.target.getZoom()
-        setZoomLevel(newZoom)
 
-        const nextBucket = bucketByZoom(newZoom)
-        if (nextBucket !== bucket) {
-          if (zoomLoadTimer.current) window.clearTimeout(zoomLoadTimer.current)
-          zoomLoadTimer.current = window.setTimeout(() => {
-            loadTimeline(nextBucket)
-          }, 350)
-        }
-      },
-    })
-    return null
-  }
 
+const ZoomTracker = () => {
+  useMapEvents({
+    moveend: (event) => {
+      const map = event.target
+
+      const bounds = map.getBounds()
+
+      const mapBounds = {
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      }
+
+      const currentZoom = map.getZoom()
+
+      setZoomLevel(currentZoom)
+
+      const nextBucket = bucketByZoom(currentZoom)
+
+      if (zoomLoadTimer.current) {
+        window.clearTimeout(zoomLoadTimer.current)
+      }
+
+      zoomLoadTimer.current = window.setTimeout(() => {
+        loadTimeline(nextBucket, mapBounds)
+      }, 350)
+    },
+  })
+
+  return null
+}
   const downloadCsv = () => {
     if (!points.length) return
 
@@ -402,10 +364,12 @@ const loadTimeline = async (overrideBucket?: BucketType) => {
             </Grid>
 
             <Grid item xs={12} md={2}>
-              <Button fullWidth variant='contained' onClick={() => loadTimeline('minute')} sx={{ height: 56 }} disabled={loading}>Load History</Button>
+              <Button fullWidth variant='contained' 
+              onClick={() => loadTimeline(bucketByZoom(zoomLevel))} 
+              sx={{ height: 56 }} disabled={loading}>Load History</Button>
             </Grid>
 
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} md={2}> 
               <Stack direction='row' justifyContent='flex-end' spacing={1}>
                 <Button variant='outlined' startIcon={<DownloadIcon />} onClick={downloadCsv} disabled={!points.length}>CSV</Button>
                 <IconButton onClick={() => setFullscreenOpen(true)}><FullscreenIcon /></IconButton>
@@ -414,18 +378,17 @@ const loadTimeline = async (overrideBucket?: BucketType) => {
           </Grid>
 
           <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
-            <Chip color='warning' label='Range limited to last 24 hours' />
+            <Chip color='warning' label='Range limited to last 6 hours' />
             <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}${bucket === "second" ? ` (${binSize}s)` : ""}`} />
             <Chip label={`Zoom: ${zoomLevel}`} />
             <Chip label={`Loaded points: ${points.length.toLocaleString()}`} />
             <Chip label='Flow: Month → Week → Day → Hour → Minute → Second' />
           </Stack>
         </CardContent>
-      </Card>
+      </Card> 
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={12}><Card><CardContent>{mapElement}</CardContent></Card></Grid>
-     
+        <Grid item xs={12} md={12}><Card><CardContent>{mapElement}</CardContent></Card></Grid>     
       </Grid>
 
       <Dialog fullScreen open={fullscreenOpen} onClose={() => setFullscreenOpen(false)}>

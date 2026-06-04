@@ -425,20 +425,20 @@ socket.on("vehicle:accident:alert", (data) => {
         {/* <LoaderBackdrop /> */}
         {/* <Message /> */}
        <ToastContainer
-  position="top-center"
-  autoClose={10000} 
-  closeOnClick
-  draggable
-/>
-        <CustomSnackbar />
-        <InactivityWarningModal
-  open={warningOpen}
-  onStay={() => setWarningOpen(false)}
-  onLogout={handleLogout}
-/>
+          position="top-center"
+          autoClose={10000} 
+          closeOnClick
+          draggable
+        />
+          <CustomSnackbar />
+          <InactivityWarningModal
+          open={warningOpen}
+          onStay={() => setWarningOpen(false)}
+          onLogout={handleLogout}
+        />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ProtectedRoute {...defaultProtectedRouteProps} outlet={<DashboardLayout />} />}>
+            <Route path="/" element={<ProtectedRoute {... defaultProtectedRouteProps} outlet={<DashboardLayout />} />}>
                <Route index element={<TrackingScreen />}></Route>
                <Route path="tracking" element={<TrackingScreen />} />
                <Route path="user" element={<UserManagementApi />} />

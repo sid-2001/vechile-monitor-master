@@ -3,7 +3,10 @@ import { Alert, Box, Card, CardContent, CircularProgress, Grid, MenuItem, Slider
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
-
+import * as XLSX from 'xlsx'
+//@ts-ignore
+import { saveAs } from 'file-saver'
+import { Button } from '@mui/material'
 
 type RangeKey = 'yearly' | 'monthly' | '15d' | '7d' | '3d' | '1d' | 'hourly'
 
@@ -59,11 +62,18 @@ const AnalyticsScreen = () => {
   }, [])
 
   useEffect(() => {
-  const now = new Date();
-  const before = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const now = new Date()
+  const before = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
-  setFromDate(before.toISOString().slice(0, 16));
-  setToDate(now.toISOString().slice(0, 16));
+  const formatLocalDateTime = (date: Date) => {
+    const offset = date.getTimezoneOffset()
+    const localDate = new Date(date.getTime() - offset * 60000)
+
+    return localDate.toISOString().slice(0, 16)
+  }
+
+  setFromDate(formatLocalDateTime(before))
+  setToDate(formatLocalDateTime(now))
 }, [])
 
   // useEffect(() => {
@@ -107,16 +117,22 @@ const AnalyticsScreen = () => {
     try {
       setLoadingAnalytics(true);
 
+      console.log('FROM LOCAL:', fromDate)
+      console.log('TO LOCAL:', toDate)
+
+      console.log('FROM ISO:', new Date(fromDate).toISOString())
+      console.log('TO ISO:', new Date(toDate).toISOString())
+
       const [analyticsData, locations] = await Promise.all([
         vehicleMonitorService.getVehicleAnalytics(vehicleId, {
-          from: new Date(fromDate).toISOString(),
-          to: new Date(toDate).toISOString(),
+          from: new Date(fromDate + ':00').toISOString(),
+          to: new Date(toDate + ':00').toISOString(),
         }),
 
         vehicleMonitorService.getVehicleLocations({
           vehicleId,
-          from: new Date(fromDate).toISOString(),
-          to: new Date(toDate).toISOString(),
+           from: new Date(fromDate + ':00').toISOString(),
+           to: new Date(toDate + ':00').toISOString(),
           limit: 20000,
           sortBy: "time",
           sortOrder: "asc",
@@ -207,6 +223,126 @@ const AnalyticsScreen = () => {
     ]
   }, [analytics])
 
+
+  const downloadReport = () => {
+  if (!analytics) return
+
+  const workbook = XLSX.utils.book_new()
+
+  // =====================================
+  // SUMMARY SHEET
+  // =====================================
+
+  const summaryData = [
+    {
+      Vehicle: vehicles.find(v => v._id === vehicleId)?.vehicleNumber || '',
+      From: new Date(fromDate).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      }),
+
+      To: new Date(toDate).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      }),
+      'Average Speed': analytics.avgSpeed,
+      'Geofence Enter': analytics.geofenceEnterCount,
+      'Geofence Exit': analytics.geofenceExitCount,
+      'Ignition On Minutes': analytics.ignitionOnMinutes,
+      'Harsh Braking': analytics.harshBrakingCount,
+      Overspeed: analytics.overSpeedCount,
+      'SOS Count': analytics.sosCount,
+    },
+  ]
+
+  const summarySheet = XLSX.utils.json_to_sheet(summaryData)
+
+  summarySheet['!cols'] = [
+  { wch: 18 },
+  { wch: 25 },
+  { wch: 25 },
+  { wch: 18 },
+  { wch: 18 },
+  { wch: 18 },
+  { wch: 22 },
+  { wch: 18 },
+  { wch: 18 },
+  { wch: 15 },
+]
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    summarySheet,
+    'Summary'
+  )
+
+  // =====================================
+  // GEOFENCE LOGS
+  // =====================================
+
+  const geofenceLogs = (analytics.geofenceLogs || []).map((log: any) => ({
+    Geofence: log.geofenceName,
+    Event: log.eventType,
+    Time: new Date(log.enter_time).toLocaleString(),
+    Speed: log.speed,
+  }))
+
+  const geofenceSheet = XLSX.utils.json_to_sheet(geofenceLogs)
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    geofenceSheet,
+    'Geofence Logs'
+  )
+
+  // =====================================
+  // SOS LOGS
+  // =====================================
+
+  const sosLogs = (analytics.sosLogs || []).map((log: any) => ({
+    Time: new Date(log.createdAt).toLocaleString(),
+    Status: log.status,
+  }))
+
+  const sosSheet = XLSX.utils.json_to_sheet(sosLogs)
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    sosSheet,
+    'SOS Logs'
+  )
+
+  // =====================================
+  // DOWNLOAD FILE
+  // =====================================
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array',
+  })
+
+  const fileData = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+  })
+
+  const vehicleNumber =
+    vehicles.find(v => v._id === vehicleId)?.vehicleNumber || 'vehicle'
+
+  saveAs(
+    fileData,
+    `${vehicleNumber}_analytics_report.xlsx`
+  )
+}
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
       <Typography variant='h5' mb={2}>Vehicle Analytics</Typography>
@@ -242,9 +378,16 @@ const AnalyticsScreen = () => {
   />
 </Grid>
             <Grid item xs={12} md={2}>
-              <Typography variant='caption'>Zoom Level (data expansion): {zoomLevel}</Typography>
-              <Slider min={5} max={18} value={zoomLevel} onChange={(_, val) => setZoomLevel(Number(val))} />
-            </Grid>
+  <Button
+    fullWidth
+    variant='contained'
+    onClick={downloadReport}
+    disabled={!analytics}
+    sx={{ height: '56px' }}
+  >
+    Download Report
+  </Button>
+</Grid>
           </Grid>
         </CardContent>
       </Card>

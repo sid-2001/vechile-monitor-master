@@ -37,7 +37,7 @@ const SimMasterSchema: Schema = new Schema(
 
     iccidnumber: {
       type: String,
-      match: /^\d{19,20}$/ 
+      match: /^\d{10,20}$/ 
     },
 
     operator: {

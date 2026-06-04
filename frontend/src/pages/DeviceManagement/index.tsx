@@ -152,7 +152,7 @@ setEditForm({
   const cols: GridColDef[] = [
     { field: 'name', headerName: 'Name', flex: 1 },
     { field: 'imei', headerName: 'IMEI', flex: 1 },
-    { field: 'simNumber', headerName: 'SIM', flex: 1 },
+    // { field: 'simNumber', headerName: 'SIM', flex: 1 },
     { field: 'status', headerName: 'Status', flex: 1 },
     { field: 'linkedVehicle', headerName: 'Linked Vehicle', flex: 1, valueGetter: (_, row) => row.linkedVehicleId?.vehicleNumber || '-' },
     { field: 'actions', headerName: 'Actions', flex: 1, sortable: false, renderCell: ({ row }) => <Stack direction='row' spacing={1}><Button size='small' onClick={() => openEdit(row)}>Edit</Button><Button size='small' color='error' onClick={() => onDelete(row.id)}>Delete</Button></Stack> }

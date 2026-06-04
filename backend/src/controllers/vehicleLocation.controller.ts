@@ -25,28 +25,55 @@ export class VehicleLocationController {
     if (!item) return void res.status(404).json({ message: "No location data" });
     res.json(item);
   }
-
   async analytics(req: Request, res: Response): Promise<void> {
-    const data = await vehicleLocationService.getAnalytics(req.params.vehicleId);
-    res.json(data);
-  }
 
+  const from = req.query.from
+    ? new Date(String(req.query.from))
+    : undefined;
+
+  const to = req.query.to
+    ? new Date(String(req.query.to))
+    : undefined;
+
+  console.log("ANALYTICS FILTER:", {
+    vehicleId: req.params.vehicleId,
+    from,
+    to,
+  });
+
+  const data = await vehicleLocationService.getAnalytics(
+    req.params.vehicleId,
+    from,
+    to
+  );
+
+  res.json(data);
+  }
   async timeline(req: Request, res: Response): Promise<void> {
-    const MAX_TIMELINE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+    const MAX_TIMELINE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
     const vehicleIds = String(req.query.vehicleIds || '').split(',').map((id) => id.trim()).filter(Boolean);
     const from = req.query.from ? new Date(String(req.query.from)) : new Date(Date.now() - MAX_TIMELINE_WINDOW_MS);
     const to = req.query.to ? new Date(String(req.query.to)) : new Date();
     const bucket = String(req.query.bucket || 'month') as "month" | "week" | "day" | "hour" | "minute" | "second";
     const binSize = Math.max(1, Number(req.query.binSize || 1));
 
+    
 
-    console.log("TIMELINE PARAMS:", {
-    vehicleIds,
-    from,
-    to,
-    bucket,
-    binSize,
-  });
+      const limit = Math.min(10000, Number(req.query.limit || 10000));
+      const page = Math.max(1, Number(req.query.page || 1));
+      const north = req.query.north ? Number(req.query.north) : undefined;
+      const south = req.query.south ? Number(req.query.south) : undefined;
+      const east = req.query.east ? Number(req.query.east) : undefined;
+      const west = req.query.west ? Number(req.query.west) : undefined;
+ 
+
+      console.log("TIMELINE PARAMS:", {
+      vehicleIds,
+      from,
+      to, 
+      bucket,
+      binSize,
+    });
 
   
     if (!vehicleIds.length) {
@@ -67,13 +94,19 @@ export class VehicleLocationController {
     // }
 
     const items = await vehicleLocationService.getTimeline({
-      vehicleIds,
-      from,
-      to,
-      bucket,
-      binSize,
-      excludeSimulation: req.query.excludeSimulation !== 'false',
-    });
+    vehicleIds,
+    from,
+    to,
+    bucket,
+    binSize,
+    limit,
+    page,
+    north,
+    south,
+    east,
+    west,
+    excludeSimulation: req.query.excludeSimulation !== 'false',
+  });
 
     res.json({ items, total: items.length });
   }

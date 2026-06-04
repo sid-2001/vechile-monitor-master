@@ -122,9 +122,12 @@ const [editErrors, setEditErrors] = useState<any>({})
   locationid: form.locationid,
   baseunitid: form.baseunitid,
 
-  role: form.role,
+ role: form.role,
+
+...(form.role !== 'ADMIN' && {
   baseId: form.baseIds[0] || form.baseId,
   baseIds: form.baseIds
+})
 })
 setForm({
   username: '',
@@ -423,12 +426,43 @@ const inputStyle = {
       )}
 
       {form.countrycode && form.statecode && (
-        <Grid item xs={12} md={3}>
-          <TextField fullWidth select label='City' sx={inputStyle} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
-            {createCities.map((city) => <MenuItem key={`${city.name}-${city.latitude}-${city.longitude}`} value={city.name}>{city.name}</MenuItem>)}
-          </TextField>
-        </Grid>
-      )}
+  createCities.length > 0 ? (
+    <Grid item xs={12} md={3}>
+      <TextField
+        fullWidth
+        select
+        label='City'
+        sx={inputStyle}
+        value={form.district}
+        onChange={(e) =>
+          setForm({ ...form, district: e.target.value })
+        }
+      >
+        {createCities.map((city) => (
+          <MenuItem
+            key={`${city.name}-${city.latitude}-${city.longitude}`}
+            value={city.name}
+          >
+            {city.name}
+          </MenuItem>
+        ))}
+      </TextField>
+    </Grid>
+  ) : (
+    <Grid item xs={12} md={3}>
+      <TextField
+        fullWidth
+        label='City'
+        sx={inputStyle}
+        value={form.district}
+        onChange={(e) =>
+          setForm({ ...form, district: e.target.value })
+        }
+        helperText='City data not available, enter manually'
+      />
+    </Grid>
+  )
+)}
 
       <Grid item xs={12} md={3}>
         <TextField fullWidth label='Zip Code' sx={inputStyle} value={form.zipcode} onChange={(e) => setForm({ ...form, zipcode: e.target.value })} />

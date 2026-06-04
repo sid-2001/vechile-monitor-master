@@ -16,8 +16,6 @@ import VehicleSOS from "../models/VehicleSOS";
 import { VehicleLocationHistory } from "../models/VehicleLocationCoordinateHistory";
 const HARSH_BRAKING_MIN_PREVIOUS_SPEED = 20;
 const HARSH_BRAKING_MAX_CURRENT_SPEED = 1;
-const MAX_TIMELINE_POINTS = 500000;
-const MAX_SECOND_BIN_SIZE = 60;
 
 export class VehicleLocationService {
   private getDistanceMeters(
@@ -107,8 +105,6 @@ export class VehicleLocationService {
       });
     }
   }
-
-
 
    public async getVehicleById(vehicleId: string) {
     return Vehicle.findById(vehicleId).lean();
@@ -222,30 +218,26 @@ export class VehicleLocationService {
   }
 
   async getAnalytics(vehicleId: string, from?: Date, to?: Date) {
-    // const [locations, geofenceLogs, speedLogs, brakingLogs] = await Promise.all([
-    //   VehicleLocation.find({ vehicleId }).sort({ time: 1 }).lean(),
-    //   GeofenceLog.find({ vehicleId }).sort({ enter_time: -1 }).lean(),
-    //   VehicleSpeedStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
-    //   VehicleBrakingStatus.find({ vehicleId }).sort({ time: -1 }).lean(),
-    // ]);
+   
 
     const [locations, geofenceLogs, speedLogs, brakingLogs] = await Promise.all([
-  VehicleLocation.find({
-    vehicleId,
-    ...(from && to
-      ? {
-          time: {
-            $gte: from,
-            $lte: to,
-          },
-        }
-      : {}),
-  })
-    .sort({ time: 1 })
-    .lean(),
+    // VehicleLocation.find({
+    VehicleLocationHistory.find({
+    vehicleId: new Types.ObjectId(vehicleId),
+      ...(from && to
+        ? {
+            time: {
+              $gte: from,
+              $lte: to,
+            },
+          }
+        : {}),
+    })
+      .sort({ time: 1 })
+      .lean(),
 
   GeofenceLog.find({
-    vehicleId,
+    vehicleId: new Types.ObjectId(vehicleId),
     ...(from && to
       ? {
           enter_time: {
@@ -259,7 +251,7 @@ export class VehicleLocationService {
     .lean(),
 
   VehicleSpeedStatus.find({
-    vehicleId,
+    vehicleId: new Types.ObjectId(vehicleId),
     ...(from && to
       ? {
           time: {
@@ -273,7 +265,7 @@ export class VehicleLocationService {
     .lean(),
 
   VehicleBrakingStatus.find({
-    vehicleId,
+    vehicleId: new Types.ObjectId(vehicleId),
     ...(from && to
       ? {
           time: {
@@ -287,22 +279,30 @@ export class VehicleLocationService {
     .lean(),
 ]);
 
-const sosLogs = await VehicleSOS.find({
-  vehicleId: new Types.ObjectId(vehicleId),
-  ...(from && to
-    ? {
-        createdAt: {
-          $gte: from,
-          $lte: to,
-        },
-      }
-    : {}),
-})
-  .sort({ createdAt: -1 })
-  .lean();
+    const sosLogs = await VehicleSOS.find({
+      vehicleId: new Types.ObjectId(vehicleId),
+      ...(from && to
+        ? {
+            createdAt: {
+              $gte: from,
+              $lte: to,
+            },
+          }
+        : {}),
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const totalSpeed = locations.reduce((sum, item) => sum + (item.speed || 0), 0);
+      const totalSpeed = locations.reduce(
+        (sum, item) => sum + (Number(item.speed) || 0),
+        0
+      );
     const avgSpeed = locations.length ? totalSpeed / locations.length : 0;
+    
+    console.log("FIRST LOCATION:", locations[0]);
+    console.log("TOTAL LOCATIONS:", locations.length);
+    console.log("TOTAL SPEED:", totalSpeed);
+    console.log("AVG SPEED:", avgSpeed);
 
     let ignitionOnMs = 0;
     for (let i = 0; i < locations.length - 1; i += 1) {
@@ -344,118 +344,246 @@ const sosLogs = await VehicleSOS.find({
   }
 
 
-  async getTimeline(params: {
-    vehicleIds: string[];
-    from: Date;
-    to: Date;
-    bucket: "month" | "week" | "day" | "hour" | "minute" | "second";
-    binSize?: number;
-    excludeSimulation?: boolean;
-  }) {
-    const matchStage: Record<string, unknown> = {
-      vehicleId: { $in: params.vehicleIds.map((id) => new Types.ObjectId(id)) },
-      time: { $gte: params.from, $lte: params.to },
-    };
-    console.log("PARAMS:", {
-      vehicleIds: params.vehicleIds,
-      from: params.from,
-      to: params.to,
-    });
+  // async getTimeline(params: {
+  //   vehicleIds: string[];
+  //   from: Date;
+  //   to: Date;
+  //   bucket: "month" | "week" | "day" | "hour" | "minute" | "second";
+  //   binSize?: number;
+  //   excludeSimulation?: boolean;
+  // }) {
+  //   const matchStage: Record<string, unknown> = {
+  //     vehicleId: { $in: params.vehicleIds.map((id) => new Types.ObjectId(id)) },
+  //     time: { $gte: params.from, $lte: params.to },
+  //   };
+  //   console.log("PARAMS:", {
+  //     vehicleIds: params.vehicleIds,
+  //     from: params.from,
+  //     to: params.to,
+  //   });
 
-    console.log("MATCH STAGE:", matchStage);
+  //   console.log("MATCH STAGE:", matchStage);
 
-    if (params.excludeSimulation !== false) {
-      matchStage.source = { $ne: "simulation" };
-    }
+  //   if (params.excludeSimulation !== false) {
+  //     matchStage.source = { $ne: "simulation" };
+  //   }
 
 
-    const createTimelinePipeline = (binSize: number): Record<string, unknown>[] => ([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: {
-            vehicleId: "$vehicleId",
-            bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize } },
-          },
-          vehicleId: { $first: "$vehicleId" },
-          time: { $max: "$time" },
-        },
-      },
-      {
-        $lookup: {
-          from: "vehicle_coordinates_history",
-          let: { vId: "$vehicleId", latestTime: "$time" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$vehicleId", "$$vId"] },
-                    { $eq: ["$time", "$$latestTime"] },
-                  ],
-                },
-              },
-            },
-            { $project: { latitude: 1, longitude: 1, speed: 1, ignition: 1, source: 1 } },
-            { $limit: 1 },
-          ],
-          as: "historyData",
-        },
-      },
-      { $unwind: { path: "$historyData", preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: "vehicles",
-          localField: "vehicleId",
-          foreignField: "_id",
-          as: "vehicleData",
-        },
-      },
-      {
-        $unwind: {
-          path: "$vehicleData",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          vehicleId: 1,
-          vehicleNumber: "$vehicleData.vehicleNumber",
-          latitude: "$historyData.latitude",
-          longitude: "$historyData.longitude",
-          speed: "$historyData.speed",
-          ignition: "$historyData.ignition",
-          time: 1,
-          source: "$historyData.source",
-          bucketTime: "$_id.bucketTime",
-        },
-      },
-      { $sort: { bucketTime: 1 } },
-      { $limit: MAX_TIMELINE_POINTS },
-    ]);
+  //   const raw = await VehicleLocationHistory.find({
+  //     vehicleId: { $in: params.vehicleIds.map(id => new Types.ObjectId(id)) },
+  //     time: { $gte: params.from, $lte: params.to },
+  //   });
 
-    const initialBinSize = Math.max(1, params.binSize || 1);
-    let activeBinSize = initialBinSize;
-    let items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any, { allowDiskUse: true }).allowDiskUse(true);
+  //   console.log("RAW DATA COUNT:", raw.length);
 
-    if (params.bucket === "second") {
-      while (items.length >= MAX_TIMELINE_POINTS && activeBinSize < MAX_SECOND_BIN_SIZE) {
-        activeBinSize += 1;
-        items = await VehicleLocationHistory.aggregate(createTimelinePipeline(activeBinSize) as any, { allowDiskUse: true }).allowDiskUse(true);
-      }
-    }
-
-    return items;
+  //   return VehicleLocationHistory.aggregate([
+  //     { $match: matchStage },
+  //     { $sort: { vehicleId: 1, time: -1 } },
+  //     {
+  //       $group: {
+  //         _id: {
+  //           vehicleId: "$vehicleId",
+  //           bucketTime: { $dateTrunc: { date: "$time", unit: params.bucket, binSize: params.binSize || 1 } },
+  //         },
+  //         vehicleId: { $first: "$vehicleId" },
+  //         latitude: { $first: "$latitude" },
+  //         longitude: { $first: "$longitude" },
+  //         speed: { $first: "$speed" },
+  //         ignition: { $first: "$ignition" },
+  //         time: { $first: "$time" },
+  //         source: { $first: "$source" },
+  //       },
+  //     },
+  //     {
+  //       $lookup: {
+  //         from: "vehicles",
+  //         localField: "vehicleId",
+  //         foreignField: "_id",
+  //         as: "vehicleData",
+  //       },
+  //     },
+  //     {
+  //       $unwind: {
+  //         path: "$vehicleData",
+  //         preserveNullAndEmptyArrays: true,
+  //       },
+  //     },
+  //     {
+  //       $project: {
+  //         _id: 1,
+  //         vehicleId: 1,
+  //         vehicleNumber: "$vehicleData.vehicleNumber",
+  //         latitude: 1,
+  //         longitude: 1,
+  //         speed: 1,
+  //         ignition: 1,
+  //         time: 1,
+  //         source: 1,
+  //         bucketTime: "$_id.bucketTime",
+  //       },
+  //     },
+  //     { $sort: { bucketTime: 1 } },
+  //     { $limit: 500000 },
+  //   ]).allowDiskUse(true);
 
     
+  // }
+
+
+  async getTimeline(params: {
+  vehicleIds: string[];
+  from: Date;
+  to: Date;
+  bucket: "month" | "week" | "day" | "hour" | "minute" | "second";
+  binSize?: number;
+  limit?: number;
+page?: number;
+north?: number;
+south?: number;
+east?: number;
+west?: number;
+  excludeSimulation?: boolean;
+}) {
+  const vehicleObjectIds = params.vehicleIds.map(id => new Types.ObjectId(id));
+
+  const matchStage: Record<string, any> = {
+  vehicleId: { $in: vehicleObjectIds },
+  time: { $gte: params.from, $lte: params.to },
+};
+
+if (
+  params.bucket === "second" &&
+  params.north !== undefined &&
+  params.south !== undefined &&
+  params.east !== undefined &&
+  params.west !== undefined
+) {
+  matchStage.latitude = {
+    $gte: params.south,
+    $lte: params.north,
+  };
+
+  matchStage.longitude = {
+    $gte: params.west,
+    $lte: params.east,
+  };
+}
+
+  if (params.excludeSimulation !== false) {
+    matchStage.source = { $ne: "simulation" };
   }
 
-  
+  console.log("PARAMS:", {
+    vehicleIds: params.vehicleIds,
+    from: params.from,
+    to: params.to,
+    bucket: params.bucket,
+    binSize: params.binSize,
+  });
+
+  // 🔥 CASE 1: SECOND → NO AGGREGATION (FULL DATA)
+  if (params.bucket === "second" && (params.binSize || 1) === 1) {
+    const raw = await VehicleLocationHistory.find(matchStage)
+      .sort({ time: 1 }) // timeline ke liye ascending
+      .skip(((params.page || 1) - 1) * (params.limit || 10000))
+      .limit(params.limit || 10000)
+      .lean();
+
+    console.log("RAW DATA COUNT (SECOND MODE):", raw.length);
+
+    // optional vehicleNumber attach
+    const vehicleMap = await Vehicle.find(
+      { _id: { $in: vehicleObjectIds } },
+      { vehicleNumber: 1 }
+    ).lean();
+
+    const vehicleLookup = new Map(
+      vehicleMap.map(v => [String(v._id), v.vehicleNumber])
+    );
+
+    return raw.map(item => ({
+      _id: item._id,
+      vehicleId: item.vehicleId,
+      vehicleNumber: vehicleLookup.get(String(item.vehicleId)) || "",
+      latitude: item.latitude,
+      longitude: item.longitude,
+      speed: item.speed,
+      ignition: item.ignition,
+      time: item.time,
+      source: item.source,
+      bucketTime: item.time, // same as time
+    }));
+  }
+
+  // 🔥 CASE 2: AGGREGATION ( buckets)
+  const data = await VehicleLocationHistory.aggregate([
+    { $match: matchStage },
+    { $sort: { vehicleId: 1, time: -1 } },
+
+
+    {
+      $group: {
+        _id: {
+          vehicleId: "$vehicleId",
+          bucketTime: {
+            $dateTrunc: {
+              date: "$time",
+              unit: params.bucket,
+              binSize: params.binSize || 1,
+            },
+          },
+        },
+        vehicleId: { $first: "$vehicleId" },
+        latitude: { $first: "$latitude" },
+        longitude: { $first: "$longitude" },
+        speed: { $first: "$speed" },
+        ignition: { $first: "$ignition" },
+        time: { $first: "$time" },
+        source: { $first: "$source" },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "vehicles",
+        localField: "vehicleId",
+        foreignField: "_id",
+        as: "vehicleData",
+      },
+    },
+    {
+      $unwind: {
+        path: "$vehicleData",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        vehicleId: 1,
+        vehicleNumber: "$vehicleData.vehicleNumber",
+        latitude: 1,
+        longitude: 1,
+        speed: 1,
+        ignition: 1,
+        time: 1,
+        source: 1,
+        bucketTime: "$_id.bucketTime",
+      },
+    },
+
+    { $sort: { bucketTime: 1 } },
+{ $skip: ((params.page || 1) - 1) * (params.limit || 10000) },
+{ $limit: params.limit || 10000 },
+  ]).allowDiskUse(true);
+
+  console.log("AGGREGATED DATA COUNT:", data.length);
+
+  return data;
+}
 
   
-
-
 async getLatestLocationsOfAllVehicles() {
   return VehicleLocation.aggregate([
     {
@@ -507,10 +635,6 @@ async getLatestLocationsOfAllVehicles() {
     },
   ]).allowDiskUse(true);
 }
-
-
-  
-
 
 //   async getTimeline(params) {
 //   const matchStage = {

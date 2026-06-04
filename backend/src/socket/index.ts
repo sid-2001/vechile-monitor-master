@@ -212,28 +212,28 @@ export const initSocket = (server: HttpServer): Server => {
     /* -------------------------------------------------- */
     /* 📡 REALTIME VEHICLE STREAM + EVENT DETECTION */
     /* -------------------------------------------------- */
-    const changeStream = VehicleLocation.watch([], {
-      fullDocument: "updateLookup",
-    });
+    // const changeStream = VehicleLocation.watch([], {
+    //   fullDocument: "updateLookup",
+    // });     
 
-    changeStream.on("change", async (change) => {
-      if (change.operationType !== "insert") return;
+    // changeStream.on("change", async (change) => {
+    //   if (change.operationType !== "insert") return;
 
-      const doc = change.fullDocument;
+    //   const doc = change.fullDocument;
 
-      socket.emit("vehicleLocationUpdate", doc);
+    //   socket.emit("vehicleLocationUpdate", doc);
 
-      // ⚡ Run event detection
-      const vehicleDoc =
-        await  vehicleService.byId (doc.vehicleId);
+    //   // ⚡ Run event detection
+    //   const vehicleDoc =
+    //     await  vehicleService.byId (doc.vehicleId);
        
        
-      // await processVehicleEvents(doc, vehicleDoc,vehicleDoc?.vehicleNumber);
-    });
+    //   // await processVehicleEvents(doc, vehicleDoc,vehicleDoc?.vehicleNumber);
+    // });
 
     socket.on("disconnect", async () => {
       console.log("❌ Client disconnected:", socket.id);
-      await changeStream.close();
+      // await changeStream.close();
     });
   });
 
