@@ -37,6 +37,7 @@ export const createSOS = async (
         sosId: existingSOS._id.toString(),
         vehicleId: existingSOS.vehicleId.toString(),
         vehicleNumber: vehicle?.vehicleNumber || "Unknown",
+        vehicle_tag_name: vehicle?.vehicle_tag_name || null,
         createdAt: existingSOS.createdAt,
       });
       await Vehicle.findByIdAndUpdate(existingSOS.vehicleId, {
@@ -64,6 +65,7 @@ await Vehicle.findByIdAndUpdate(vehicleId, {
       sosId: sos._id.toString(),
       vehicleId: sos.vehicleId.toString(),
       vehicleNumber: vehicle?.vehicleNumber || "Unknown",
+      vehicle_tag_name: vehicle?.vehicle_tag_name || null,
       createdAt: sos.createdAt,
     });
 
@@ -115,6 +117,7 @@ emitVehicleSOSClosed({
   sosId: sos._id.toString(),
   vehicleId: sos.vehicleId.toString(),
   vehicleNumber: vehicle?.vehicleNumber || "Unknown",
+  vehicle_tag_name: vehicle?.vehicle_tag_name || null,
   closedAt: sos.closedAt as Date,
   // @ts-ignore
   closedBy: user?.username || "Unknown", // username

@@ -47,6 +47,7 @@ if (!existingVehicle) {
   sosId: vehicle._id.toString(), 
   vehicleId: vehicle._id.toString(),
    vehicleNumber:existingVehicle?.vehicleNumber || "Unknown",
+  vehicle_tag_name: existingVehicle?.vehicle_tag_name || null,
   createdAt: new Date(),
   
 });

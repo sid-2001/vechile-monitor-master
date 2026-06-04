@@ -312,14 +312,18 @@ useEffect(() => {
 
   socket.connect();
 
-  const resolveVehicleName = (data: Record<string, any> = {}) =>
-    data.vehicleNumber ||
-    data.vehicle_number ||
-    data.vehicleNo ||
-    data.registrationNumber ||
-    data.name ||
-    data.vehicleId ||
-    'Unknown Vehicle';
+  const resolveVehicleName = (data: Record<string, any> = {}) => {
+    const vehicleNumber =
+      data.vehicleNumber ||
+      data.vehicle_number ||
+      data.vehicleNo ||
+      data.registrationNumber ||
+      data.name ||
+      data.vehicleId ||
+      'Unknown Vehicle';
+    const vehicleTagName = data.vehicle_tag_name || data.vehicleTagName;
+    return vehicleTagName ? `${vehicleNumber} (${vehicleTagName})` : vehicleNumber;
+  };
 
     
   const resolveGeofenceAction = (eventType: string = '') => {

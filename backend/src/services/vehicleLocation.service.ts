@@ -36,7 +36,7 @@ export class VehicleLocationService {
     return R * c;
   }
 
-  private async handleGeofenceEvents(saved: IVehicleLocation, vehicleNumber: string): Promise<void> {
+  private async handleGeofenceEvents(saved: IVehicleLocation, vehicleNumber: string, vehicleTagName?: string | null): Promise<void> {
     const [latestBeforeCurrent, geofences] = await Promise.all([
       VehicleLocation.findOne({ vehicleId: saved.vehicleId, _id: { $ne: saved._id } }).sort({ time: -1 }),
       Geofence.find({}, { _id: 1, name: 1, center: 1, radius: 1 }).lean(),
@@ -67,6 +67,7 @@ export class VehicleLocationService {
           emitGeofenceAlert({
             vehicleId: String(saved.vehicleId),
             vehicleNumber,
+            vehicle_tag_name: vehicleTagName || null,
             geofenceName: fence.name,
             eventType: "enter",
             time: saved.time,
@@ -99,6 +100,7 @@ export class VehicleLocationService {
       emitGeofenceAlert({
         vehicleId: String(saved.vehicleId),
         vehicleNumber,
+        vehicle_tag_name: vehicleTagName || null,
         geofenceName: fence.name,
         eventType,
         time: saved.time,
@@ -110,7 +112,7 @@ export class VehicleLocationService {
     return Vehicle.findById(vehicleId).lean();
   }
 
-  private async handleSpeedAndBrakingEvents(saved: IVehicleLocation, vehicleDoc: any, vehicleNumber: string): Promise<void> {
+  private async handleSpeedAndBrakingEvents(saved: IVehicleLocation, vehicleDoc: any, vehicleNumber: string, vehicleTagName?: string | null): Promise<void> {
     const maxSpeed = Number(vehicleDoc?.performance?.maxSpeed || 0);
 
     if (maxSpeed > 0 && saved.speed >= maxSpeed) {
@@ -125,6 +127,7 @@ export class VehicleLocationService {
       emitVehicleSpeedAlert({
         vehicleId: String(saved.vehicleId),
         vehicleNumber,
+        vehicle_tag_name: vehicleTagName || null,
         speed: saved.speed,
         maxSpeed,
         latitude: saved.latitude,
@@ -154,6 +157,7 @@ export class VehicleLocationService {
       emitVehicleHarshBrakingAlert({
         vehicleId: String(saved.vehicleId),
         vehicleNumber,
+        vehicle_tag_name: vehicleTagName || null,
         previousSpeed: latestBeforeCurrent.speed,
         speed: saved.speed,
         latitude: saved.latitude,
@@ -176,10 +180,11 @@ export class VehicleLocationService {
 // await VehicleLocationHistory.create(saved.toObject());
     const vehicleDoc = await Vehicle.findById(saved.vehicleId).lean();
     const vehicleNumber = vehicleDoc?.vehicleNumber || String(saved.vehicleId);
+    const vehicleTagName = vehicleDoc?.vehicle_tag_name || null;
 
     await Promise.all([
-      this.handleGeofenceEvents(saved, vehicleNumber),
-      this.handleSpeedAndBrakingEvents(saved, vehicleDoc, vehicleNumber),
+      this.handleGeofenceEvents(saved, vehicleNumber, vehicleTagName),
+      this.handleSpeedAndBrakingEvents(saved, vehicleDoc, vehicleNumber, vehicleTagName),
     ]);
 
     const latestVehicles = await this.getLatestLocationsOfAllVehicles();
@@ -629,6 +634,8 @@ async getLatestLocationsOfAllVehicles() {
         angle: 1,
         source: 1,
         vehicleNumber: "$vehicleData.vehicleNumber",
+        vehicle_tag_name: "$vehicleData.vehicle_tag_name",
+        type: "$vehicleData.type",
         live: "$vehicleData.live",
         lastSeen: "$vehicleData.lastSeen",
       },
