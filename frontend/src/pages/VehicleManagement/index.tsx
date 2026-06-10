@@ -281,16 +281,16 @@ highRoll: String(row.performance?.highRoll || 45),
 // ]
 
 const cols: GridColDef[] = [
-  { field: 'vehicleId', headerName: 'Vehicle ID', width: 160 },
+  // { field: 'vehicleId', headerName: 'Vehicle ID', width: 160 },
   { field: 'vehicleNumber', headerName: 'Vehicle Number', width: 180 },
   { field: 'vehicle_tag_name', headerName: 'Vehicle Tag Name', width: 180, valueGetter: (_, row) => row.vehicle_tag_name || '-' },
   { field: 'licensePlate', headerName: 'License Plate', width: 180 },
 
-  { field: 'enginenumber', headerName: 'Engine No', width: 160, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
-  { field: 'chassisnumber', headerName: 'Chassis No', width: 160, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
+  // { field: 'enginenumber', headerName: 'Engine No', width: 160, valueGetter: (_, row) => row.manufacturing?.engineNumber || '-' },
+  // { field: 'chassisnumber', headerName: 'Chassis No', width: 160, valueGetter: (_, row) => row.manufacturing?.chassisNumber || '-' },
 
-  { field: 'transmission', headerName: 'Transmission', width: 150, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
-  { field: 'fuelTank', headerName: 'Tank', width: 120, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
+  // { field: 'transmission', headerName: 'Transmission', width: 150, valueGetter: (_, row) => row.performance?.transmissionType || '-' },
+  // { field: 'fuelTank', headerName: 'Tank', width: 120, valueGetter: (_, row) => row.performance?.fuelTankCapacity || '-' },
   { field: 'maxSpeed', headerName: 'Max Speed', width: 130, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
 
   { field: 'harshBraking', headerName: 'Harsh Braking', width: 140, valueGetter: (_, row) => row.performance?.harshBraking || 0 },
@@ -399,7 +399,24 @@ const cols: GridColDef[] = [
     <Grid item xs={12} md={2}>
       <Button fullWidth variant='contained' sx={{ height: '56px' }} onClick={create}>Add Vehicle</Button></Grid>
       
-      </Grid></CardContent></Card><Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
+      </Grid></CardContent></Card>
+      <Card>
+  <CardContent>
+    <Box sx={{ height: 420, width: '100%' }}>
+      <DataGrid
+        rows={rows}
+        columns={cols}
+        disableRowSelectionOnClick
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#1B0C0C',
+            zIndex: 1000,
+          },
+        }}
+      />
+    </Box>
+  </CardContent>
+</Card>
 
   <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md' PaperProps={{ sx: { bgcolor: 'primary.main', color: 'text.primary', border: '1px solid', borderColor: 'primary.main' } }}>
     <DialogTitle sx={{  color: 'common.white' }}>Edit Vehicle</DialogTitle>

@@ -110,7 +110,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: 'rgba(27, 12, 12, 0.8)',
-          backdropFilter: 'blur(10px)',
+          // backdropFilter: 'blur(10px)',
           borderRadius: '12px',
 
           '& .super-app-theme--header': {

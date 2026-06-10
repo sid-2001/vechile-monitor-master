@@ -210,8 +210,23 @@ const onDelete = async (id: string) => {
         </CardContent>
       </Card>
 
-      <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={cols} /></div></CardContent></Card>
-
+<Card>
+  <CardContent>
+    <Box sx={{ height: 420, width: '100%' }}>
+      <DataGrid
+        rows={rows}
+        columns={cols}
+        disableRowSelectionOnClick
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#1B0C0C',
+            zIndex: 1000,
+          },
+        }}
+      />
+    </Box>
+  </CardContent>
+</Card>
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="md">
   <DialogTitle>Edit Base</DialogTitle>
 

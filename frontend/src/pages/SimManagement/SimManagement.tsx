@@ -351,12 +351,22 @@ setRows((res || []).map((x: any) => ({
       </Card>
 
       <Card>
-        <CardContent>
-          <div style={{ height: 420 }}>
-            <DataGrid rows={rows} columns={columns} />
-          </div>
-        </CardContent>
-      </Card>
+  <CardContent>
+    <Box sx={{ height: 420, width: '100%' }}>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        disableRowSelectionOnClick
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#1B0C0C',
+            zIndex: 1000,
+          },
+        }}
+      />
+    </Box>
+  </CardContent>
+</Card>
 
      
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth='md'>

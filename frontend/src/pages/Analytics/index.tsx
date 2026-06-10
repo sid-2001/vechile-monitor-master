@@ -202,10 +202,10 @@ const AnalyticsScreen = () => {
   const metricBars = useMemo(() => {
     if (!analytics) return []
     return [
-      { name: 'Avg Speed', value: analytics.avgSpeed },
+      // { name: 'Avg Speed', value: analytics.avgSpeed },
       { name: 'Enter', value: analytics.geofenceEnterCount },
       { name: 'Exit', value: analytics.geofenceExitCount },
-      { name: 'Ignition (min)', value: analytics.ignitionOnMinutes },
+      // { name: 'Ignition (min)', value: analytics.ignitionOnMinutes },
       { name: 'Harsh Brake', value: analytics.harshBrakingCount },
       { name: 'Overspeed', value: analytics.overSpeedCount },
        { name: 'SOS', value: analytics.sosCount },
@@ -255,10 +255,10 @@ const AnalyticsScreen = () => {
         second: '2-digit',
         hour12: true,
       }),
-      'Average Speed': analytics.avgSpeed,
+      // 'Average Speed': analytics.avgSpeed,
       'Geofence Enter': analytics.geofenceEnterCount,
       'Geofence Exit': analytics.geofenceExitCount,
-      'Ignition On Minutes': analytics.ignitionOnMinutes,
+      // 'Ignition On Minutes': analytics.ignitionOnMinutes,
       'Harsh Braking': analytics.harshBrakingCount,
       Overspeed: analytics.overSpeedCount,
       'SOS Count': analytics.sosCount,
@@ -399,7 +399,11 @@ const AnalyticsScreen = () => {
       {analytics && !loadingAnalytics && (
         <>
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            {[{ label: 'Average Speed', value: `${analytics.avgSpeed} km/h` }, { label: 'Geofence Enter', value: analytics.geofenceEnterCount }, { label: 'Geofence Exit', value: analytics.geofenceExitCount }, { label: 'Ignition On Time', value: `${analytics.ignitionOnMinutes} min` }, { label: 'Harsh Braking', value: analytics.harshBrakingCount }, { label: 'Overspeed', value: analytics.overSpeedCount },{ label: 'SOS Count', value: analytics.sosCount }].map((item) => (
+            {[
+              // { label: 'Average Speed', value: `${analytics.avgSpeed} km/h` }, 
+              { label: 'Geofence Enter', value: analytics.geofenceEnterCount }, { label: 'Geofence Exit', value: analytics.geofenceExitCount }, 
+              // { label: 'Ignition On Time', value: `${analytics.ignitionOnMinutes} min` }, 
+              { label: 'Harsh Braking', value: analytics.harshBrakingCount }, { label: 'Overspeed', value: analytics.overSpeedCount },{ label: 'SOS Count', value: analytics.sosCount }].map((item) => (
               <Grid item xs={12} sm={6} md={2} key={item.label}><Card><CardContent><Typography variant='caption'>{item.label}</Typography><Typography variant='h6'>{item.value}</Typography></CardContent></Card></Grid>
             ))}
           </Grid>

@@ -76,7 +76,7 @@ const toInputDate = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const HISTORY_WINDOW_HOURS = 6
+const HISTORY_WINDOW_HOURS = 24
 const HISTORY_WINDOW_MS = HISTORY_WINDOW_HOURS * 60 * 60 * 1000
 
 const LocationHistory = () => {
@@ -378,7 +378,7 @@ const ZoomTracker = () => {
           </Grid>
 
           <Stack direction='row' spacing={1} mt={2} flexWrap='wrap'>
-            <Chip color='warning' label='Range limited to last 6 hours' />
+            <Chip color='warning' label='Range limited to last 24 hours' />
             <Chip color='primary' label={`Current loading level: ${bucketLabelMap[bucket]}${bucket === "second" ? ` (${binSize}s)` : ""}`} />
             <Chip label={`Zoom: ${zoomLevel}`} />
             <Chip label={`Loaded points: ${points.length.toLocaleString()}`} />

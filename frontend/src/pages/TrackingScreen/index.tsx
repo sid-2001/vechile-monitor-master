@@ -112,14 +112,14 @@ const createRotatedIcon = (angle: number, isMoving: boolean) => {
   return L.divIcon({
     html: `<div style="
       transform: rotate(${angle || 0}deg);
-      width: 35px;
-      height: 35px;
+      width: 50px;
+      height: 50px;
       display: flex;
       align-items: center;
       justify-content: center;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     ">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
         fill="${isMoving ? '#4caf50' : '#f44336'}" 
         stroke="#fff" 
@@ -128,9 +128,9 @@ const createRotatedIcon = (angle: number, isMoving: boolean) => {
       </svg>
     </div>`,
     className: 'rotating-marker',
-    iconSize: [35, 35],
-    iconAnchor: [17, 22], // Center bottom of the icon
-    popupAnchor: [0, -22],
+   iconSize: [50, 50],
+iconAnchor: [25, 25],
+popupAnchor: [0, -25],
   })
 }
 
@@ -139,15 +139,15 @@ const createRotatedIcon = (angle: number, isMoving: boolean) => {
 
 const movingIcon = L.divIcon({
   html: `<div style="
-    width: 35px;
-    height: 35px;
+   width: 50px;
+height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     transition: transform 0.3s ease;
   ">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg  width="46" height="46" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
       fill="#4caf50" 
       stroke="#fff" 
@@ -156,21 +156,21 @@ const movingIcon = L.divIcon({
     </svg>
   </div>`,
   className: 'moving-marker',
-  iconSize: [35, 35],
-  iconAnchor: [17, 22],
-  popupAnchor: [0, -22],
+  iconSize: [50, 50],
+iconAnchor: [25, 25],
+popupAnchor: [0, -25],
 })
 
 const stoppedIcon = L.divIcon({
   html: `<div style="
-    width: 35px;
-    height: 35px;
+   width: 50px;
+height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   ">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" 
       fill="#f44336" 
       stroke="#fff" 
@@ -179,9 +179,9 @@ const stoppedIcon = L.divIcon({
     </svg>
   </div>`,
   className: 'stopped-marker',
-  iconSize: [35, 35],
-  iconAnchor: [17, 22],
-  popupAnchor: [0, -22],
+ iconSize: [50, 50],
+iconAnchor: [25, 25],
+popupAnchor: [0, -25],
 })
 
 // Component to auto-fit map bounds
@@ -416,7 +416,7 @@ const icon = useMemo(() => {
       <Popup>
         <Box sx={{ minWidth: 200, p: 0.5 , color: 'black'}}>
           <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DirectionsCarIcon fontSize="small" color="primary" />
+            {/* <DirectionsCarIcon fontSize="small" color="primary" /> */}
             {getVehicleDisplayName(vehicle)}
           </Typography>
           <Divider sx={{ my: 1 }} />

@@ -18,7 +18,7 @@ export const baseSchema: ValidatorFn = (body: any) => {
 export const userSchema: ValidatorFn = (body: any) => {
   const errors: string[] = [];
   ["username", "role"].forEach((f) => !body?.[f] && errors.push(`${f} is required`));
-  if (!Array.isArray(body?.baseIds) || body.baseIds.length === 0) errors.push("baseIds is required");
+  // if (!Array.isArray(body?.baseIds) || body.baseIds.length === 0) errors.push("baseIds is required");
   if (!body?.name?.first || !body?.name?.last) errors.push("name.first and name.last are required");
   if (!body?.contact?.mobile || !body?.contact?.email) errors.push("contact.mobile and contact.email are required");
   return errors;
@@ -40,7 +40,7 @@ export const vehicleLocationSchema: ValidatorFn = (body: any) => {
 export const geofenceSchema: ValidatorFn = (body: any) => {
   const errors: string[] = [];
   if (!body?.name) errors.push("name is required");
-  if (!body?.locationId) errors.push("locationId is required");
+  // if (!body?.locationId) errors.push("locationId is required");
   if (!body?.baseId) errors.push("baseId is required");
   if (body?.center?.latitude === undefined || body?.center?.longitude === undefined) errors.push("center latitude and longitude are required");
   if (body?.radius === undefined || Number(body.radius) <= 0) errors.push("radius should be greater than 0");

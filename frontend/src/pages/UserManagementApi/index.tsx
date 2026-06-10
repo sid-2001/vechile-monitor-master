@@ -5,7 +5,10 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 import { useTheme } from '@emotion/react'
 import { Country, State, City } from 'country-state-city'
-
+import InputAdornment from '@mui/material/InputAdornment'
+import IconButton from '@mui/material/IconButton'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
   const [bases, setBases] = useState<any[]>([])
@@ -15,6 +18,8 @@ const UserManagementApi = () => {
   const [editOpen, setEditOpen] = useState(false)
   const [editId, setEditId] = useState('')
   const theme=useTheme();
+  const [showPassword, setShowPassword] = useState(false)
+const [showEditPassword, setShowEditPassword] = useState(false)
 
   
 const [errors, setErrors] = useState<any>({})
@@ -46,6 +51,8 @@ const [editErrors, setEditErrors] = useState<any>({})
   const [editForm, setEditForm] = useState({
   username: '',
   first: '',
+    password: '',
+
   middle: '',
   last: '',
   gender: '',
@@ -124,10 +131,8 @@ const [editErrors, setEditErrors] = useState<any>({})
 
  role: form.role,
 
-...(form.role !== 'ADMIN' && {
-  baseId: form.baseIds[0] || form.baseId,
-  baseIds: form.baseIds
-})
+baseId: form.baseIds[0] || form.baseId,
+baseIds: form.baseIds,
 })
 setForm({
   username: '',
@@ -163,6 +168,7 @@ setForm({
   first: row.name?.first || '',
   middle: row.name?.middle || '',
   last: row.name?.last || '',
+  password: '',
   gender: row.gender || '',
   dob: row.dob || '',
   phonecode: row.contact?.phonecode || '',
@@ -187,6 +193,9 @@ setForm({
   const update = async () => {
    await vehicleMonitorService.updateUser(editId, {
   username: editForm.username,
+ ...(editForm.password && {
+    password: editForm.password
+  }),  
 
   name: {
     first: editForm.first,
@@ -336,6 +345,28 @@ const inputStyle = {
       <Grid item xs={12} md={3}>
         <TextField fullWidth label='Last Name' value={form.last} sx={inputStyle} onChange={(e) => setForm({ ...form, last: e.target.value })} />
       </Grid>
+      <Grid item xs={12} md={3}>
+  <TextField
+  fullWidth
+  label="Password"
+  type={showPassword ? 'text' : 'password'}
+  value={form.password}
+  onChange={(e) => setForm({ ...form, password: e.target.value })}
+  sx={inputStyle}
+  InputProps={{
+    endAdornment: (
+      <InputAdornment position="end">
+       <IconButton
+  onClick={() => setShowPassword(!showPassword)}
+  edge="end"
+>
+  {showPassword ? <VisibilityOff /> : <Visibility />}
+</IconButton>
+      </InputAdornment>
+    ),
+  }}
+/>
+</Grid>
 
       {/* PERSONAL */}
       <Grid item xs={12} md={3}>
@@ -532,8 +563,23 @@ const inputStyle = {
     </Grid>
   </CardContent>
 </Card>
-      <Card><CardContent><div style={{ height: 420 }}><DataGrid rows={rows} columns={columns} /></div></CardContent></Card>
-
+<Card>
+  <CardContent>
+    <Box sx={{ height: 420, width: '100%' }}>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        disableRowSelectionOnClick
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#1B0C0C',
+            zIndex: 1000,
+          },
+        }}
+      />
+    </Box>
+  </CardContent>
+</Card>
       <Dialog 
       
     
@@ -544,6 +590,7 @@ const inputStyle = {
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} md={6}><TextField fullWidth label='Username' value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth select label='Role' value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}><MenuItem value='ADMIN'>ADMIN</MenuItem><MenuItem value='DRIVER'>DRIVER</MenuItem><MenuItem value='OPERATOR'>OPERATOR</MenuItem></TextField></Grid>
+
             <Grid item xs={12} md={6}><TextField fullWidth label='First Name' value={editForm.first} onChange={(e) => setEditForm({ ...editForm, first: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Last Name' value={editForm.last} onChange={(e) => setEditForm({ ...editForm, last: e.target.value })} /></Grid>
 <Grid item xs={12} md={6}>
@@ -569,6 +616,33 @@ const inputStyle = {
 helperText={editErrors.email}
 />    
   </Grid>
+
+  <Grid item xs={12} md={6}>
+ <TextField
+  fullWidth
+  label="Password"
+ type={showEditPassword ? 'text' : 'password'}
+value={editForm.password}
+onChange={(e) =>
+  setEditForm({
+    ...editForm,
+    password: e.target.value
+  })
+}
+  InputProps={{
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+  onClick={() => setShowEditPassword(!showEditPassword)}
+  edge="end"
+>
+  {showEditPassword ? <VisibilityOff /> : <Visibility />}
+</IconButton>
+      </InputAdornment>
+    ),
+  }}
+/>
+</Grid>
    {/* @ts-ignore */}
             <Grid item xs={12} md={6}><TextField fullWidth select SelectProps={{ multiple: true }} label='Bases' value={editForm.baseIds} 
              // @ts-ignore
