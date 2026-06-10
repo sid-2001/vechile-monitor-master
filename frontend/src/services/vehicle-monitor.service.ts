@@ -97,6 +97,14 @@ deleteLocation: (id: string) => api1.del(`/locations/${id}`),
   },
   createGeofence: (payload: GeofencePayload) => api1.post('/geofences', payload),
   updateGeofence: (id: string, payload: Partial<GeofencePayload>) => api1.put(`/geofences/${id}`, payload),
-  deleteGeofence: (id: string) => api1.del(`/geofences/${id}`)
+  deleteGeofence: (id: string) => api1.del(`/geofences/${id}`),
+  getLoginDevices: () => api1.get('/login-devices'),
+  logoutLoginDevice: (id: string) => api1.post(`/login-devices/${id}/logout`, {}),
+  logoutAllLoginDevices: () => api1.post('/login-devices/logout-all', {}),
+  createSOS: (vehicleId: string) => api1.post('/api/sos/create', { vehicleId }),
+  createSpeedSignal: (payload: Record<string, unknown>) => api1.post('/notifications/speed-exceeded', payload),
+  createHarshBrakingSignal: (payload: Record<string, unknown>) => api1.post('/notifications/harsh-braking', payload),
+  createGeofenceEnterSignal: (payload: Record<string, unknown>) => api1.post('/notifications/geofence-enter', payload),
+  createGeofenceExitSignal: (payload: Record<string, unknown>) => api1.post('/notifications/geofence-exit', payload)
 
 }

@@ -87,7 +87,7 @@ const CustomSnackbar = () => {
       open={open}
       autoHideDuration={2000}
       onClose={handleClose}
-      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      anchorOrigin={{ vertical: "top", horizontal: "right" }}
       message={
         <span
           style={{

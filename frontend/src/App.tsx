@@ -31,6 +31,7 @@ import DeviceManagement from './pages/DeviceManagement'
 import GeofenceManagement from './pages/GeofenceManagement'
 import LocationHistory from './pages/LocationHistory'
 import LocationSimulator from './pages/LocationSimulator'
+import LoginDevices from './pages/LoginDevices'
 import AnalyticsScreen from './pages/Analytics'
 import LocationManagement from './pages/LocationManagement'
 import { socket } from "./services/socket";
@@ -429,7 +430,7 @@ socket.on("vehicle:accident:alert", (data) => {
         {/* <LoaderBackdrop /> */}
         {/* <Message /> */}
        <ToastContainer
-          position="top-center"
+          position="top-right"
           autoClose={10000} 
           closeOnClick
           draggable
@@ -453,6 +454,7 @@ socket.on("vehicle:accident:alert", (data) => {
                <Route path="location" element={<LocationManagement />} />
                <Route path="location-history" element={<LocationHistory />} />
                <Route path="location-simulator" element={<LocationSimulator />} />
+               <Route path="login-devices" element={<LoginDevices />} />
                <Route path="analytics" element={<AnalyticsScreen />} />
                <Route path="sims" element={<SimManagement />} />
                <Route path="device-sim-mapping" element={<DeviceSimMapping />} />

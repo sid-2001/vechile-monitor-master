@@ -62,6 +62,7 @@ import PolylineIcon from '@mui/icons-material/Polyline';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import InsightsIcon from '@mui/icons-material/Insights';
+import PhonelinkLockIcon from '@mui/icons-material/PhonelinkLock';
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
   padding: theme.spacing(1),
@@ -132,6 +133,10 @@ const SIDEBAR_MENUS = [
   { label: 'Vehicle History', name: 'History', icon: <TimelineIcon fontSize="small" />, path: '/location-history' },
 
   { label: 'Analytics', name: 'Analytics', icon: <InsightsIcon fontSize="small" />, path: '/analytics' },
+
+  { label: 'Login Devices', name: 'Login Dev', icon: <PhonelinkLockIcon fontSize="small" />, path: '/login-devices' },
+
+  { label: 'Test Signals', name: 'Test', icon: <MyLocationIcon fontSize="small" />, path: '/location-simulator' },
 ]
 
 const DashboardLayout = () => {

@@ -6,6 +6,7 @@ declare global {
       id: string;
       username: string;
       role: "ADMIN" | "DRIVER" | "OPERATOR";
+      tokenId?: string;
     }
 
     interface Request {

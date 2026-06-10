@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { IUser, User } from "../models/User";
+import { randomUUID } from "crypto";
+import { LoginDeviceSession } from "../models/LoginDeviceSession";
 
 export class UserService {
   async create(payload: Partial<IUser>, actor: string): Promise<any> {
@@ -31,7 +33,7 @@ export class UserService {
 
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }
 //@ts-ignore
-  async login(username: string, password: string): Promise<{ token: string ,user:any}> {
+  async login(username: string, password: string, deviceInfo: any = {}, requestMeta: any = {}): Promise<{ token: string ,user:any}> {
     try{
 
       console.log("connecting")
@@ -55,7 +57,24 @@ export class UserService {
     user.$locals.currentUser = username;
     await user.save();
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, env.jwtSecret, { expiresIn: "1d" });
+    const tokenId = randomUUID();
+    const lastLoginTime = new Date();
+    await LoginDeviceSession.create({
+      userId: user._id,
+      username: user.username,
+      role: user.role,
+      tokenId,
+      deviceName: deviceInfo.deviceName || requestMeta.userAgent || "Unknown device",
+      ipAddress: deviceInfo.ipAddress || requestMeta.ipAddress,
+      userAgent: requestMeta.userAgent,
+      location: deviceInfo.location,
+      timezone: deviceInfo.timezone,
+      lastLoginTime,
+      lastSeenAt: lastLoginTime,
+      active: true,
+    });
+
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role, tokenId }, env.jwtSecret, { expiresIn: "1d" });
     return { token,user };
   }catch(err:any){
 
