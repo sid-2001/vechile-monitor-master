@@ -51,3 +51,17 @@ export const requireRole = (...roles: Array<"ADMIN" | "DRIVER" | "OPERATOR">) =>
     next();
   };
 };
+
+
+export const requireModuleAccess = (module: string, minimum: "READ" | "WRITE" = "READ") => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (req.user?.role === "ADMIN") return next();
+    const access = req.user?.permissions?.[module] || "NONE";
+    const rank = { NONE: 0, READ: 1, WRITE: 2 };
+    if (rank[access] < rank[minimum]) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+    next();
+  };
+};

@@ -107,41 +107,50 @@ const MainContent = styled(Box)(({ theme }) => ({
 
 // Sidebar menu structure
 const SIDEBAR_MENUS = [
-  { label: 'Dashboard', name: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/', },
+  { label: 'Dashboard', name: 'Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/', module: 'dashboard' },
 
-  { label: 'User', name: 'User', icon: <PersonIcon fontSize="small" />, path: '/user' },
+  { label: 'User', name: 'User', icon: <PersonIcon fontSize="small" />, path: '/user', module: 'users' },
+  { label: 'Roles', name: 'Roles', icon: <SettingsIcon fontSize="small" />, path: '/roles', module: 'roles' },
 
-  { label: 'Location', name: 'Location', icon: <LocationSearchingIcon fontSize="small" />, path: '/location' },
-    { label: 'Base Geofencing', name: 'Base Geo', icon: <PolylineIcon fontSize="small" />, path: '/geofence' },
+  { label: 'Location', name: 'Location', icon: <LocationSearchingIcon fontSize="small" />, path: '/location', module: 'locations' },
+    { label: 'Base Geofencing', name: 'Base Geo', icon: <PolylineIcon fontSize="small" />, path: '/geofence', module: 'geofences' },
 
 
-  { label: 'Base Unit', name: 'Base Unit', icon: <HomeIcon fontSize="small" />, path: '/bases' },
+  { label: 'Base Unit', name: 'Base Unit', icon: <HomeIcon fontSize="small" />, path: '/bases', module: 'bases' },
 
 
   // { label: 'Location-Base Mapping', name: 'Loc-Base Map', icon: <SyncAltRounded fontSize="small" />, path: '/location-base-mapping' },
 
-  { label: 'Vehicle', name: 'Vehicle', icon: <DirectionsBusIcon fontSize="small" />, path: '/vehicles' },
+  { label: 'Vehicle', name: 'Vehicle', icon: <DirectionsBusIcon fontSize="small" />, path: '/vehicles', module: 'vehicles' },
 
-  { label: 'Device', name: 'Device', icon: <MemoryIcon fontSize="small" />, path: '/devices' },
+  { label: 'Device', name: 'Device', icon: <MemoryIcon fontSize="small" />, path: '/devices', module: 'devices' },
 
-  { label: 'SIM Master', name: 'SIM Master', icon: <DeveloperBoardIcon fontSize="small" />, path: '/sims' },
-{ label: 'Kilometer Card', name: 'Kilometer Card', icon: <DescriptionRounded fontSize="small" />, path: '/kilometer-card' },
-  { label: 'Device-SIM Mapping', name: 'Dev-SIM Map', icon: <SyncAltRounded fontSize="small" />, path: '/device-sim-mapping' },
+  { label: 'SIM Master', name: 'SIM Master', icon: <DeveloperBoardIcon fontSize="small" />, path: '/sims', module: 'sims' },
+{ label: 'Kilometer Card', name: 'Kilometer Card', icon: <DescriptionRounded fontSize="small" />, path: '/kilometer-card', module: 'kilometerCards' },
+  { label: 'Device-SIM Mapping', name: 'Dev-SIM Map', icon: <SyncAltRounded fontSize="small" />, path: '/device-sim-mapping', module: 'deviceSimMapping' },
 
   // { label: 'Vehicle-Device Mapping', name: 'Veh-Dev Map', icon: <SyncAltRounded fontSize="small" />, path: '/vehicle-device-mapping' },
 
   // { label: 'Base-Vehicle Mapping', name: 'Base-Veh Map', icon: <SyncAltRounded fontSize="small" />, path: '/base-vehicle-mapping' },
 
-  { label: 'Live Tracking', name: 'Live Track', icon: <TrackChangesIcon fontSize="small" />, path: '/tracking' },
+  { label: 'Live Tracking', name: 'Live Track', icon: <TrackChangesIcon fontSize="small" />, path: '/tracking', module: 'tracking' },
 
-  { label: 'Vehicle History', name: 'History', icon: <TimelineIcon fontSize="small" />, path: '/location-history' },
+  { label: 'Vehicle History', name: 'History', icon: <TimelineIcon fontSize="small" />, path: '/location-history', module: 'locationHistory' },
 
-  { label: 'Analytics', name: 'Analytics', icon: <InsightsIcon fontSize="small" />, path: '/analytics' },
+  { label: 'Analytics', name: 'Analytics', icon: <InsightsIcon fontSize="small" />, path: '/analytics', module: 'analytics' },
 
-  { label: 'Login Devices', name: 'Login Dev', icon: <PhonelinkLockIcon fontSize="small" />, path: '/login-devices' },
+  { label: 'Login Devices', name: 'Login Dev', icon: <PhonelinkLockIcon fontSize="small" />, path: '/login-devices', module: 'loginDevices' },
 
-  { label: 'Test Signals', name: 'Test', icon: <MyLocationIcon fontSize="small" />, path: '/location-simulator' },
+  { label: 'Test Signals', name: 'Test', icon: <MyLocationIcon fontSize="small" />, path: '/location-simulator', module: 'testSignals' },
 ]
+
+const hasModuleAccess = (item: any) => {
+  const user = local_service.get_user()
+  if (user?.role === 'ADMIN') return true
+  if (!item.module) return true
+  const permissions = user?.roleId?.permissions || user?.permissions || {}
+  return ['READ', 'WRITE'].includes(permissions[item.module])
+}
 
 const DashboardLayout = () => {
   const [mode, setMode] = useRecoilState(themeModeState)
@@ -238,7 +247,7 @@ const handleMenuClick = (menu: any) => {
           py: 2,
         }}
       >
-        {SIDEBAR_MENUS.map((item, index) => (
+        {SIDEBAR_MENUS.filter(hasModuleAccess).map((item, index) => (
           <ListItem
             button
             key={index}

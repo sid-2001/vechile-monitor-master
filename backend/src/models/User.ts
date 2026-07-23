@@ -14,6 +14,7 @@ export interface IUser extends Document, AuditFields {
   dob?: Date;
   contact: { phonecode?: string; mobile: string; email: string };
   role: UserRole;
+  roleId?: Schema.Types.ObjectId;
   baseId?: Schema.Types.ObjectId;
   baseIds: Schema.Types.ObjectId[];
   failedAttempts: number;
@@ -47,6 +48,7 @@ const schema = new Schema<IUser>({
     email: { type: String, required: true }
   },
   role: { type: String, enum: ["ADMIN", "DRIVER", "OPERATOR"], default: "OPERATOR" },
+  roleId: { type: Schema.Types.ObjectId, ref: "Role", required: false },
   baseId: { type: Schema.Types.ObjectId, ref: "Base", required: false },
   baseIds: [{ type: Schema.Types.ObjectId, ref: "Base", required: true }],
   failedAttempts: { type: Number, default: 0 },

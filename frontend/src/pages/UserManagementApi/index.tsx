@@ -13,6 +13,7 @@ const UserManagementApi = () => {
   const [rows, setRows] = useState<any[]>([])
   const [bases, setBases] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
+  const [roles, setRoles] = useState<any[]>([])
   const [error, setError] = useState('')
   const [snack, setSnack] = useState('')
   const [editOpen, setEditOpen] = useState(false)
@@ -45,6 +46,7 @@ const [editErrors, setEditErrors] = useState<any>({})
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
+  roleId: '',
   baseId: '',
   baseIds: [] as string[]
 })
@@ -69,16 +71,18 @@ const [editErrors, setEditErrors] = useState<any>({})
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
+  roleId: '',
   baseId: '',
   baseIds: [] as string[],
   status: 'ACTIVE'
 })
   const load = async () => {
     try {
-      const [users, baseData, locationData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases(), vehicleMonitorService.getLocations()])
+      const [users, baseData, locationData, roleData] = await Promise.all([vehicleMonitorService.getUsers(), vehicleMonitorService.getBases(), vehicleMonitorService.getLocations(), vehicleMonitorService.getRoles()])
       setRows((users.items || []).map((x: any) => ({ id: x._id, ...x })))
       setBases(baseData.items || [])
       setLocations(locationData.items || [])
+      setRoles(roleData.items || [])
       setError('')
     } catch (e: any) {
       setError(e?.error_message || 'Failed to load users')
@@ -130,6 +134,7 @@ const [editErrors, setEditErrors] = useState<any>({})
   baseunitid: form.baseunitid,
 
  role: form.role,
+ roleId: form.roleId || undefined,
 
 baseId: form.baseIds[0] || form.baseId,
 baseIds: form.baseIds,
@@ -154,6 +159,7 @@ setForm({
   locationid: '',
   baseunitid: '',
   role: 'OPERATOR',
+  roleId: '',
   baseId: '',
   baseIds: [] as string[]
 })
@@ -183,6 +189,7 @@ setForm({
   locationid: row.locationid?._id || row.locationid || '',
   baseunitid: row.baseunitid || '',
   role: row.role || 'OPERATOR',
+  roleId: row.roleId?._id || row.roleId || '',
   baseId: row.baseId?._id || row.baseId || '',
   baseIds: (row.baseIds || []).map((b: any) => b._id || b),
   status: row.status || 'ACTIVE'
@@ -224,6 +231,7 @@ setForm({
   baseunitid: editForm.baseunitid,
 
   role: editForm.role,
+  roleId: editForm.roleId || undefined,
   baseId: editForm.baseIds[0] || editForm.baseId,
   baseIds: editForm.baseIds,
   // status: editForm.status
@@ -534,6 +542,12 @@ const inputStyle = {
           <MenuItem value='OPERATOR'>OPERATOR</MenuItem>
         </TextField>
       </Grid>
+      <Grid item xs={12} md={3}>
+        <TextField fullWidth select label='Custom Role' sx={inputStyle} value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })}>
+          <MenuItem value=''>No custom role</MenuItem>
+          {roles.map((role: any) => <MenuItem key={role._id} value={role._id}>{role.name}</MenuItem>)}
+        </TextField>
+      </Grid>
 
       {/* BASE */}
       <Grid item xs={12} md={3}>
@@ -590,6 +604,7 @@ const inputStyle = {
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} md={6}><TextField fullWidth label='Username' value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth select label='Role' value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}><MenuItem value='ADMIN'>ADMIN</MenuItem><MenuItem value='DRIVER'>DRIVER</MenuItem><MenuItem value='OPERATOR'>OPERATOR</MenuItem></TextField></Grid>
+            <Grid item xs={12} md={6}><TextField fullWidth select label='Custom Role' value={editForm.roleId} onChange={(e) => setEditForm({ ...editForm, roleId: e.target.value })}><MenuItem value=''>No custom role</MenuItem>{roles.map((role: any) => <MenuItem key={role._id} value={role._id}>{role.name}</MenuItem>)}</TextField></Grid>
 
             <Grid item xs={12} md={6}><TextField fullWidth label='First Name' value={editForm.first} onChange={(e) => setEditForm({ ...editForm, first: e.target.value })} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label='Last Name' value={editForm.last} onChange={(e) => setEditForm({ ...editForm, last: e.target.value })} /></Grid>

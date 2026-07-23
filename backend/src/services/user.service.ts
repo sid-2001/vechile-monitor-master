@@ -16,19 +16,19 @@ export class UserService {
 
   async list(filter: Record<string, unknown>, options: { skip: number; limit: number; sort: Record<string, 1 | -1> }) {
     const [items, total] = await Promise.all([
-      User.find(filter).select("-password").populate("baseIds", "name").populate("locationid", "name country state city").skip(options.skip).limit(options.limit).sort(options.sort),
+      User.find(filter).select("-password").populate("roleId", "name permissions status").populate("baseIds", "name").populate("locationid", "name country state city").skip(options.skip).limit(options.limit).sort(options.sort),
       User.countDocuments(filter)
     ]);
     return { items, total };
   }
 
-  async byId(id: string): Promise<any> { return User.findById(id).select("-password").populate("baseIds", "name").populate("locationid", "name country state city"); }
+  async byId(id: string): Promise<any> { return User.findById(id).select("-password").populate("roleId", "name permissions status").populate("baseIds", "name").populate("locationid", "name country state city"); }
 
   async update(id: string, payload: Partial<IUser>, actor: string): Promise<any> {
     const next = { ...payload } as Partial<IUser>;
     if (next.password) next.password = await bcrypt.hash(next.password, 10) as never;
     if (next.baseIds && next.baseIds.length) next.baseId = next.baseIds[0] as never;
-    return User.findByIdAndUpdate(id, next, { new: true, runValidators: true, currentUser: actor } as never).select("-password").populate("baseIds", "name").populate("locationid", "name country state city");
+    return User.findByIdAndUpdate(id, next, { new: true, runValidators: true, currentUser: actor } as never).select("-password").populate("roleId", "name permissions status").populate("baseIds", "name").populate("locationid", "name country state city");
   }
 
   async remove(id: string): Promise<any> { return User.findByIdAndDelete(id); }
@@ -37,7 +37,7 @@ export class UserService {
     try{
 
       console.log("connecting")
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).populate("roleId", "name permissions status");
     if (!user) throw new Error("Invalid credentials");
     if (user.status === "LOCKED") throw new Error("User locked due to failed attempts");
 
@@ -74,7 +74,9 @@ export class UserService {
       active: true,
     });
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role, tokenId }, env.jwtSecret, { expiresIn: "1d" });
+    const customRole: any = user.roleId;
+    const permissions = customRole?.status === "ACTIVE" ? customRole.permissions : undefined;
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role, roleId: customRole?._id, permissions, tokenId }, env.jwtSecret, { expiresIn: "1d" });
     return { token,user };
   }catch(err:any){
 
@@ -84,7 +86,7 @@ export class UserService {
   }
 
   async generatePasscode(username: string, actor: string): Promise<{ temporaryPasscode: string }> {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).populate("roleId", "name permissions status");
     if (!user) throw new Error("User not found");
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.temporaryPasscode = code;
@@ -94,7 +96,7 @@ export class UserService {
   }
 
   async resetPassword(username: string, passcode: string, newPassword: string): Promise<void> {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).populate("roleId", "name permissions status");
     if (!user || user.temporaryPasscode !== passcode) throw new Error("Invalid passcode");
     user.password = await bcrypt.hash(newPassword, 10);
     user.temporaryPasscode = undefined;
