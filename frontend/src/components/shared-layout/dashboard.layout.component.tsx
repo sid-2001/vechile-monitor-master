@@ -1,4 +1,6 @@
 import { ThemeProvider } from '@mui/material/styles'
+import SpeedIcon from '@mui/icons-material/Speed'
+import DescriptionIcon from '@mui/icons-material/Description'
 import {
   Box,
   Typography,
@@ -15,6 +17,7 @@ import {
   createTheme,
   Drawer,
   useMediaQuery,
+  SpeedDialIcon,
 } from '@mui/material'
 import MemoryIcon from "@mui/icons-material/Memory";
 import HomeIcon from "@mui/icons-material/Home";
@@ -35,6 +38,7 @@ import {
   Menu as MenuIcon,
   LocationSearching,
   DeveloperBoard,
+  DescriptionRounded,
 } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
 import Backdrop from '@mui/material/Backdrop'
@@ -121,7 +125,7 @@ const SIDEBAR_MENUS = [
   { label: 'Device', name: 'Device', icon: <MemoryIcon fontSize="small" />, path: '/devices' },
 
   { label: 'SIM Master', name: 'SIM Master', icon: <DeveloperBoardIcon fontSize="small" />, path: '/sims' },
-
+{ label: 'Kilometer Card', name: 'Kilometer Card', icon: <DescriptionRounded fontSize="small" />, path: '/kilometer-card' },
   { label: 'Device-SIM Mapping', name: 'Dev-SIM Map', icon: <SyncAltRounded fontSize="small" />, path: '/device-sim-mapping' },
 
   // { label: 'Vehicle-Device Mapping', name: 'Veh-Dev Map', icon: <SyncAltRounded fontSize="small" />, path: '/vehicle-device-mapping' },

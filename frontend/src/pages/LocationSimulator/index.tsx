@@ -221,9 +221,21 @@ const LocationSimulator = () => {
           <Box sx={{ height: 520, borderRadius: 2, overflow: 'hidden' }}>
             <MapContainer center={position} zoom={6} style={{ height: '100%', width: '100%' }}>
               <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-              {geofences.map((fence) => (
-                <Circle key={fence._id} center={[fence.center.latitude, fence.center.longitude]} radius={fence.radius} pathOptions={{ color: '#FFDE42' }} />
-              ))}
+              {geofences
+  .filter(
+    (fence) =>
+      fence?.center &&
+      typeof fence.center.latitude === "number" &&
+      typeof fence.center.longitude === "number"
+  )
+  .map((fence) => (
+    <Circle
+      key={fence._id}
+      center={[fence.center.latitude, fence.center.longitude]}
+      radius={fence.radius}
+      pathOptions={{ color: '#FFDE42' }}
+    />
+))}
               <Marker
                 position={position}
                 draggable

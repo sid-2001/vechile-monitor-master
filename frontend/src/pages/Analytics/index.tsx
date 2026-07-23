@@ -4,6 +4,10 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 import * as XLSX from 'xlsx'
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import autoTable from "jspdf-autotable";
+import { useRef } from "react";
 //@ts-ignore
 import { saveAs } from 'file-saver'
 import { Button } from '@mui/material'
@@ -34,6 +38,8 @@ const bucketByZoom = (zoomLevel: number) => {
 }
 
 const AnalyticsScreen = () => {
+  const barChartRef = useRef<HTMLDivElement>(null);
+  const pieChartRef = useRef<HTMLDivElement>(null);
   const [vehicles, setVehicles] = useState<any[]>([])
   const [vehicleId, setVehicleId] = useState('')
   const [rangeKey, setRangeKey] = useState<RangeKey>('monthly')
@@ -233,37 +239,42 @@ const AnalyticsScreen = () => {
   // SUMMARY SHEET
   // =====================================
 
-  const summaryData = [
-    {
-      Vehicle: vehicles.find(v => v._id === vehicleId)?.vehicleNumber || '',
-      From: new Date(fromDate).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-      }),
+  const selectedVehicle =
+  vehicles.find(v => v._id === vehicleId);
 
-      To: new Date(toDate).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-      }),
-      // 'Average Speed': analytics.avgSpeed,
-      'Geofence Enter': analytics.geofenceEnterCount,
-      'Geofence Exit': analytics.geofenceExitCount,
-      // 'Ignition On Minutes': analytics.ignitionOnMinutes,
-      'Harsh Braking': analytics.harshBrakingCount,
-      Overspeed: analytics.overSpeedCount,
-      'SOS Count': analytics.sosCount,
-    },
-  ]
+const summaryData = [
+  {
+    Vehicle: selectedVehicle?.vehicleNumber || '',
+    "Vehicle Tag Name":
+      selectedVehicle?.vehicle_tag_name || '',
+
+    From: new Date(fromDate).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }),
+
+    To: new Date(toDate).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }),
+
+    'Geofence Enter': analytics.geofenceEnterCount,
+    'Geofence Exit': analytics.geofenceExitCount,
+    'Harsh Braking': analytics.harshBrakingCount,
+    Overspeed: analytics.overSpeedCount,
+    'SOS Count': analytics.sosCount,
+  },
+]
 
   const summarySheet = XLSX.utils.json_to_sheet(summaryData)
 
@@ -343,6 +354,270 @@ const AnalyticsScreen = () => {
     `${vehicleNumber}_analytics_report.xlsx`
   )
 }
+
+const downloadPDF = async () => {
+  if (!analytics) return;
+
+  const pdf = new jsPDF("p", "mm", "a4");
+
+ const selectedVehicle =
+  vehicles.find(v => v._id === vehicleId);
+
+const vehicleNumber =
+  selectedVehicle?.vehicleNumber ||
+  "Unknown Vehicle";
+
+const vehicleTagName =
+  selectedVehicle?.vehicle_tag_name || "";
+
+  pdf.setFillColor(25, 25, 25);
+  pdf.rect(0, 0, 210, 20, "F");
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(18);
+  pdf.text("Vehicle Analytics Report", 14, 13);
+
+  pdf.setTextColor(0, 0, 0);
+
+  pdf.setFontSize(12);
+pdf.text(
+  `Vehicle: ${vehicleNumber}${vehicleTagName ? ` (${vehicleTagName})` : ""}`,
+  14,
+  30
+);
+  const formattedFrom = new Date(fromDate).toLocaleString("en-IN", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const formattedTo = new Date(toDate).toLocaleString("en-IN", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+pdf.text(`From: ${formattedFrom}`, 14, 38);
+pdf.text(`To: ${formattedTo}`, 14, 46);
+
+  const totalGeofenceEvents =
+  analytics.geofenceEnterCount +
+  analytics.geofenceExitCount;
+
+const totalSafetyEvents =
+  analytics.harshBrakingCount +
+  analytics.overSpeedCount +
+  analytics.sosCount;
+
+pdf.setFontSize(14);
+pdf.text("Overall Summary", 14, 58);
+
+pdf.setFontSize(11);
+
+pdf.text(
+  `Total Geofence Entries : ${analytics.geofenceEnterCount}`,
+  14,
+  68
+);
+
+pdf.text(
+  `Total Geofence Exits : ${analytics.geofenceExitCount}`,
+  14,
+  76
+);
+
+pdf.text(
+  `Total Harsh Braking : ${analytics.harshBrakingCount}`,
+  14,
+  84
+);
+
+pdf.text(
+  `Total Overspeed Events : ${analytics.overSpeedCount}`,
+  14,
+  92
+);
+
+pdf.text(
+  `Total SOS Alerts : ${analytics.sosCount}`,
+  14,
+  100
+);
+
+pdf.text(
+  `Total Geofence Events : ${totalGeofenceEvents}`,
+  14,
+  108
+);
+
+pdf.text(
+  `Total Safety Events : ${totalSafetyEvents}`,
+  14,
+  116
+);
+
+// let status = "Normal";
+
+// if (analytics.sosCount > 0) {
+//   status = "Critical";
+// } else if (
+//   analytics.harshBrakingCount > 0 ||
+//   analytics.overSpeedCount > 0
+// ) {
+//   status = "Attention Required";
+// }
+
+// pdf.setFillColor(
+//   status === "Critical"
+//     ? 220
+//     : status === "Attention Required"
+//     ? 255
+//     : 120,
+//   status === "Critical"
+//     ? 53
+//     : status === "Attention Required"
+//     ? 193
+//     : 200,
+//   status === "Critical"
+//     ? 69
+//     : status === "Attention Required"
+//     ? 7
+//     : 80
+// );
+
+// pdf.roundedRect(140, 58, 50, 12, 2, 2, "F");
+
+// pdf.setTextColor(255, 255, 255);
+// pdf.text(status, 148, 66);
+
+// pdf.setTextColor(0, 0, 0);
+
+  let y = 130;
+  pdf.setFontSize(14);
+pdf.text("Analytics Overview", 14, y - 5);
+
+  // BAR CHART
+
+  if (barChartRef.current) {
+    const canvas = await html2canvas(barChartRef.current, {
+      scale: 2,
+    });
+
+    const img = canvas.toDataURL("image/png");
+
+    pdf.addImage(img, "PNG", 10, y, 120, 70);
+  }
+
+  // PIE CHART
+
+  if (pieChartRef.current) {
+    const canvas = await html2canvas(pieChartRef.current, {
+      scale: 2,
+    });
+
+    const img = canvas.toDataURL("image/png");
+
+    pdf.addImage(img, "PNG", 135, y, 60, 70);
+  }
+
+  y += 85;
+
+  pdf.setFontSize(14);
+  pdf.text("Geofence Logs", 14, y);
+
+  y += 10;
+
+  autoTable(pdf, {
+  startY: y,
+  head: [["Geofence", "Event", "Time", "Speed"]],
+  body: (analytics.geofenceLogs || []).map((log: any) => [
+    log.geofenceName,
+    log.eventType,
+    new Date(log.enter_time).toLocaleString(),
+    log.speed,
+  ]),
+  theme: "grid",
+  headStyles: {
+    fillColor: [25, 25, 25],
+  },
+});
+
+const geofenceTableEndY =
+  (pdf as any).lastAutoTable.finalY;
+
+// If Geofence table ended near page bottom,
+// move SOS logs to next page
+if (geofenceTableEndY > 240) {
+
+  pdf.addPage();
+
+  pdf.setFontSize(14);
+  pdf.text("SOS Logs", 14, 20);
+
+  autoTable(pdf, {
+    startY: 28,
+
+    head: [["Time", "Status"]],
+
+    body: (analytics.sosLogs || []).map((log: any) => [
+      new Date(log.createdAt).toLocaleString(),
+      log.status,
+    ]),
+
+    theme: "grid",
+
+    headStyles: {
+      fillColor: [25, 25, 25],
+    },
+  });
+
+} else {
+
+  pdf.setFontSize(14);
+
+  pdf.text(
+    "SOS Logs",
+    14,
+    geofenceTableEndY + 12
+  );
+
+  autoTable(pdf, {
+    startY: geofenceTableEndY + 18,
+
+    head: [["Time", "Status"]],
+
+    body: (analytics.sosLogs || []).map((log: any) => [
+      new Date(log.createdAt).toLocaleString(),
+      log.status,
+    ]),
+
+    theme: "grid",
+
+    headStyles: {
+      fillColor: [25, 25, 25],
+    },
+  });
+
+}
+
+const finalY =
+  (pdf as any).lastAutoTable?.finalY || 260;
+
+pdf.setFontSize(9);
+
+pdf.text(
+  `Generated On: ${new Date().toLocaleString()}`,
+  14,
+  finalY + 15
+);
+
+  pdf.save(`${vehicleNumber}_analytics_report.pdf`);
+};
+
   return (
     <Box sx={{ maxWidth: 1700, mx: 'auto', width: '100%' }}>
       <Typography variant='h5' mb={2}>Vehicle Analytics</Typography>
@@ -353,7 +628,18 @@ const AnalyticsScreen = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <TextField fullWidth select label='Vehicle' value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} disabled={loadingVehicles}>
-                {vehicles.map((vehicle) => <MenuItem key={vehicle._id} value={vehicle._id}>{vehicle.vehicleNumber}</MenuItem>)}
+                {vehicles.map((vehicle) => (
+  <MenuItem
+    key={vehicle._id}
+    value={vehicle._id}
+  >
+    {vehicle.vehicleNumber}
+    {vehicle.vehicle_tag_name
+      ? ` (${vehicle.vehicle_tag_name})`
+      : ""}
+      
+  </MenuItem>
+))}
               </TextField>
             </Grid>
            <Grid item xs={12} md={3}>
@@ -377,16 +663,27 @@ const AnalyticsScreen = () => {
     onChange={(e) => setToDate(e.target.value)}
   />
 </Grid>
-            <Grid item xs={12} md={2}>
-  <Button
-    fullWidth
-    variant='contained'
-    onClick={downloadReport}
-    disabled={!analytics}
-    sx={{ height: '56px' }}
-  >
-    Download Report
-  </Button>
+           <Grid item xs={12} md={2}>
+  <Stack spacing={1}>
+    <Button
+      fullWidth
+      variant="contained"
+      onClick={downloadPDF}
+      disabled={!analytics}
+      sx={{ height: '56px' }}
+    >
+      Download PDF
+    </Button>
+
+    <Button
+      fullWidth
+      variant="outlined"
+      onClick={downloadReport}
+      disabled={!analytics}
+    >
+      Download Excel
+    </Button>
+  </Stack>
 </Grid>
           </Grid>
         </CardContent>
@@ -397,7 +694,7 @@ const AnalyticsScreen = () => {
       )}
 
       {analytics && !loadingAnalytics && (
-        <>
+         <>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             {[
               // { label: 'Average Speed', value: `${analytics.avgSpeed} km/h` }, 
@@ -409,29 +706,25 @@ const AnalyticsScreen = () => {
           </Grid>
 
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} md={8}><Card><CardContent><Typography variant='h6' mb={1}>Analytics Overview</Typography><Box sx={{ width: '100%', height: 280 }}><ResponsiveContainer><BarChart data={metricBars}><CartesianGrid strokeDasharray='3 3' /><XAxis dataKey='name' /><YAxis /><Tooltip /><Bar dataKey='value' fill='#FFDE42' radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></Box></CardContent></Card></Grid>
-            <Grid item xs={12} md={4}><Card><CardContent><Typography variant='h6' mb={1}>Event Distribution</Typography><Box sx={{ width: '100%', height: 280 }}><ResponsiveContainer><PieChart><Pie data={pieData} dataKey='value' nameKey='name' outerRadius={90} label>{pieData.map((_: any, index: number) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend /><Tooltip /></PieChart></ResponsiveContainer></Box></CardContent></Card></Grid>
+            <Grid item xs={12} md={8}><Card><CardContent><Typography variant='h6' mb={1}>Analytics Overview</Typography><Box
+  ref={barChartRef}
+  sx={{
+    width: '100%',
+    height: 280,
+    backgroundColor: '#fff'
+  }}
+><ResponsiveContainer><BarChart data={metricBars}><CartesianGrid strokeDasharray='3 3' /><XAxis dataKey='name' /><YAxis /><Tooltip /><Bar dataKey='value' fill='#FFDE42' radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></Box></CardContent></Card></Grid>
+            <Grid item xs={12} md={4}><Card><CardContent><Typography variant='h6' mb={1}>Event Distribution</Typography><Box
+  ref={pieChartRef}
+  sx={{
+    width: '100%',
+    height: 280,
+    backgroundColor: '#fff'
+  }}
+><ResponsiveContainer><PieChart><Pie data={pieData} dataKey='value' nameKey='name' outerRadius={90} label>{pieData.map((_: any, index: number) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend /><Tooltip /></PieChart></ResponsiveContainer></Box></CardContent></Card></Grid>
           </Grid>
 
-          {/* <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant='h6' mb={1}>Speed Timeline</Typography>
-              <Typography variant='caption' color='text.secondary'>Data points auto-expand as zoom increases.</Typography>
-              <Box sx={{ width: '100%', height: 320 }}>
-                <ResponsiveContainer>
-                  <LineChart data={timelineData}>
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis dataKey='time' hide={timelineData.length > 24} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type='monotone' dataKey='avgSpeed' stroke='#42A5F5' dot={false} name='Avg Speed' />
-                    <Line type='monotone' dataKey='maxSpeed' stroke='#EF5350' dot={false} name='Max Speed' />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card> */}
+         
 
           <Card><CardContent><Typography variant='h6' mb={1}>Geofence Logs</Typography><div style={{ height: 320 }}><DataGrid rows={(analytics.geofenceLogs || []).map((x: any) => ({ ...x, id: x._id }))} columns={geofenceCols} /></div></CardContent></Card>
           <Card sx={{ mt: 2 }}>
