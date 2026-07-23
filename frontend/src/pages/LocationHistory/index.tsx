@@ -27,7 +27,11 @@ import { CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from 'reac
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
 // import 'leaflet/dist/leaflet.css'
 
-type VehicleOption = { _id: string; vehicleNumber: string }
+type VehicleOption = {
+  _id: string
+  vehicleNumber: string
+  vehicle_tag_name?: string
+}
 type BucketType = 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'
 
 type TimelinePoint = {
@@ -99,6 +103,7 @@ const LocationHistory = () => {
     const loadVehicles = async () => {
       try {
         const data = await vehicleMonitorService.getVehicles()
+        console.log(data.items)
         setVehicles(data.items || [])
       } catch (e: any) {
         setError(e?.error_message || 'Unable to load vehicles')
@@ -326,11 +331,19 @@ const ZoomTracker = () => {
                   value={selectedVehicleIds}
                   onChange={onVehicleChange}
                   label='Vehicles'
-                  renderValue={(selected) => (selected as string[])
-                    .map((id) => vehicles.find((v) => v._id === id)?.vehicleNumber || id)
-                    .join(', ')}
-                >
-                  {vehicles.map((vehicle) => <MenuItem key={vehicle._id} value={vehicle._id}>{vehicle.vehicleNumber}</MenuItem>)}
+                 renderValue={(selected) =>
+  (selected as string[])
+    .map((id) => {
+      const vehicle = vehicles.find((v) => v._id === id)
+
+      return vehicle
+        ? `${vehicle.vehicleNumber} (${vehicle.vehicle_tag_name || ""})`
+        : id
+    })
+    .join(", ")
+}
+>
+                  {vehicles.map((vehicle) => <MenuItem key={vehicle._id} value={vehicle._id}>{vehicle.vehicleNumber} ({vehicle.vehicle_tag_name})</MenuItem>)}
                 </Select>
               </FormControl>
             </Grid>

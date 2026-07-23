@@ -5,6 +5,7 @@ import { GeofenceLog } from "../models/GeofenceLog";
 import { Vehicle } from "../models/Vehicle";
 import { VehicleSpeedStatus } from "../models/VehicleSpeedStatus";
 import { VehicleBrakingStatus } from "../models/VehicleBrakingStatus";
+import { haltDetectionService } from "./haltDetection.service";
 import {
   emitAllVehicleLocationUpdate,
   emitGeofenceAlert,
@@ -167,41 +168,119 @@ export class VehicleLocationService {
     }
   }
 
-  async create(payload: Partial<IVehicleLocation>, actor: string): Promise<any> {
-    const doc = new VehicleLocation(payload);
-    doc.$locals.currentUser = actor;
+  async create(
+  payload: Partial<IVehicleLocation>,
+  actor: string
+): Promise<any> {
+  const doc = new VehicleLocation(payload);
+  doc.$locals.currentUser = actor;
 
-    const saved = await doc.save();
-    await VehicleLocationHistory.create({
-      ...saved.toObject(),
-      source: saved.source || "live",
-    });
+  const saved = await doc.save();
+
+  await VehicleLocationHistory.create({
+    ...saved.toObject(),
+    source: saved.source || "live",
+  });
+
+  const vehicleDoc = await Vehicle.findById(
+    saved.vehicleId
+  ).lean();
+
+  const vehicleNumber =
+    vehicleDoc?.vehicleNumber || String(saved.vehicleId);
+
+  const vehicleTagName =
+    vehicleDoc?.vehicle_tag_name || null;
+
+  await Promise.all([
+    this.handleGeofenceEvents(
+      saved,
+      vehicleNumber,
+      vehicleTagName
+    ),
+    this.handleSpeedAndBrakingEvents(
+      saved,
+      vehicleDoc,
+      vehicleNumber,
+      vehicleTagName
+    ),
+  ]);
+
+  // HALT DETECTION
+  if (vehicleDoc) {
+    await haltDetectionService.process(
+      saved,
+      vehicleDoc,
+      actor
+    );
+  }
+
+  const latestVehicles =
+    await this.getLatestLocationsOfAllVehicles();
+
+  emitAllVehicleLocationUpdate(latestVehicles);
+
+  emitVehicleLocationUpdate({
+    vehicleId: String(saved.vehicleId),
+    latitude: saved.latitude,
+    longitude: saved.longitude,
+    speed: saved.speed,
+    ignition: saved.ignition,
+    time: saved.time,
+    source: saved.source || "live",
+  });
+
+  return saved;
+}
 
 // await VehicleLocationHistory.create(saved.toObject());
-    const vehicleDoc = await Vehicle.findById(saved.vehicleId).lean();
-    const vehicleNumber = vehicleDoc?.vehicleNumber || String(saved.vehicleId);
-    const vehicleTagName = vehicleDoc?.vehicle_tag_name || null;
+//     const vehicleDoc = await Vehicle.findById(saved.vehicleId).lean();
+//     const vehicleNumber = vehicleDoc?.vehicleNumber || String(saved.vehicleId);
+//     const vehicleTagName = vehicleDoc?.vehicle_tag_name || null;
 
-    await Promise.all([
-      this.handleGeofenceEvents(saved, vehicleNumber, vehicleTagName),
-      this.handleSpeedAndBrakingEvents(saved, vehicleDoc, vehicleNumber, vehicleTagName),
-    ]);
+//     await Promise.all([
+//   this.handleGeofenceEvents(
+//     saved,
+//     vehicleNumber,
+//     vehicleTagName
+//   ),
+//   this.handleSpeedAndBrakingEvents(
+//     saved,
+//     vehicleDoc,
+//     vehicleNumber,
+//     vehicleTagName
+//   ),
+// ]);
 
-    const latestVehicles = await this.getLatestLocationsOfAllVehicles();
-    emitAllVehicleLocationUpdate(latestVehicles);
+// // HALT DETECTION
+// if (vehicleDoc) {
+//   await haltDetectionService.process(
+//     saved,
+//     vehicleDoc,
+//     actor
+//   );
+// }
 
-    emitVehicleLocationUpdate({
-      vehicleId: String(saved.vehicleId),
-      latitude: saved.latitude,
-      longitude: saved.longitude,
-      speed: saved.speed,
-      ignition: saved.ignition,
-      time: saved.time,
-      source: saved.source || "live",
-    });
+// const latestVehicles =
+//   await this.getLatestLocationsOfAllVehicles();
 
-    return saved;
-  }
+// emitAllVehicleLocationUpdate(latestVehicles);
+
+//     const latestVehicles = await this.getLatestLocationsOfAllVehicles();
+//     emitAllVehicleLocationUpdate(latestVehicles);
+
+//     emitVehicleLocationUpdate({
+//       vehicleId: String(saved.vehicleId),
+//       latitude: saved.latitude,
+//       longitude: saved.longitude,
+//       speed: saved.speed,
+//       ignition: saved.ignition,
+//       time: saved.time,
+//       source: saved.source || "live",
+//     });
+
+//     return saved;
+//   }
 
   async list(
     filter: Record<string, unknown>,

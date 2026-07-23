@@ -25,6 +25,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import { Circle, MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { vehicleMonitorService } from '../../services/vehicle-monitor.service'
+//@ts-ignore
 import 'leaflet/dist/leaflet.css'
 
 type Fence = {
@@ -39,11 +40,11 @@ type Fence = {
 type BaseOption = { _id: string; name: string }
 
 const dottedStyle = {
-  color: '#FFDE42',
-  weight: 3,
-  dashArray: '8 8',
-  fillColor: '#FFDE42',
-  fillOpacity: 0.08
+  color: '#000000',      // black border
+  weight: 4,             // thoda mota
+  dashArray: '10 6',     // dotted effect
+  fillColor: '#000000',
+  fillOpacity: 0.03      // bahut halka fill
 }
 
 const radiusHandleIcon = L.divIcon({
@@ -81,6 +82,8 @@ const GeofenceManagement = () => {
   const loadData = async () => {
     try {
       const [fenceRes, baseRes] = await Promise.all([vehicleMonitorService.getGeofences(), vehicleMonitorService.getBases()])
+      console.log("GEOFENCES", fenceRes.items)
+
       setSavedFences(fenceRes.items || [])
       setBases(baseRes.items || [])
       setError('')
@@ -196,14 +199,18 @@ const GeofenceManagement = () => {
 
                 <GeofenceMapEvents onPickCenter={(lat, lng) => setCenter([lat, lng])} />
 
-                {savedFences.map((fence) => (
-                  <Circle
-                    key={fence._id}
-                    center={[fence.center.latitude, fence.center.longitude]}
-                    radius={fence.radius}
-                    pathOptions={editingId === fence._id ? activeFenceStyle : dottedStyle}
-                  />
-                ))}
+               {savedFences.map((fence) => {
+  if (!fence.center) return null
+
+  return (
+    <Circle
+      key={fence._id}
+      center={[fence.center.latitude, fence.center.longitude]}
+      radius={fence.radius}
+      pathOptions={editingId === fence._id ? activeFenceStyle : dottedStyle}
+    />
+  )
+})}
 
                 {center && <Circle center={center} radius={radius} pathOptions={activeFenceStyle} />}
                 {center && centerHandle && (

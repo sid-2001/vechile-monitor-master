@@ -1,9 +1,9 @@
 import { userService } from "./user.service";
 
 export class AuthService {
-  login(username: string, password: string) {
+  login(username: string, password: string, deviceInfo?: any, requestMeta?: any) {
   
-    return userService.login(username, password);
+    return userService.login(username, password, deviceInfo, requestMeta);
   }
 
   generatePasscode(username: string, actor: string) {

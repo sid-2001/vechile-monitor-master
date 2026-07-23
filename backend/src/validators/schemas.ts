@@ -63,3 +63,126 @@ export const locationSchema: ValidatorFn = (body: any) => {
   ["name", "country", "state", "city"].forEach((f) => !body?.[f] && errors.push(`${f} is required`));
   return errors;
 };
+
+export const vehicleHaltConfigSchema: ValidatorFn = (
+  body: any
+) => {
+  const errors: string[] = [];
+
+  if (!body?.vehicleId) {
+    errors.push("vehicleId is required");
+  }
+
+  if (!body?.dayHalt) {
+    errors.push("dayHalt is required");
+  } else {
+    if (!body.dayHalt.windowStartTime) {
+      errors.push(
+        "dayHalt.windowStartTime is required"
+      );
+    }
+
+    if (!body.dayHalt.windowEndTime) {
+      errors.push(
+        "dayHalt.windowEndTime is required"
+      );
+    }
+
+    if (
+      body.dayHalt.minimumDurationMinutes === undefined ||
+      Number(body.dayHalt.minimumDurationMinutes) <= 0
+    ) {
+      errors.push(
+        "dayHalt.minimumDurationMinutes must be greater than 0"
+      );
+    }
+  }
+
+  if (!body?.nightHalt) {
+    errors.push("nightHalt is required");
+  } else {
+    if (!body.nightHalt.windowStartTime) {
+      errors.push(
+        "nightHalt.windowStartTime is required"
+      );
+    }
+
+    if (!body.nightHalt.windowEndTime) {
+      errors.push(
+        "nightHalt.windowEndTime is required"
+      );
+    }
+
+    if (
+      body.nightHalt.minimumDurationMinutes === undefined ||
+      Number(body.nightHalt.minimumDurationMinutes) <= 0
+    ) {
+      errors.push(
+        "nightHalt.minimumDurationMinutes must be greater than 0"
+      );
+    }
+  }
+
+  if (!body?.detection) {
+    errors.push("detection is required");
+
+    return errors;
+  }
+
+  const positiveDetectionFields = [
+    "stationaryRadiusMeters",
+    "stationaryConfirmationPackets",
+    "movementConfirmationPackets",
+    "maxPacketGapSeconds",
+    "gpsJumpSpeedMultiplier",
+  ];
+
+  positiveDetectionFields.forEach((field) => {
+    if (
+      body.detection[field] === undefined ||
+      Number(body.detection[field]) <= 0
+    ) {
+      errors.push(
+        `detection.${field} must be greater than 0`
+      );
+    }
+  });
+
+  if (
+    body.detection.stationarySpeedThreshold === undefined ||
+    Number(body.detection.stationarySpeedThreshold) < 0
+  ) {
+    errors.push(
+      "detection.stationarySpeedThreshold must be 0 or greater"
+    );
+  }
+
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+  [
+    {
+      field: "dayHalt.windowStartTime",
+      value: body?.dayHalt?.windowStartTime,
+    },
+    {
+      field: "dayHalt.windowEndTime",
+      value: body?.dayHalt?.windowEndTime,
+    },
+    {
+      field: "nightHalt.windowStartTime",
+      value: body?.nightHalt?.windowStartTime,
+    },
+    {
+      field: "nightHalt.windowEndTime",
+      value: body?.nightHalt?.windowEndTime,
+    },
+  ].forEach(({ field, value }) => {
+    if (value && !timeRegex.test(String(value))) {
+      errors.push(
+        `${field} must be in HH:mm format`
+      );
+    }
+  });
+
+  return errors;
+};

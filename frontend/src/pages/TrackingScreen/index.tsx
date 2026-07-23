@@ -715,11 +715,32 @@ const TrackingScreen = () => {
     };
   }, []);
 
+  // const filteredVehicles = useMemo(() => {
+  //   if (vehicleStatusFilter === 'moving') return vehicles.filter(v => v.ignition === true)
+  //   if (vehicleStatusFilter === 'parked') return vehicles.filter(v => v.ignition === false)
+  //   return vehicles
+  // }, [vehicles, vehicleStatusFilter])
+
   const filteredVehicles = useMemo(() => {
-    if (vehicleStatusFilter === 'moving') return vehicles.filter(v => v.ignition === true)
-    if (vehicleStatusFilter === 'parked') return vehicles.filter(v => v.ignition === false)
-    return vehicles
-  }, [vehicles, vehicleStatusFilter])
+  console.log("Current Filter:", vehicleStatusFilter)
+
+  const result =
+    vehicleStatusFilter === 'moving'
+      ? vehicles.filter(v => v.ignition === true)
+      : vehicleStatusFilter === 'parked'
+      ? vehicles.filter(v => v.ignition === false)
+      : vehicles
+
+  console.log(
+    "Filtered Vehicles:",
+    result.map(v => ({
+      vehicle: v.vehicleNumber,
+      ignition: v.ignition
+    }))
+  )
+
+  return result
+}, [vehicles, vehicleStatusFilter])
 
   const markers = useMemo(() => filteredVehicles.filter((v) => v.lat && v.lng), [filteredVehicles])
 
@@ -745,6 +766,16 @@ const TrackingScreen = () => {
   
   const movingVehicles = vehicles.filter(v => v.ignition === true)
   const parkedVehicles = vehicles.filter(v => v.ignition === false)
+  console.log(
+  vehicles.map(v => ({
+    vehicle: v.vehicleNumber,
+    ignition: v.ignition,
+    type: typeof v.ignition
+  }))
+)
+console.log("MOVING COUNT", movingVehicles.length)
+console.log("PARKED COUNT", parkedVehicles.length)
+console.log("ALL VEHICLES", vehicles)
   const focusedVehicle = vehicles.find((v) => v.id === focusedVehicleId)
   const filteredMovingCount = filteredVehicles.filter(v => v.ignition === true).length
   const filteredParkedCount = filteredVehicles.filter(v => v.ignition === false).length
@@ -787,7 +818,16 @@ const TrackingScreen = () => {
       {/* Stats Cards */}
       <Grid container spacing={1} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), borderLeft: `4px solid ${theme.palette.success.main}` }}>
+           <Tooltip title="Click to view only moving vehicles">
+          <Card
+  onClick={() => setVehicleStatusFilter('moving')}
+  sx={{
+    cursor: 'pointer',
+    bgcolor: alpha(theme.palette.success.main, 0.1),
+    borderLeft: `4px solid ${theme.palette.success.main}`
+  }}
+>
+  
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
@@ -800,10 +840,18 @@ const TrackingScreen = () => {
               </Stack>
             </CardContent>
           </Card>
+          </Tooltip>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), borderLeft: `4px solid ${theme.palette.error.main}` }}>
-            <CardContent>
+          <Tooltip title="Click to view only parked vehicles">
+<Card
+  onClick={() => setVehicleStatusFilter('parked')}
+  sx={{
+    cursor: 'pointer',
+    bgcolor: alpha(theme.palette.error.main, 0.1),
+    borderLeft: `4px solid ${theme.palette.error.main}`
+  }}
+>            <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="caption" color="text.secondary">PARKED VEHICLES</Typography>
@@ -815,10 +863,19 @@ const TrackingScreen = () => {
               </Stack>
             </CardContent>
           </Card>
+          </Tooltip>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: alpha(theme.palette.info.main, 0.1), borderLeft: `4px solid ${theme.palette.info.main}` }}>
-            <CardContent>
+          <Tooltip title="Click to view all vehicles">
+
+<Card
+  onClick={() => setVehicleStatusFilter('all')}
+  sx={{
+    cursor: 'pointer',
+    bgcolor: alpha(theme.palette.info.main, 0.1),
+    borderLeft: `4px solid ${theme.palette.info.main}`,
+  }}
+>            <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="caption" color="text.secondary">TOTAL VEHICLES</Typography>
@@ -830,12 +887,13 @@ const TrackingScreen = () => {
               </Stack>
             </CardContent>
           </Card>
+          </Tooltip>
         </Grid>
       </Grid>
 
 
 
-      <Card sx={{ mb: 2, borderRadius: 2 }}>
+      {/* <Card sx={{ mb: 2, borderRadius: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between">
             <Box>
@@ -861,7 +919,7 @@ const TrackingScreen = () => {
             </Stack>
           </Stack>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Map and Vehicles Grid */}
       <Grid container spacing={3}>
@@ -902,9 +960,21 @@ const TrackingScreen = () => {
           <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], mb: 1 }}>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6" fontWeight="bold">Live Vehicles</Typography>
+<Typography variant="h6" fontWeight="bold">
+  {vehicleStatusFilter === 'moving'
+    ? 'Moving Vehicles'
+    : vehicleStatusFilter === 'parked'
+    ? 'Parked Vehicles'
+    : 'Live Vehicles'}
+</Typography>
                 <Chip
-                  label={`${filteredVehicles.length} shown`}
+                   label={
+    vehicleStatusFilter === 'moving'
+      ? `${movingVehicles.length} Moving`
+      : vehicleStatusFilter === 'parked'
+      ? `${parkedVehicles.length} Parked`
+      : `${vehicles.length} Total`
+  }
                   size="small"
                   color="primary"
                   variant="outlined"

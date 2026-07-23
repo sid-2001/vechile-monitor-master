@@ -22,6 +22,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { AuthService } from '../../services/auth.service'
 import { Logo } from '../../assets/images'
+import { getDeviceInfo } from '../../services/apis/api1'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('')
@@ -56,7 +57,32 @@ const LoginPage: React.FC = () => {
 
     try {
       setLoading(true)
-      const response = await loginservice.login({ username, password })
+      const browserDevice = await getDeviceInfo()
+      const geoLocation = await new Promise<Record<string, number> | undefined>((resolve) => {
+        if (!navigator.geolocation) {
+          resolve(undefined)
+          return
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          }),
+          () => resolve(undefined),
+          { enableHighAccuracy: false, timeout: 3000 }
+        )
+      })
+      const response = await loginservice.login({
+        username,
+        password,
+        deviceInfo: {
+          deviceName: browserDevice.deviceName,
+          ipAddress: browserDevice.ip,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          location: geoLocation,
+        },
+      })
 
       localStorage.setItem('access_token', JSON.stringify(response.token))
       //@ts-ignore

@@ -10,16 +10,18 @@ import { useSetRecoilState } from "recoil";
 import { alertState, alertTextState, alertTypeState } from "./states/state";
 import { ThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
+import HaltConfiguration from './pages/vehicle/HaltConfiguration'
 import type { ProtectedRouteProps } from './helpers/protected-route'
 import { LocalStorageService } from './helpers/local-storage-service'
 import ProtectedRoute from './helpers/protected-route'
 import { useRecoilState } from 'recoil'
 import { inactivityTiming, themeModeState } from './states/state'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useRef } from 'react'
 import { useAutoLogout } from './helpers/useAutoLogout'
 import { CssBaseline } from '@mui/material'
 import CustomSnackbar from './components/customsnackbar/snackbar'
 import InactivityWarningModal from './components/inactivity-modal'
+import KilometerCardEntry from './pages/vehicle-monitoring/KilometerCardEntry'
 import Login from './pages/login'
 import DashboardLayout from './components/shared-layout'
 import TrackingScreen from './pages/TrackingScreen'
@@ -31,6 +33,7 @@ import DeviceManagement from './pages/DeviceManagement'
 import GeofenceManagement from './pages/GeofenceManagement'
 import LocationHistory from './pages/LocationHistory'
 import LocationSimulator from './pages/LocationSimulator'
+import LoginDevices from './pages/LoginDevices'
 import AnalyticsScreen from './pages/Analytics'
 import LocationManagement from './pages/LocationManagement'
 import { socket } from "./services/socket";
@@ -50,6 +53,9 @@ function App() {
   const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
     authenticationPath: '/login',
   }
+  const sosAudioRef = useRef(
+  new Audio("/sounds/sos-alert.mp3")
+);
   const [mode, setMode] = useRecoilState(themeModeState)
   const [inactivity, setinactivityTiming] = useRecoilState(inactivityTiming)
   const [warningOpen, setWarningOpen] = useState(false)
@@ -311,6 +317,7 @@ useEffect(() => {
   console.log("🟡 Initializing socket...");
 
   socket.connect();
+  sosAudioRef.current.loop = true;
 
   const resolveVehicleName = (data: Record<string, any> = {}) => {
     const vehicleNumber =
@@ -344,6 +351,8 @@ useEffect(() => {
 
 socket.on("vehicle:sos:created", (data) => {
   console.log("🚨 RECEIVED SOS CREATED", data);
+  sosAudioRef.current.currentTime = 0;
+  sosAudioRef.current.play().catch(console.error);
 
   // 🔥 DEBUG (IMPORTANT)
   console.log("👉 vehicleNumber:", data.vehicleNumber);
@@ -384,6 +393,9 @@ socket.on("vehicle:sos:created", (data) => {
 socket.on("vehicle:sos:closed", (data) => {
   console.log("✅ RECEIVED SOS CLOSED", data);
 
+  sosAudioRef.current.pause();
+  sosAudioRef.current.currentTime = 0;
+  
   setAlertText(`SOS Closed - ${resolveVehicleName(data)} by ${data.closedBy || 'system'}`);
   setAlertType("success");
   setAlertOpen(true);
@@ -429,7 +441,7 @@ socket.on("vehicle:accident:alert", (data) => {
         {/* <LoaderBackdrop /> */}
         {/* <Message /> */}
        <ToastContainer
-          position="top-center"
+          position="top-right"
           autoClose={10000} 
           closeOnClick
           draggable
@@ -453,10 +465,19 @@ socket.on("vehicle:accident:alert", (data) => {
                <Route path="location" element={<LocationManagement />} />
                <Route path="location-history" element={<LocationHistory />} />
                <Route path="location-simulator" element={<LocationSimulator />} />
+               <Route path="login-devices" element={<LoginDevices />} />
                <Route path="analytics" element={<AnalyticsScreen />} />
                <Route path="sims" element={<SimManagement />} />
                <Route path="device-sim-mapping" element={<DeviceSimMapping />} />
-            
+               <Route
+                path="kilometer-card"
+                element={<KilometerCardEntry />}
+              />
+              <Route
+  path="/halt-configuration"
+  element={<HaltConfiguration />}
+/>
+                          
             </Route>
 
             <Route

@@ -24,6 +24,7 @@ performance: {
   maxSpeed: Number,
   minSpeed: Number,
   harshBraking: { type: Number, default: 0 },
+  suddenAcceleration: { type: Number, default: 0 },
   highPitch: { type: Number, default: 45 },
   highRoll: { type: Number, default: 45 }
 },
@@ -59,6 +60,7 @@ const schema = new Schema<IVehicle>({
     fuelTankCapacity: Number,
     maxSpeed: Number,
     minSpeed: Number,
+    suddenAcceleration: Number,
     harshBraking: { type: Number, default: 0 },
     highPitch: { type: Number, default: 45 },
     highRoll: { type: Number, default: 45 }

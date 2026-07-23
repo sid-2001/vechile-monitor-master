@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
+import { LoginDeviceSession } from "../models/LoginDeviceSession";
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const auth = req.headers.authorization;
 
   if (!auth?.startsWith("Bearer ")) {
@@ -25,6 +26,17 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
   // ✅ Otherwise validate JWT
   try {
     req.user = jwt.verify(token, env.jwtSecret) as Express.UserPayload;
+    if (req.user.tokenId) {
+      const session = await LoginDeviceSession.findOneAndUpdate(
+        { tokenId: req.user.tokenId, active: true },
+        { lastSeenAt: new Date() },
+        { new: true }
+      );
+      if (!session) {
+        res.status(401).json({ message: "Session logged out" });
+        return;
+      }
+    }
     next();
   } catch {
     res.status(401).json({ message: "Invalid token" });

@@ -83,6 +83,15 @@ const LocationSimulator = () => {
   const testOverspeed = async () => {
     try {
       await pushLocation({ speed: Math.max(speed, 140) })
+      await vehicleMonitorService.createSpeedSignal({
+        vehicleId,
+        speed: Math.max(speed, 140),
+        maxSpeed: 80,
+        latitude: position[0],
+        longitude: position[1],
+        time: new Date().toISOString(),
+        source: 'simulation',
+      })
     } catch (e: any) {
       setError(e?.error_message || 'Failed to test overspeed')
     }
@@ -94,8 +103,33 @@ const LocationSimulator = () => {
       setTimeout(() => {
         pushLocation({ speed: 0 }).catch(console.error)
       }, 500)
+      await vehicleMonitorService.createHarshBrakingSignal({
+        vehicleId,
+        previousSpeed: Math.max(speed, 70),
+        speed: 0,
+        latitude: position[0],
+        longitude: position[1],
+        time: new Date().toISOString(),
+        source: 'simulation',
+      })
     } catch (e: any) {
       setError(e?.error_message || 'Failed to test harsh braking')
+    }
+  }
+
+  const saveFakeLocation = async () => {
+    try {
+      await pushLocation()
+    } catch (e: any) {
+      setError(e?.error_message || 'Failed to save fake location')
+    }
+  }
+
+  const testSOS = async () => {
+    try {
+      await vehicleMonitorService.createSOS(vehicleId)
+    } catch (e: any) {
+      setError(e?.error_message || 'Failed to create SOS signal')
     }
   }
 
@@ -111,7 +145,27 @@ const LocationSimulator = () => {
     const fence = geofences[0]
     try {
       await pushLocation({ latitude: fence.center.latitude, longitude: fence.center.longitude, speed: 20 })
+      await vehicleMonitorService.createGeofenceEnterSignal({
+        vehicleId,
+        geofenceId: fence._id,
+        geofenceName: fence.name,
+        latitude: fence.center.latitude,
+        longitude: fence.center.longitude,
+        speed: 20,
+        time: new Date().toISOString(),
+        source: 'simulation',
+      })
       await pushLocation({ latitude: fence.center.latitude + 0.3, longitude: fence.center.longitude + 0.3, speed: 25 })
+      await vehicleMonitorService.createGeofenceExitSignal({
+        vehicleId,
+        geofenceId: fence._id,
+        geofenceName: fence.name,
+        latitude: fence.center.latitude + 0.3,
+        longitude: fence.center.longitude + 0.3,
+        speed: 25,
+        time: new Date().toISOString(),
+        source: 'simulation',
+      })
     } catch (e: any) {
       setError(e?.error_message || 'Failed to test geofence entry/exit')
     }
@@ -148,9 +202,11 @@ const LocationSimulator = () => {
             <Grid item xs={12}>
               <Stack direction='row' spacing={1} flexWrap='wrap'>
                 <Button variant='contained' disabled={!vehicleId || recording} onClick={() => setRecording(true)}>Start Recording</Button>
+                <Button variant='contained' color='info' disabled={!vehicleId} onClick={saveFakeLocation}>Save Fake Location</Button>
                 <Button variant='outlined' color='error' disabled={!recording} onClick={() => setRecording(false)}>Stop</Button>
                 <Button variant='outlined' color='success' disabled={!vehicleId} onClick={endSimulation}>End Simulation (Back to Live)</Button>
                 <Button variant='contained' color='warning' disabled={!vehicleId} onClick={testOverspeed}>Test Overspeed</Button>
+                <Button variant='contained' color='error' disabled={!vehicleId} onClick={testSOS}>Test SOS</Button>
                 <Button variant='contained' color='error' disabled={!vehicleId} onClick={testHarshBraking}>Test Harsh Braking</Button>
                 <Button variant='contained' color='secondary' disabled={!vehicleId || !geofences.length} onClick={testOutOfFence}>Test Geofence In/Out</Button>
               </Stack>
@@ -161,12 +217,25 @@ const LocationSimulator = () => {
 
       <Card>
         <CardContent>
+          <Typography variant='body2' sx={{ mb: 1 }}>Drag the pointer to any place on the map, then click Save Fake Location to store that test point in the database. Use Test Geofence In/Out to generate fake geofence enter and exit alerts.</Typography>
           <Box sx={{ height: 520, borderRadius: 2, overflow: 'hidden' }}>
             <MapContainer center={position} zoom={6} style={{ height: '100%', width: '100%' }}>
               <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-              {geofences.map((fence) => (
-                <Circle key={fence._id} center={[fence.center.latitude, fence.center.longitude]} radius={fence.radius} pathOptions={{ color: '#FFDE42' }} />
-              ))}
+              {geofences
+  .filter(
+    (fence) =>
+      fence?.center &&
+      typeof fence.center.latitude === "number" &&
+      typeof fence.center.longitude === "number"
+  )
+  .map((fence) => (
+    <Circle
+      key={fence._id}
+      center={[fence.center.latitude, fence.center.longitude]}
+      radius={fence.radius}
+      pathOptions={{ color: '#FFDE42' }}
+    />
+))}
               <Marker
                 position={position}
                 draggable

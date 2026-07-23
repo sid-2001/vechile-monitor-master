@@ -50,11 +50,12 @@ const [form, setForm] = useState({
   noofaxles: '',
   transmissiontype: '',
   fueltankcapacity: '',
+  suddenAcceleration: '',
   harshBraking: '',
    highPitch: '',
   highRoll: ''
 })
-  const [editForm, setEditForm] = useState({ vehicleNumber: '', vehicle_tag_name: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '',highPitch: '',
+  const [editForm, setEditForm] = useState({ vehicleNumber: '', vehicle_tag_name: '', licensePlate: '', type: 'TRUCK', subType: 'HEAVY', manufacturerName: '', manufacturerModel: '', manufacturerVariant: '', baseId: '', driverId: '', deviceId: '', maxSpeed: '120', harshBraking: '',highPitch: '',suddenAcceleration: '',
   highRoll: '' })
 
   const load = async () => {
@@ -116,6 +117,7 @@ const [form, setForm] = useState({
     maxSpeed: Number(form.maxSpeed || 120),
      highPitch: Number(form.highPitch || 45),
   highRoll: Number(form.highRoll || 45),
+  suddenAcceleration: Number(form.suddenAcceleration || 0),
     harshBraking: Number(form.harshBraking || 0),
     minSpeed: 0
   },
@@ -168,6 +170,7 @@ setForm({
   noofaxles: '',
   transmissiontype: '',
   fueltankcapacity: '',
+  suddenAcceleration: '',
   harshBraking: '',
   highPitch:'',
   highRoll:''
@@ -192,8 +195,10 @@ setForm({
       driverId: row.driverId?._id || row.driverId || '',
       deviceId: row.deviceId || '',
       maxSpeed: String(row.performance?.maxSpeed || 120),
+      suddenAcceleration: String(row.performance?.suddenAcceleration || 0),
       highPitch: String(row.performance?.highPitch || 45),
 highRoll: String(row.performance?.highRoll || 45),
+
       harshBraking: String(row.performance?.harshBraking || 0)
     })
     setEditOpen(true)
@@ -210,7 +215,7 @@ highRoll: String(row.performance?.highRoll || 45),
       driverId: editForm.driverId,
       deviceId: editForm.deviceId,
       manufacturer: { name: editForm.manufacturerName, model: editForm.manufacturerModel, variant: editForm.manufacturerVariant },
-      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0, harshBraking: Number(editForm.harshBraking || 0),highPitch: Number(editForm.highPitch || 45),
+      performance: { transmissionType: 'Manual', fuelTankCapacity: 200, maxSpeed: Number(editForm.maxSpeed || 120), minSpeed: 0, harshBraking: Number(editForm.harshBraking || 0),suddenAcceleration: Number(editForm.suddenAcceleration || 0),highPitch: Number(editForm.highPitch || 45),
       highRoll: Number(editForm.highRoll || 45) }
     })
     setEditOpen(false)
@@ -294,6 +299,13 @@ const cols: GridColDef[] = [
   { field: 'maxSpeed', headerName: 'Max Speed', width: 130, valueGetter: (_, row) => row.performance?.maxSpeed || '-' },
 
   { field: 'harshBraking', headerName: 'Harsh Braking', width: 140, valueGetter: (_, row) => row.performance?.harshBraking || 0 },
+  {
+  field: 'suddenAcceleration',
+  headerName: 'Sudden Acceleration',
+  width: 170,
+  valueGetter: (_, row) =>
+    row.performance?.suddenAcceleration || 0
+},
   { field: 'highPitch', headerName: 'Pitch', width: 100, valueGetter: (_, row) => row.performance?.highPitch || 0 },
   { field: 'highRoll', headerName: 'Roll', width: 100, valueGetter: (_, row) => row.performance?.highRoll || 0 },
 
@@ -381,6 +393,17 @@ const cols: GridColDef[] = [
   <TextField
     fullWidth
     type="number"
+    label="Sudden Acceleration"
+    value={form.suddenAcceleration}
+    onChange={e =>
+      setForm({ ...form, suddenAcceleration: e.target.value })
+    }
+  />
+</Grid>
+<Grid item xs={12} md={2}>
+  <TextField
+    fullWidth
+    type="number"
     label="High Pitch"
     value={form.highPitch}
     onChange={e => setForm({ ...form, highPitch: e.target.value })}
@@ -461,9 +484,25 @@ const cols: GridColDef[] = [
     onChange={e => setEditForm({ ...editForm, harshBraking: e.target.value })}
   />
 </Grid>
+<Grid item xs={12} md={6}>
+  <TextField
+    fullWidth
+    type="number"
+    label="Sudden Acceleration"
+    value={editForm.suddenAcceleration}
+    onChange={e =>
+      setEditForm({
+        ...editForm,
+        suddenAcceleration: e.target.value
+      })
+    }
+  />
+</Grid>
       </Grid>
     </DialogContent>
-    <DialogActions><Button onClick={() => setEditOpen(false)}>Cancel</Button><Button variant='contained' onClick={update}>Update</Button></DialogActions>
+    <DialogActions>
+      <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+      <Button variant='contained' onClick={update}>Update</Button></DialogActions>
   </Dialog>
 
   <Snackbar open={!!snack} autoHideDuration={2500} onClose={() => setSnack('')}><MuiAlert severity='success' variant='filled' onClose={() => setSnack('')} sx={{ bgcolor: 'primary.main', color: 'common.white' }}>{snack}</MuiAlert></Snackbar>

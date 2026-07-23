@@ -97,6 +97,77 @@ deleteLocation: (id: string) => api1.del(`/locations/${id}`),
   },
   createGeofence: (payload: GeofencePayload) => api1.post('/geofences', payload),
   updateGeofence: (id: string, payload: Partial<GeofencePayload>) => api1.put(`/geofences/${id}`, payload),
-  deleteGeofence: (id: string) => api1.del(`/geofences/${id}`)
+  deleteGeofence: (id: string) => api1.del(`/geofences/${id}`),
+  getLoginDevices: () => api1.get('/login-devices'),
+  logoutLoginDevice: (id: string) => api1.post(`/login-devices/${id}/logout`, {}),
+  logoutAllLoginDevices: () => api1.post('/login-devices/logout-all', {}),
+  createSOS: (vehicleId: string) => api1.post('/api/sos/create', { vehicleId }),
+  createSpeedSignal: (payload: Record<string, unknown>) => api1.post('/notifications/speed-exceeded', payload),
+  createHarshBrakingSignal: (payload: Record<string, unknown>) => api1.post('/notifications/harsh-braking', payload),
+    createGeofenceEnterSignal: (payload: Record<string, unknown>) =>
+    api1.post('/notifications/geofence-enter', payload),
 
+  createGeofenceExitSignal: (payload: Record<string, unknown>) =>
+    api1.post('/notifications/geofence-exit', payload),
+
+  // Halt Configuration
+  getVehicleHaltConfigs: (params?: Record<string, unknown>) => {
+    const query = new URLSearchParams(
+      Object.entries(params || {})
+        .filter(([, value]) => value !== undefined && value !== null)
+        .map(([key, value]) => [key, String(value)])
+    )
+
+    return api1.get(
+      `/vehicle-halt-config${
+        query.toString() ? `?${query.toString()}` : ''
+      }`
+    )
+  },
+
+  getVehicleHaltConfigByVehicle: (vehicleId: string) =>
+    api1.get(`/vehicle-halt-config/vehicle/${vehicleId}`),
+
+  getVehicleHaltConfigById: (id: string) =>
+    api1.get(`/vehicle-halt-config/${id}`),
+
+  createVehicleHaltConfig: (
+    payload: Record<string, unknown>
+  ) =>
+    api1.post('/vehicle-halt-config', payload),
+
+  updateVehicleHaltConfig: (
+    id: string,
+    payload: Record<string, unknown>
+  ) =>
+    api1.put(`/vehicle-halt-config/${id}`, payload),
+
+  deleteVehicleHaltConfig: (id: string) =>
+    api1.del(`/vehicle-halt-config/${id}`),
+
+  // Vehicle Halt / Stop History
+  getVehicleStopHistory: (
+    params?: Record<string, unknown>
+  ) => {
+    const query = new URLSearchParams(
+      Object.entries(params || {})
+        .filter(
+          ([, value]) =>
+            value !== undefined &&
+            value !== null
+        )
+        .map(([key, value]) => [
+          key,
+          String(value),
+        ])
+    )
+
+    return api1.get(
+      `/vehicle-stop-history${
+        query.toString()
+          ? `?${query.toString()}`
+          : ''
+      }`
+    )
+  }
 }
