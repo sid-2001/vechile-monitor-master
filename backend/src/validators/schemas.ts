@@ -24,6 +24,17 @@ export const userSchema: ValidatorFn = (body: any) => {
   return errors;
 };
 
+export const roleSchema: ValidatorFn = (body: any) => {
+  const errors: string[] = [];
+  if (!body?.name) errors.push("name is required");
+  if (body?.permissions && typeof body.permissions !== "object") errors.push("permissions must be an object");
+  const allowed = ["NONE", "READ", "WRITE", "UPDATE", "DELETE", "FULL"];
+  Object.values(body?.permissions || {}).forEach((value) => {
+    if (!allowed.includes(String(value))) errors.push("permissions values must be NONE, READ, WRITE, UPDATE, DELETE or FULL");
+  });
+  return errors;
+};
+
 export const vehicleSchema: ValidatorFn = (body: any) => {
   const errors: string[] = [];
   ["vehicleNumber", "licensePlate", "type", "subType", "deviceId", "baseId"].forEach((f) => !body?.[f] && errors.push(`${f} is required`));

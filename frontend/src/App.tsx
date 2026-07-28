@@ -44,6 +44,7 @@ import { API_ERROR_EVENT } from './services/apis/api-error-events';
 
 import SimManagement from './pages/SimManagement/SimManagement'
 import DeviceSimMapping from './pages/DeviceSimMapping/DeviceSimMapping'
+import RoleManagement from './pages/RoleManagement'
 //@ts-ignore
 const { VITE_APP_BACKEND } = import.meta.env
 
@@ -458,6 +459,7 @@ socket.on("vehicle:accident:alert", (data) => {
                <Route index element={<TrackingScreen />}></Route>
                <Route path="tracking" element={<TrackingScreen />} />
                <Route path="user" element={<UserManagementApi />} />
+               <Route path="roles" element={<RoleManagement />} />
                <Route path="bases" element={<BaseManagement />} />
                <Route path="vehicles" element={<VehicleManagement />} />
                <Route path="devices" element={<DeviceManagement />} />
