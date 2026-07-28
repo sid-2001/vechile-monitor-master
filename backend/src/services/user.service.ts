@@ -75,7 +75,7 @@ export class UserService {
     });
 
     const customRole: any = user.roleId;
-    const permissions = customRole?.status === "ACTIVE" ? customRole.permissions : undefined;
+    const permissions = customRole?.status === "ACTIVE" ? (customRole.permissions instanceof Map ? Object.fromEntries(customRole.permissions) : customRole.permissions) : undefined;
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role, roleId: customRole?._id, permissions, tokenId }, env.jwtSecret, { expiresIn: "1d" });
     return { token,user };
   }catch(err:any){

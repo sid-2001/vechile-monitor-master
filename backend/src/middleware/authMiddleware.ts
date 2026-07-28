@@ -53,12 +53,22 @@ export const requireRole = (...roles: Array<"ADMIN" | "DRIVER" | "OPERATOR">) =>
 };
 
 
-export const requireModuleAccess = (module: string, minimum: "READ" | "WRITE" = "READ") => {
+const ACCESS_RANK: Record<string, number> = { NONE: 0, READ: 1, WRITE: 2, UPDATE: 3, DELETE: 4, FULL: 5 };
+
+const methodAccess = (method: string): "READ" | "WRITE" | "UPDATE" | "DELETE" => {
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return "READ";
+  if (method === "POST") return "WRITE";
+  if (method === "PUT" || method === "PATCH") return "UPDATE";
+  if (method === "DELETE") return "DELETE";
+  return "READ";
+};
+
+export const requireModuleAccess = (module: string, minimum?: "READ" | "WRITE" | "UPDATE" | "DELETE") => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (req.user?.role === "ADMIN") return next();
+    const requiredAccess = minimum || methodAccess(req.method);
     const access = req.user?.permissions?.[module] || "NONE";
-    const rank = { NONE: 0, READ: 1, WRITE: 2 };
-    if (rank[access] < rank[minimum]) {
+    if ((ACCESS_RANK[access] || 0) < ACCESS_RANK[requiredAccess]) {
       res.status(403).json({ message: "Forbidden" });
       return;
     }

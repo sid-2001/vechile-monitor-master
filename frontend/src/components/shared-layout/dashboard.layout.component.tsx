@@ -149,7 +149,7 @@ const hasModuleAccess = (item: any) => {
   if (user?.role === 'ADMIN') return true
   if (!item.module) return true
   const permissions = user?.roleId?.permissions || user?.permissions || {}
-  return ['READ', 'WRITE'].includes(permissions[item.module])
+  return ['READ', 'WRITE', 'UPDATE', 'DELETE', 'FULL'].includes(permissions[item.module])
 }
 
 const DashboardLayout = () => {

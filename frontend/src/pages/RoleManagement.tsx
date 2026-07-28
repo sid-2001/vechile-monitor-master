@@ -10,7 +10,7 @@ const MODULES = [
   ['deviceSimMapping', 'Device-SIM Mapping'], ['tracking', 'Live Tracking'], ['locationHistory', 'Vehicle History'], ['analytics', 'Analytics'],
   ['loginDevices', 'Login Devices'], ['testSignals', 'Test Signals'], ['haltConfiguration', 'Halt Configuration'],
 ]
-const ACCESS = ['NONE', 'READ', 'WRITE']
+const ACCESS = ['NONE', 'READ', 'WRITE', 'UPDATE', 'DELETE', 'FULL']
 const defaultPermissions = () => Object.fromEntries(MODULES.map(([key]) => [key, 'NONE']))
 
 const RoleManagement = () => {

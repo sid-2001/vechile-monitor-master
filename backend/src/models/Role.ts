@@ -2,7 +2,7 @@ import mongoose, { Document, model, Schema } from "mongoose";
 import { AuditFields } from "./audit";
 import { auditPlugin } from "../plugins/auditPlugin";
 
-export type AccessLevel = "NONE" | "READ" | "WRITE";
+export type AccessLevel = "NONE" | "READ" | "WRITE" | "UPDATE" | "DELETE" | "FULL";
 
 export const MODULE_KEYS = [
   "dashboard",
@@ -40,12 +40,12 @@ const schema = new Schema<IRole>({
   description: { type: String, trim: true },
   permissions: {
     type: Map,
-    of: { type: String, enum: ["NONE", "READ", "WRITE"], default: "NONE" },
+    of: { type: String, enum: ["NONE", "READ", "WRITE", "UPDATE", "DELETE", "FULL"], default: "NONE" },
     default: {},
   },
   isSystem: { type: Boolean, default: false },
   status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
-});
+}, { toJSON: { flattenMaps: true }, toObject: { flattenMaps: true } });
 
 schema.plugin(auditPlugin);
 

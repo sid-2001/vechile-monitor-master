@@ -7,7 +7,7 @@ declare global {
       username: string;
       role: "ADMIN" | "DRIVER" | "OPERATOR";
       roleId?: string;
-      permissions?: Record<string, "NONE" | "READ" | "WRITE">;
+      permissions?: Record<string, "NONE" | "READ" | "WRITE" | "UPDATE" | "DELETE" | "FULL">;
       tokenId?: string;
     }
 
